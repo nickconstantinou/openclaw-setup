@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+# Secure git push tool leveraging ~/.openclaw/.env for authentication
+
+set -euo pipefail
+
+# 1. Parse arguments (fallback to current directory)
+REPO_DIR="${1:-.}"
+REMOTE="${2:-origin}"
+BRANCH="${3:-main}"
+
+# Convert to absolute path to ensure -C works robustly
+REPO_DIR=$(realpath "$REPO_DIR")
+
+if [[ ! -d "$REPO_DIR/.git" ]]; then
+    echo "Error: Directory '$REPO_DIR' is not a git repository."
+    exit 1
+fi
+
+# 2. Source the environment file
+ENV_FILE="$HOME/.openclaw/.env"
+if [[ ! -f "$ENV_FILE" ]]; then
+    echo "Error: Environment file not found at $ENV_FILE"
+    echo "Please create it and export GITHUB_API_KEY."
+    exit 1
+fi
+
+# We use set +r to allow sourcing
+set +u
+source "$ENV_FILE"
+set -u
+
+if [[ -z "${GITHUB_API_KEY:-}" ]]; then
+    echo "Error: GITHUB_API_KEY is not set in $ENV_FILE"
+    echo "Please add it: GITHUB_API_KEY=ghp_your_token_here"
+    exit 1
+fi
+
+# 3. Get remote URL
+REMOTE_URL=$(git -C "$REPO_DIR" remote get-url "$REMOTE" 2>/dev/null || true)
+
+if [[ -z "$REMOTE_URL" ]]; then
+    echo "Error: Remote '$REMOTE' not found for repository '$REPO_DIR'."
+    exit 1
+fi
+
+# Ensure URL is HTTPS and github.com
+if [[ ! "$REMOTE_URL" == *"github.com"* ]]; then
+    echo "Error: This tool currently only supports github.com remotes."
+    exit 1
+fi
+
+# Extract the repository path (e.g., username/repo.git)
+# Handles both HTTPS and SSH formats
+if [[ "$REMOTE_URL" == "git@github.com:"* ]]; then
+    REPO_PATH="${REMOTE_URL#git@github.com:}"
+elif [[ "$REMOTE_URL" == "https://github.com/"* ]]; then
+    # Strip https://github.com/
+    REPO_PATH="${REMOTE_URL#https://github.com/}"
+    # Strip potential username@ if present in the HTTPS URL
+    REPO_PATH=$(echo "$REPO_PATH" | sed -E 's/^[^@]+@(.*)$/\1/')
+else
+    echo "Error: Unrecognized GitHub URL format: $REMOTE_URL"
+    exit 1
+fi
+
+# Construct the secure URL with token
+SECURE_URL="https://${GITHUB_API_KEY}@github.com/${REPO_PATH}"
+
+echo "Pushing securely via token to $REPO_PATH..."
+
+# 4. Perform the push
+git -C "$REPO_DIR" push "$SECURE_URL" "$BRANCH"

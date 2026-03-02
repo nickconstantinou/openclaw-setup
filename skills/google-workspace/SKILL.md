@@ -178,4 +178,24 @@ gog docs cat <docId>
 
 ---
 
+## AI Assistant Workflows
+
+Use these step-by-step generic workflows when acting as an email/calendar assistant for the user:
+
+### Daily Inbox Triage & Drafts Workflow
+1. Get recent unread threads: `gog gmail search 'is:unread' --max 20 --json`
+2. Parse the JSON to find important threads (e.g., flag items requiring a response vs newsletters).
+3. For each important thread requiring context, retrieve the full thread: `gog gmail thread get <threadId>`
+4. Draft a natural, human-like reply locally to `/tmp/drafts/reply.txt` based on the tone/profile requested by the user.
+5. Create the draft in Gmail for user review: `gog gmail drafts create --to <address> --subject "Re: ..." --body-file /tmp/drafts/reply.txt`
+6. Summarize the actions taken to the user.
+
+### Calendar Scheduling Workflow
+1. Look up existing events to find free slots using strict RFC3339 timestamps for the current week: `gog calendar events primary --from $(date -u +%Y-%m-%dT00:00:00Z) --to $(date -v+7d -u +%Y-%m-%dT23:59:59Z) --json`
+2. Identify a 30/60 minute free slot that aligns with the user's instructions (e.g., "Monday 2pm").
+3. Create the event using the precise slot: `gog calendar create primary --summary "Project Sync" --from 2026-03-02T14:00:00Z --to 2026-03-02T15:00:00Z`
+4. Confirm scheduling with the user.
+
+---
+
 _Remember: Always use --json for scripted output, pipe to jq, and use RFC3339 timestamps for calendar._

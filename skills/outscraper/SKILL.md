@@ -6,6 +6,8 @@ metadata:
     "openclaw":
       {
         "emoji": "🗺️",
+        "requires": { "env": ["OUTSCRAPER_API_KEY"] },
+        "primaryEnv": "OUTSCRAPER_API_KEY"
       },
   }
 ---
@@ -20,32 +22,37 @@ Scrape business data from Google Maps using Outscraper API.
 
 **Auth:** Header `X-API-KEY: YOUR_API_KEY`
 
+Ensure `OUTSCRAPER_API_KEY` is set in your `~/.openclaw/.env` file. We source this file to get the key.
+
 ## Quick Start
 
 ```bash
 # Search for tutors in a city
+source ~/.openclaw/.env
 curl -s "https://api.outscraper.cloud/google-maps-search?query=tutors, London, UK&limit=50" \
-  -H "X-API-KEY: YOUR_API_KEY"
+  -H "X-API-KEY: $OUTSCRAPER_API_KEY"
 ```
 
 ## Example Calls
 
 ```bash
+source ~/.openclaw/.env
+
 # Basic search - up to 500 results
 curl -s "https://api.outscraper.cloud/google-maps-search?query=tutors, London, UK&limit=500&region=GB" \
-  -H "X-API-KEY: YOUR_API_KEY"
+  -H "X-API-KEY: $OUTSCRAPER_API_KEY"
 
 # With coordinates (more precise)
 curl -s "https://api.outscraper.cloud/google-maps-search?query=tutors&coordinates=51.5074,-0.1278&limit=500&region=GB" \
-  -H "X-API-KEY: YOUR_API_KEY"
+  -H "X-API-KEY: $OUTSCRAPER_API_KEY"
 
 # With email enrichment (async recommended)
 curl -s "https://api.outscraper.cloud/google-maps-search?query=tutors, London, UK&limit=100&enrichment=contacts_n_leads&async=true" \
-  -H "X-API-KEY: YOUR_API_KEY"
+  -H "X-API-KEY: $OUTSCRAPER_API_KEY"
 
 # Pagination - skip first 20
 curl -s "https://api.outscraper.cloud/google-maps-search?query=tutors, London, UK&limit=500&skipPlaces=20" \
-  -H "X-API-KEY: YOUR_API_KEY"
+  -H "X-API-KEY: $OUTSCRAPER_API_KEY"
 ```
 
 ## Parameters
@@ -116,7 +123,7 @@ Add enrichments to get more data:
 
 ## Workflow
 
-1. API key stored in: `/home/openclaw/.openclaw/credentials/outscraper.json`
+1. Configure API key in `~/.openclaw/.env`: `OUTSCRAPER_API_KEY=your_key_here`
 2. Run searches for target cities
 3. Parse results → import to Supabase
 
@@ -166,4 +173,4 @@ After scraping, transform data:
 - Use batching for multiple queries (up to 250 in one request)
 - Check rate limits for your plan
 - **API endpoint:** `https://api.outscraper.cloud` (not .com!)
-- **Auth:** Use header `X-API-KEY: YOUR_KEY`
+- **Auth:** Use header `X-API-KEY: $OUTSCRAPER_API_KEY` where `$OUTSCRAPER_API_KEY` is loaded from `~/.openclaw/.env`

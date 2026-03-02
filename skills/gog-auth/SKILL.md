@@ -29,51 +29,52 @@ You run the command. The user tunnels the port. Google redirects through the tun
 
 Use the exec tool to run:
 ```bash
-gog auth add chas.constantinou@gmail.com --services all --port 38625
+gog auth add user@example.com --services all --port 38625
 ```
 
 Leave the process running. It will print a URL and wait.
-
-### Step 2 — tell the user to open a tunnel
-
-Tell the user:
-> Open a new terminal on your local machine and run:
-> ```
-> ssh -N -L 38625:127.0.0.1:38625 openclaw@talons.tail7e0e6e.ts.net
-> ```
-> Keep that terminal open, then click the Google auth link I showed you.
-
-### Step 3 — wait for callback
-
-Once the user clicks the link and approves in Google, the callback hits their
-local port 38625, the tunnel forwards it to the server, and gog captures it.
-The exec command will print "Authentication successful" and exit.
-
-### Step 4 — verify
+### 1. Add account
 
 ```bash
-gog accounts list
-gog calendar list --account chas.constantinou@gmail.com --limit 3
+gog auth add user@example.com --services all --port 38625
+```
+This triggers an OAuth web flow. Ensure the proxy intercepts the callback if running remotely.
+
+### 2. Add multiple services at once
+
+```bash
+gog auth add user@example.com --services drive,gmail,calendar
 ```
 
-## If --port flag isn't supported
+### 3. Set standard defaults
 
-Some gogcli versions don't support `--port`. In that case:
-1. Run `gog auth add chas.constantinou@gmail.com --services all`
-2. Read the redirect_uri from the URL it prints (the port after `127.0.0.1:`)
-3. Tell the user to tunnel THAT port, then click the link
+By default, without the `-a` flag, gog commands fail if there are multiple accounts. You can configure defaults via environment aliases or shell wrappers, but `gog` core requires you to either have 1 account or specify `-a`.
 
-## Re-authenticating / refreshing tokens
-
+If working extensively, create aliases for the session:
 ```bash
-gog auth refresh chas.constantinou@gmail.com
+alias gcalendar="gog calendar list --account user@example.com"
+gog calendar list --account user@example.com --limit 3
 ```
 
-## Checking what's authenticated
+## Handling Auth Errors
 
+If you encounter `Token expired` or `invalid_grant`:
+1. Run `gog auth add user@example.com --services all`
+2. Complete the OAuth flow again
+3. Retry the operation
+
+If `gog` hangs on commands:
+- Check token status:
 ```bash
-gog accounts list
-gog accounts status chas.constantinou@gmail.com
+gog auth refresh user@example.com
+```
+
+## Verification
+
+To verify current state:
+```bash
+gog auth list
+gog accounts status user@example.com
 ```
 
 ## Common errors

@@ -37,12 +37,11 @@ curl -s -X POST https://api.tavily.com/search \
 
 ## Environment
 
-Set the API key:
+Set the API key by adding it to `~/.openclaw/.env` and sourcing it:
 ```bash
-export TAVILY_API_KEY="tvly-..."
+echo 'TAVILY_API_KEY="tvly-..."' >> ~/.openclaw/.env
+source ~/.openclaw/.env
 ```
-
-Or configure in OpenClaw config.
 
 ## Response format
 
