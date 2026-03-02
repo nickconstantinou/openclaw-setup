@@ -29,9 +29,12 @@ Output a JSON object to guide `visual-producer.md`:
   "aesthetic": "Neo-Brutalist",
   "palette": ["#FF0000", "#000000", "#FFFFFF"],
   "typography": ["Courier New", "Helvetica Bold"],
-  "motif": "Glitch art and raw concrete textures."
+  "motif": "Glitch art and raw concrete textures.",
+  "character_token": "{char} a young female developer with pink hair and round glasses"
 }
 ```
+
+*Note: If a `character_token` is provided, the `visual-producer` MUST use the NVIDIA Consistory model to ensure the exact same character appears in every generated asset for the campaign.*
 
 ## 4. Banned Visuals
 *   3D Clay Hands holding phones.

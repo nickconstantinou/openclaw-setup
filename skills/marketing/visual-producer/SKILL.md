@@ -2,7 +2,8 @@
 name: visual-producer
 type: skill
 mcp: [glif, replicate]
-version: 2.0.0
+version: 2.1.0
+dependencies: [nvidia-imagegen]
 ---
 
 # Skill 12: Visual Production Engine
@@ -11,7 +12,9 @@ version: 2.0.0
 To generate "stop-the-scroll" assets that look like they cost $5k/shoot.
 
 ## 1. Tool Stack & Models
-*   **Flux Pro (Replicate):** Best for photorealism and text rendering.
+*   **FLUX.1-dev (NVIDIA NIM via `nvidia-imagegen`):** **PRIMARY.** Best for photorealism, text rendering, and high-fidelity assets.
+*   **Consistory (NVIDIA NIM via `nvidia-imagegen`):** Use specifically when you need consistent character/object identity across multiple images in a campaign.
+*   **Flux Pro (Replicate):** Fallback for photorealism.
 *   **Midjourney V6 (Glif):** Best for "Vibe" and artistic abstraction.
 *   **Runway Gen-3 (Web):** For video motion (until API is connected).
 
@@ -27,7 +30,7 @@ Say:
 
 ## 4. Protocol for Asset Generation
 1.  **Ingest Content:** Read the copy/landing page text.
-2.  **Define Vibe:** Consult `creative-strategist.md`.
-3.  **Generate:** Run 4 variations.
+2.  **Define Vibe:** Consult `creative-strategist.md`. If a `{char}` token is defined for branding, you MUST use the `Consistory` model.
+3.  **Generate:** Run 4 variations. For standard high-fidelity assets, use `FLUX.1-dev` via the `nvidia-imagegen` skill.
 4.  **Select:** Pick the one that has the best composition (Rule of Thirds).
 5.  **Output:** Save to `public/assets/[campaign_name]/[type]_[id].png`.

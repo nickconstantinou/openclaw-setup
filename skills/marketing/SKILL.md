@@ -9,7 +9,7 @@ metadata:
     "openclaw":
       {
         "emoji": "📈",
-        "requires": { "tools": ["generate_image"] },
+        "requires": { "tools": ["generate_image"], "skills": ["nvidia-imagegen"] },
       },
   }
 ---
