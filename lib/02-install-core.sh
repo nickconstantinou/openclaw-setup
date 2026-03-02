@@ -226,5 +226,6 @@ setup_agent_dirs() {
 # ── 7i. INSTALL POST BRIDGE ───────────────────────────────────────────────────
 install_post_bridge() {
     log "Installing Post Bridge social media skill..."
-    oc skills add "jackfriks/post-bridge-social-manager" --dir "$ACTUAL_HOME/.openclaw/workspace/skills" || log "WARNING: Post Bridge skill install failed."
+    # Note: skill is also deployed via lib/03-skills.sh file-copy; this registers it from upstream if available
+    oc skills add "jackfriks/post-bridge-social-manager" || log "INFO: Post Bridge upstream skill registration skipped (already deployed locally)."
 }
