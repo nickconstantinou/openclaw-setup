@@ -42,21 +42,22 @@ def main():
     config.get('tools', {}).pop('files', None)                       # tools.files.*
     config.get('agents', {}).get('defaults', {}).pop('sandbox', None)  # agents.defaults.sandbox.mode
 
-    _bad_minimax = {
+    _bad_models = {
         'minimax/MiniMax-M2.5-highspeed',
         'minimax/MiniMax-M2.1-highspeed',
+        'nvidia/mistralai/devstral-2-123b-instruct-2512',
     }
     _defaults = config.get('agents', {}).get('defaults', {})
     _model = _defaults.get('model', {})
     if isinstance(_model.get('fallbacks'), list):
-        _model['fallbacks'] = strip_bad_models(_model['fallbacks'], _bad_minimax)
+        _model['fallbacks'] = strip_bad_models(_model['fallbacks'], _bad_models)
     _sub = _defaults.get('subagents', {}).get('model', {})
     if isinstance(_sub.get('fallbacks'), list):
-        _sub['fallbacks'] = strip_bad_models(_sub['fallbacks'], _bad_minimax)
+        _sub['fallbacks'] = strip_bad_models(_sub['fallbacks'], _bad_models)
     for agent in config.get('agents', {}).get('list', []):
         _am = agent.get('model', {})
         if isinstance(_am.get('fallbacks'), list):
-            _am['fallbacks'] = strip_bad_models(_am['fallbacks'], _bad_minimax)
+            _am['fallbacks'] = strip_bad_models(_am['fallbacks'], _bad_models)
         # Strip per-agent keys that aren't in the schema
         agent.get('subagents', {}).pop('maxConcurrent', None)
         # sandbox.mode is only valid at agents.defaults level, not per-agent
@@ -117,7 +118,6 @@ def main():
         'nvidia/qwen/qwen3.5-397b-a17b':         {'alias': 'qwen3'},
         'nvidia/qwen/qwen3-coder-480b-a35b-instruct':  {'alias': 'qwen3-coder'},
         'nvidia/deepseek-ai/deepseek-v3.1-terminus':   {'alias': 'deepseek-terminus'},
-        'nvidia/mistralai/devstral-2-123b-instruct-2512':   {'alias': 'devstral'},
         'nvidia/z-ai/glm4.7':                          {'alias': 'glm4-7'},
     }
 

@@ -36,7 +36,7 @@ def main():
     _fallbacks = (
         ['minimax/MiniMax-M2.1', 'nvidia/moonshotai/kimi-k2-thinking', 'nvidia/qwen/qwen3.5-397b-a17b',
          'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
-         'nvidia/mistralai/devstral-2-123b-instruct-2512', 'nvidia/z-ai/glm4.7']
+         'nvidia/z-ai/glm4.7']
         if _nvidia_active else
         ['minimax/MiniMax-M2.1']
     )
@@ -83,11 +83,11 @@ def main():
         _coding_primary   = 'nvidia/moonshotai/kimi-k2-thinking'
         _coding_fallback  = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1', 'nvidia/qwen/qwen3.5-397b-a17b',
                              'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
-                             'nvidia/mistralai/devstral-2-123b-instruct-2512', 'nvidia/z-ai/glm4.7']
+                             'nvidia/z-ai/glm4.7']
         _frontend_primary  = 'nvidia/moonshotai/kimi-k2-thinking'
         _frontend_fallback = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1', 'nvidia/qwen/qwen3.5-397b-a17b',
                               'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
-                              'nvidia/mistralai/devstral-2-123b-instruct-2512', 'nvidia/z-ai/glm4.7']
+                              'nvidia/z-ai/glm4.7']
     else:
         _coding_primary   = 'minimax/MiniMax-M2.5'
         _coding_fallback  = ['minimax/MiniMax-M2.1']
