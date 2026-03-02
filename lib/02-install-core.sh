@@ -6,6 +6,11 @@
 
 # ── 6. INSTALL OPENCLAW ───────────────────────────────────────────────────────
 install_openclaw() {
+    if command -v openclaw >/dev/null 2>&1; then
+        log "OpenClaw already installed ($(openclaw --version | head -1)) — skipping installer."
+        return 0
+    fi
+
     log "Installing OpenClaw (checksum enforced)..."
     local installer_dir; installer_dir=$(mktemp -d)
     chmod 700 "$installer_dir"
