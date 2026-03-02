@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Marketing Skill**: Consolidated 18 sub-skills into a unified `skills/marketing/SKILL.md` overview.
 - **Config Hardening**: Updated `patch-stale-keys.py` and `apply-config.py` to inject `SecretRef` objects directly, preventing plaintext regressions in subsequent deployments.
 - **Environment Resilience**: Added a fallback in `lib/01-env.sh` to load secrets from `~/.config/environment.d/openclaw.conf` for scrubbed `.env` files.
+- **Subagent Best Practices**: Updated `apply-config.py` with recommended defaults for `maxSpawnDepth` (2), `maxChildrenPerAgent` (5), and `runTimeoutSeconds` (900) to support the orchestrator pattern.
+- **Orchestration Persona**: Harmonized `orchestration` skill documentation to correctly identify `MiniMax M2.5` as the main planner model.
 
 ### Fixed
 - **Gateway Installation**: Resolved systemd symlink collisions during re-runs.

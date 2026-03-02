@@ -3,7 +3,7 @@ name: orchestration
 description: >
   Tri-model task routing. Use this skill to decide when to handle a task
   yourself vs delegating to the coding or frontend specialist agents.
-  Main agent (you) = Kimi K2 Planner. Coding agent = Kimi K2 Executor.
+  Main agent (you) = MiniMax M2.5 Planner. Coding agent = Kimi K2 Executor.
   Frontend agent = Kimi K2 Builder (specialised context).
 ---
 

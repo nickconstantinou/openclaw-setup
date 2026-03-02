@@ -88,6 +88,9 @@ def main():
         'fallbacks': ['minimax/MiniMax-M2.1'],
     })
     ds(c, 'agents.defaults.subagents.maxConcurrent', 4)
+    ds(c, 'agents.defaults.subagents.maxSpawnDepth', 2)
+    ds(c, 'agents.defaults.subagents.maxChildrenPerAgent', 5)
+    ds(c, 'agents.defaults.subagents.runTimeoutSeconds', 900)
 
     if _nvidia_active:
         _coding_primary   = 'nvidia/moonshotai/kimi-k2-thinking'
