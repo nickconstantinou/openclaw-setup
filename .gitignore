@@ -1,6 +1,7 @@
 # Logs
 *.log
 /var/log/openclaw-deploy.log
+/docs
 
 # Temporary files
 /tmp/*
