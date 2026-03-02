@@ -31,5 +31,10 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - **Security**: Never include secrets in workflow files.
 - **Persistence**: Multi-stage (Epoch) workflows MUST use artifacts in `~/.gemini/antigravity/brain/` for state management across sessions.
 
+## 🎓 Self-Learning & Pattern Recognition
+- `[BASH_VAR_MASK]` -> **Pattern**: `local x=$(cmd)` masks `cmd`'s exit code. | **Fix**: Declare and assign separately: `local x; x=$(cmd)`.
+- `[STRUCTURAL_DRIFT]` -> **Pattern**: Moving files into subfolders breaks hardcoded paths in `tests/verify-repo.sh`. | **Fix**: Update testing assets *concurrently* with structural refactors.
+- `[GLOB_RECURSION]` -> **Pattern**: Deployment loops using `dir/*` fail when content is moved to sub-subfolders. | **Fix**: Use `find` or recursive globs in deployment logic.
+
 '' Openclaw Docs
 - Read all docs in `docs/` directory.
