@@ -6,8 +6,9 @@
 
 # ── 6. INSTALL OPENCLAW ───────────────────────────────────────────────────────
 install_openclaw() {
-    if command -v openclaw >/dev/null 2>&1; then
-        log "OpenClaw already installed ($(openclaw --version | head -1)) — skipping installer."
+    if uas command -v openclaw >/dev/null 2>&1; then
+        local oc_ver; oc_ver=$(uas openclaw --version 2>/dev/null | head -1 || echo "unknown")
+        log "OpenClaw already installed ($oc_ver) — skipping installer."
         return 0
     fi
 
