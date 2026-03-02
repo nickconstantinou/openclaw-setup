@@ -19,6 +19,13 @@ class TestMigration(unittest.TestCase):
                         "apiKey": "nvapi-plaintext-456"
                     }
                 }
+            },
+            "skills": {
+                "entries": {
+                    "tavily": {
+                        "apiKey": "tvly-plaintext-789"
+                    }
+                }
             }
         }
         
@@ -32,10 +39,17 @@ class TestMigration(unittest.TestCase):
         self.assertIsInstance(minimax_ref, dict)
         self.assertEqual(minimax_ref["source"], "env")
         self.assertEqual(minimax_ref["id"], "MINIMAX_API_KEY")
+
+        tavily_ref = result["updated_config"]["skills"]["entries"]["tavily"]["apiKey"]
+        self.assertIsInstance(tavily_ref, dict)
+        self.assertEqual(tavily_ref["source"], "env")
+        self.assertEqual(tavily_ref["id"], "TAVILY_API_KEY")
         
-        self.assertGreaterEqual(len(result["plan"]["targets"]), 2)
+        self.assertGreaterEqual(len(result["plan"]["targets"]), 3)
         has_minimax = any(t["path"] == "models.providers.minimax.apiKey" for t in result["plan"]["targets"])
+        has_tavily = any(t["path"] == "skills.entries.tavily.apiKey" for t in result["plan"]["targets"])
         self.assertTrue(has_minimax)
+        self.assertTrue(has_tavily)
 
 if __name__ == '__main__':
     unittest.main()

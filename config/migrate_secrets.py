@@ -26,9 +26,10 @@ def run_migration(config):
     
     # 2. Define targets for migration
     targets = [
-        # (Path, Env Var Name, Target Type, Provider ID)
+        # (Config Path, Env Var Name, Target Type, Provider ID)
         ("models.providers.minimax.apiKey", "MINIMAX_API_KEY", "models.providers.apiKey", "minimax"),
-        ("models.providers.nvidia.apiKey",  "NVIDIA_API_KEY",  "models.providers.apiKey", "nvidia")
+        ("models.providers.nvidia.apiKey", "NVIDIA_API_KEY", "models.providers.apiKey", "nvidia"),
+        ("skills.entries.tavily.apiKey", "TAVILY_API_KEY", "skills.entries.apiKey", "tavily"),
     ]
     
     for path, env_var, t_type, p_id in targets:

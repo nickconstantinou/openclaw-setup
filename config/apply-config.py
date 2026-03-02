@@ -66,6 +66,16 @@ def main():
         ds(c, f'skills.entries.{skill_key}.enabled', True)
         ds(c, f'skills.entries.{skill_key}.apiKey', {"source": "env", "provider": "default", "id": "POST_BRIDGE_API_KEY"})
 
+    tavily_key = os.environ.get('TAVILY_API_KEY', '')
+    if tavily_key and tavily_key != 'tvly-REPLACE_ME_WHEN_READY':
+        ds(c, 'env.TAVILY_API_KEY', tavily_key)
+        ds(c, 'skills.entries.tavily.enabled', True)
+        ds(c, 'skills.entries.tavily.apiKey', {"source": "env", "provider": "default", "id": "TAVILY_API_KEY"})
+
+    if _nvidia_active:
+        ds(c, 'skills.entries.nvidia-imagegen.enabled', True)
+        ds(c, 'skills.entries.nvidia-imagegen.apiKey', {"source": "env", "provider": "default", "id": "NVIDIA_API_KEY"})
+
     ds(c, 'agents.defaults.memorySearch.enabled',          True)
     ds(c, 'agents.defaults.memorySearch.provider',         'openai')
     ds(c, 'agents.defaults.memorySearch.model',            'nomic-embed-text')

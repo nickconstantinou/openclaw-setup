@@ -36,6 +36,8 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[BASH_VAR_MASK]` -> **Pattern**: `local x=$(cmd)` masks `cmd`'s exit code. | **Fix**: Declare and assign separately: `local x; x=$(cmd)`.
 - `[STRUCTURAL_DRIFT]` -> **Pattern**: Moving files into subfolders breaks hardcoded paths in `tests/verify-repo.sh`. | **Fix**: Update testing assets *concurrently* with structural refactors.
 - `[GLOB_RECURSION]` -> **Pattern**: Deployment loops using `dir/*` fail when content is moved to sub-subfolders. | **Fix**: Use `find` or recursive globs in deployment logic.
+- `[HYPHENATED_PYTHON_MODULE]` -> **Pattern**: Naming scripts with hyphens (e.g., `migrate-secrets.py`) prevents Python imports in tests. | **Fix**: Use underscores for Python scripts intended for unit testing.
+- `[VARIABLE_PRUNING_ORPHAN]` -> **Pattern**: Refactoring complex config blocks can orphan dependent variables (e.g., `skill_key`). | **Fix**: Audit all f-string references in a block after removing any assignment lines.
 
 '' Openclaw Docs
 - Read all docs in `docs/` directory.

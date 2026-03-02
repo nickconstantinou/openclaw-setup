@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Automated SecretRef Migration**: Implemented a non-interactive migration path for `.env` API keys (Minimax, NVIDIA, Post Bridge) using OpenClaw's `SecretRef` system.
-- **Migration Plan Utility**: Created `config/migrate_secrets.py` to generate `oc secrets apply` JSON plans from existing plaintext configurations.
+- **Automated SecretRef Migration**: Implemented a non-interactive migration path for `.env` API keys (Minimax, NVIDIA, Tavily, Post Bridge) using OpenClaw's `SecretRef` system.
+- **Migration Plan Utility**: Created `config/migrate_secrets.py` to generate `oc secrets apply` JSON plans from existing plaintext configurations; fixed root-user ownership conflict in plan generation.
 - **Modular Architecture**: Decomposed the monolithic `openclaw-self-heal.sh` into 13 single-responsibility bash modules in `lib/`.
 - **Advanced Verification**: Created `tests/verify-repo.sh` with ShellCheck integration, function resolution audits, and environment variable coverage.
 - **Anthropic-Standard Skills**: Reorganized `skills/` into a folder-per-skill structure with YAML-frontmatter `SKILL.md` files.

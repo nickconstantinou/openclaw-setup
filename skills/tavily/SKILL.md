@@ -37,11 +37,13 @@ curl -s -X POST https://api.tavily.com/search \
 
 ## Environment
 
-Set the API key by adding it to `~/.openclaw/.env` and sourcing it:
-```bash
-echo 'TAVILY_API_KEY="tvly-..."' >> ~/.openclaw/.env
-source ~/.openclaw/.env
-```
+API keys are managed securely via OpenClaw's **SecretRef** system. 
+
+1. Add your key to `~/.openclaw/.env`:
+   ```bash
+   echo 'TAVILY_API_KEY="tvly-..."' >> ~/.openclaw/.env
+   ```
+2. Run `openclaw-self-heal.sh`. The key will be migrated to the secure secret store and scrubbed from the `.env` file.
 
 ## Response format
 

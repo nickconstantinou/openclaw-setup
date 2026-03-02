@@ -10,6 +10,7 @@ migrate_secrets() {
     local config_file="$ACTUAL_HOME/.openclaw/openclaw.json"
     local plan_file
     plan_file=$(mktemp /tmp/openclaw-secrets-plan.XXXXXX.json)
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$plan_file"
     
     uas python3 "$SCRIPT_DIR/config/migrate_secrets.py" \
         --config "$config_file" \
