@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # OpenClaw Bootstrap Installer
-# Usage: curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/nickconstantinou/openclaw-scripts/main/install.sh | bash
+# Usage: curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/nickconstantinou/openclaw-setup/main/install.sh | bash
 
 set -Eeuo pipefail
 
-REPO_URL="https://github.com/nickconstantinou/openclaw-scripts.git"
+REPO_URL="https://github.com/nickconstantinou/openclaw-setup.git"
 INSTALL_DIR="$HOME/.openclaw-scripts"
 
 log() { echo -e "\033[1;32m[BOOTSTRAP]\033[0m $1"; }
