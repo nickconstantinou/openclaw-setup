@@ -7,7 +7,7 @@ Deployment and self-healing scripts for OpenClaw Enterprise.
 To deploy or repair OpenClaw on a fresh Ubuntu 24.04 server:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/nickconstantinou/openclaw-scripts/main/install.sh | bash
+curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/nickconstantinou/openclaw-scripts/main/install.sh | bash
 ```
 
 ### Setup

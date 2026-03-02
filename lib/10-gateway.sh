@@ -22,13 +22,15 @@ ExecStart=
 ExecStart=aa-exec -p openclaw-gateway -- $exec_cmd
 EOF
             chown -R "$ACTUAL_USER:$ACTUAL_USER" "$dropin_dir"
-            log "AppArmor confinement applied via systemd drop-in."
+        log "AppArmor confinement applied via systemd drop-in."
         fi
+    fi
 
-        # GAP 1: Performance Tuning Drop-in (docs/vps.md)
-        local tuning_dir="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service.d"
-        mkdir -p "$tuning_dir"
-        cat > "$tuning_dir/tuning.conf" <<EOF
+    # GAP 1: Performance Tuning Drop-in (docs/vps.md)
+    # Moved outside aa-exec check to ensure tuning applies on all systems.
+    local tuning_dir="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service.d"
+    mkdir -p "$tuning_dir"
+    cat > "$tuning_dir/tuning.conf" <<EOF
 [Service]
 Environment=OPENCLAW_NO_RESPAWN=1
 Environment=NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
@@ -36,9 +38,8 @@ Restart=always
 RestartSec=2
 TimeoutStartSec=90
 EOF
-        chown -R "$ACTUAL_USER:$ACTUAL_USER" "$tuning_dir"
-        log "Performance tuning (NODE_COMPILE_CACHE, etc.) applied via systemd drop-in."
-    fi
+    chown -R "$ACTUAL_USER:$ACTUAL_USER" "$tuning_dir"
+    log "Performance tuning (NODE_COMPILE_CACHE, etc.) applied via systemd drop-in."
 
     log "Starting OpenClaw gateway service..."
     uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user daemon-reload
