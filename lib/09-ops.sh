@@ -13,7 +13,13 @@ run_security_audit() {
 
     # GAP 6: Secrets Audit (docs/gateway/secrets.md)
     log "Running secrets hygiene audit..."
-    oc secrets audit --check 2>/dev/null || log "INFO: Secrets audit skipped (not configured)."
+    local audit_out
+    audit_out=$(oc secrets audit --check 2>&1 || true)
+    if [[ -n "$audit_out" ]]; then
+        log "  Secrets audit: $audit_out"
+    else
+        log "  Secrets audit: no findings."
+    fi
 }
 
 # ── 16.5 SQLITE OPTIMIZATION ──────────────────────────────────────────────────

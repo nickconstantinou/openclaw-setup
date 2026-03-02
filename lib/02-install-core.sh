@@ -6,8 +6,13 @@
 
 # ── 6. INSTALL OPENCLAW ───────────────────────────────────────────────────────
 install_openclaw() {
-    if uas command -v openclaw >/dev/null 2>&1; then
-        local oc_ver; oc_ver=$(uas openclaw --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
+    # Check for existing binary in common install locations (runs as root, so check explicit paths)
+    local oc_bin
+    oc_bin=$(command -v openclaw 2>/dev/null || true)
+    [[ -z "$oc_bin" ]] && oc_bin=$(sudo -u "$ACTUAL_USER" env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" which openclaw 2>/dev/null || true)
+
+    if [[ -n "$oc_bin" ]]; then
+        local oc_ver; oc_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
         
         # Check remote version before running slow npm install
         local latest_ver; latest_ver=$(uas npm view openclaw version 2>/dev/null || echo "unknown")
@@ -19,7 +24,7 @@ install_openclaw() {
 
         log "OpenClaw update available: $oc_ver → $latest_ver. Attempting upgrade..."
         if uas npm install -g openclaw@latest --quiet 2>/dev/null; then
-            local new_ver; new_ver=$(uas openclaw --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
+            local new_ver; new_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
             log "OpenClaw upgraded: $oc_ver → $new_ver"
         else
             log "WARNING: Upgrade failed — continuing with existing version ($oc_ver)."
@@ -194,7 +199,8 @@ install_acpx_plugin() {
     log "Installing acpx plugin..."
     mkdir -p "$ACTUAL_HOME/.openclaw/plugins"
     chown "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw/plugins"
-    oc plugins install @openclaw/acpx || log "WARNING: acpx plugin install failed."
+    # Note: @openclaw/acpx may not be publicly available on npm; skip gracefully
+    oc plugins install @openclaw/acpx 2>/dev/null && log "acpx plugin installed." || log "INFO: acpx plugin not available — skipping."
 }
 
 # ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
@@ -220,5 +226,5 @@ setup_agent_dirs() {
 # ── 7i. INSTALL POST BRIDGE ───────────────────────────────────────────────────
 install_post_bridge() {
     log "Installing Post Bridge social media skill..."
-    oc skill add "jackfriks/post-bridge-social-manager" --dir "$ACTUAL_HOME/.openclaw/workspace/skills" || log "WARNING: Post Bridge skill install failed."
+    oc skills add "jackfriks/post-bridge-social-manager" --dir "$ACTUAL_HOME/.openclaw/workspace/skills" || log "WARNING: Post Bridge skill install failed."
 }
