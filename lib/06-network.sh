@@ -10,7 +10,7 @@ setup_network() {
 
     if ! command -v tailscale >/dev/null 2>&1; then
         log "Tailscale not found — installing via official script..."
-        curl -fsSL https://tailscale.com/install.sh | sh || die "Tailscale install failed."
+        curl -fsSL --proto '=https' --tlsv1.2 https://tailscale.com/install.sh | sh || die "Tailscale install failed."
     fi
 
     systemctl enable tailscaled --now 2>/dev/null || true

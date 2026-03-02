@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # OpenClaw Bootstrap Installer
-# Usage: curl -sSL https://raw.githubusercontent.com/nickconstantinou/openclaw-scripts/main/install.sh | bash
+# Usage: curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/nickconstantinou/openclaw-scripts/main/install.sh | bash
 
 set -Eeuo pipefail
 

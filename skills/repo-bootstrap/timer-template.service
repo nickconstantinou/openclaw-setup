@@ -1,0 +1,19 @@
+[Unit]
+Description=Push {PROJECT} to GitHub daily
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/openclaw/.openclaw/workspace/projects/{PROJECT}
+ExecStart=/bin/bash -c '\
+export HOME=/home/openclaw/.openclaw && \
+export GIT_ASKPASS=/bin/echo && \
+git add -A && \
+if ! git diff --cached --quiet; then \
+  git -c commit.gpgsign=false commit --no-verify -m "Daily sync" && \
+  git push https://ghp_TOKEN@github.com/owner/{PROJECT}.git main; \
+else \
+  echo "No changes to push"; \
+fi'
+
+[Install]
+WantedBy=timers.target

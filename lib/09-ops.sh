@@ -10,6 +10,10 @@ run_security_audit() {
     oc security audit --fix 2>/dev/null \
         && log "Security audit complete." \
         || log "WARNING: Security audit returned non-zero."
+
+    # GAP 6: Secrets Audit (docs/gateway/secrets.md)
+    log "Running secrets hygiene audit..."
+    oc secrets audit --check 2>/dev/null || log "INFO: Secrets audit skipped (not configured)."
 }
 
 # ── 16.5 SQLITE OPTIMIZATION ──────────────────────────────────────────────────

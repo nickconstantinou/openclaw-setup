@@ -97,3 +97,22 @@ check_resources() {
         || die "Insufficient disk: ${avail_disk}GB available (minimum ${min_disk}GB required)."
     log "Resources OK — RAM: ${total_ram}GB, Disk free: ${avail_disk}GB"
 }
+
+# ── 5. SHELL PROFILE TUNING ───────────────────────────────────────────────────
+setup_shell_profile() {
+    log "Configuring shell performance tuning (NODE_COMPILE_CACHE)..."
+    local bashrc="$ACTUAL_HOME/.bashrc"
+    if [[ -f "$bashrc" ]]; then
+        if ! grep -q "NODE_COMPILE_CACHE" "$bashrc"; then
+            cat >> "$bashrc" <<'EOF'
+
+# OpenClaw Performance Tuning (added by self-heal)
+export NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
+mkdir -p /var/tmp/openclaw-compile-cache
+export OPENCLAW_NO_RESPAWN=1
+EOF
+            chown "$ACTUAL_USER:$ACTUAL_USER" "$bashrc"
+            log "  Performance tuning added to $bashrc"
+        fi
+    fi
+}

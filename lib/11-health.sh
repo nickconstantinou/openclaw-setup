@@ -47,6 +47,13 @@ check_gateway() {
     if [[ "$state" == "active" ]]; then
         if ss -tlnp 2>/dev/null | grep -q ":18789"; then
             log "[HEALTH] PASS — Gateway active and listening on :18789"
+            
+            # GAP 2: Deep Application Health (docs/gateway/health.md)
+            if oc health --json --timeout 5000 >/dev/null 2>&1; then
+                log "[HEALTH] PASS — Gateway health probe (WS) OK"
+            else
+                log "[HEALTH] WARN — Gateway health probe (WS) failed or timed out"
+            fi
             return 0
         else
             log "[HEALTH] WARN — Gateway unit active but port 18789 not detected"
@@ -116,4 +123,8 @@ run_health_suite() {
     else
         log "All critical health checks passed."
     fi
+
+    # GAP 3: Deep Status Probe (docs/gateway/health.md)
+    log "Running per-channel status probe..."
+    oc status --deep 2>/dev/null || log "[HEALTH] WARN — Deep status probe failed."
 }

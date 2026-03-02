@@ -57,6 +57,7 @@ main() {
     validate_env
     validate_system
     check_resources
+    setup_shell_profile
 
     # 2. Installation
     install_openclaw
