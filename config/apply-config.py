@@ -64,7 +64,7 @@ def main():
         ds(c, 'env.POST_BRIDGE_API_KEY', pb_key)
         skill_key = 'post-bridge-social-manager'
         ds(c, f'skills.entries.{skill_key}.enabled', True)
-        ds(c, f'skills.entries.{skill_key}.env.POST_BRIDGE_API_KEY', pb_key)
+        ds(c, f'skills.entries.{skill_key}.apiKey', {"source": "env", "provider": "default", "id": "POST_BRIDGE_API_KEY"})
 
     ds(c, 'agents.defaults.memorySearch.enabled',          True)
     ds(c, 'agents.defaults.memorySearch.provider',         'openai')

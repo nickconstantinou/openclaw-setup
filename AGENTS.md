@@ -13,6 +13,7 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - **Modular Bash**: Large scripts MUST be decomposed into `lib/XX-name.sh` modules and sourced by a thin orchestrator.
 - **Skill Folders**: Skills MUST follow the folder-per-skill pattern with a `SKILL.md` (YAML frontmatter + Markdown).
 - **Hardening**: All shell scripts MUST pass ShellCheck analysis.
+- **SecretRef Migration**: Non-interactive secrets migration MUST use ephemeral JSON plans (`migrate_secrets.py`) and a `systemd environment.d` fallback for scrubbed `.env` resilience.
 - **Technology Layer**: Workflows assume a Supabase (Backend) + Expo (Frontend) stack unless otherwise specified.
 
 ## 🔄 Available Workflows

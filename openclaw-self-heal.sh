@@ -88,6 +88,7 @@ main() {
     patch_config
 
     # 5. Launch & Operations
+    migrate_secrets
     run_security_audit
     optimize_sqlite
     onboard_gateway

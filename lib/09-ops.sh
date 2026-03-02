@@ -4,6 +4,26 @@
 # @complexity 2
 # 
 
+# ── 16.1 SECRET REF MIGRATION ────────────────────────────────────────────────
+migrate_secrets() {
+    log "Migrating plaintext API keys to SecretRefs..."
+    local config_file="$ACTUAL_HOME/.openclaw/openclaw.json"
+    local plan_file
+    plan_file=$(mktemp /tmp/openclaw-secrets-plan.XXXXXX.json)
+    
+    uas python3 "$SCRIPT_DIR/config/migrate_secrets.py" \
+        --config "$config_file" \
+        --plan-out "$plan_file"
+    
+    if [[ -s "$plan_file" ]] && python3 -c "import json,sys; p=json.load(open(sys.argv[1])); sys.exit(0 if p.get('targets') else 1)" "$plan_file" 2>/dev/null; then
+        log "  Applying secrets plan..."
+        oc secrets apply --from "$plan_file" 2>&1 | while IFS= read -r line; do log "  secrets: $line"; done
+    else
+        log "  No secrets migration needed (already clean or no targets)."
+    fi
+    rm -f "$plan_file"
+}
+
 # ── 16. SECURITY AUDIT ────────────────────────────────────────────────────────
 run_security_audit() {
     log "Running security audit..."

@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Automated SecretRef Migration**: Implemented a non-interactive migration path for `.env` API keys (Minimax, NVIDIA, Post Bridge) using OpenClaw's `SecretRef` system.
+- **Migration Plan Utility**: Created `config/migrate_secrets.py` to generate `oc secrets apply` JSON plans from existing plaintext configurations.
 - **Modular Architecture**: Decomposed the monolithic `openclaw-self-heal.sh` into 13 single-responsibility bash modules in `lib/`.
 - **Advanced Verification**: Created `tests/verify-repo.sh` with ShellCheck integration, function resolution audits, and environment variable coverage.
 - **Anthropic-Standard Skills**: Reorganized `skills/` into a folder-per-skill structure with YAML-frontmatter `SKILL.md` files.
@@ -19,8 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Deployment Efficiency**: Updated `lib/03-skills.sh` to use recursive folder deployment, simplifying logic and increasing flexibility.
 - **Hardening**: Applied ShellCheck fixes to all bash modules to prevent variable masking and logic errors.
 - **Marketing Skill**: Consolidated 18 sub-skills into a unified `skills/marketing/SKILL.md` overview.
+- **Config Hardening**: Updated `patch-stale-keys.py` and `apply-config.py` to inject `SecretRef` objects directly, preventing plaintext regressions in subsequent deployments.
+- **Environment Resilience**: Added a fallback in `lib/01-env.sh` to load secrets from `~/.config/environment.d/openclaw.conf` for scrubbed `.env` files.
 
 ### Fixed
 - **Gateway Installation**: Resolved systemd symlink collisions during re-runs.
 - **AppArmor Fallback**: Restored missing fallback logic for non-AppArmor systems in the gateway module.
 - **API Key Handling**: Corrected inconsistent environment variable names for GITHUB_TOKEN and GEMINI_API_KEY.
+- **Security Hygiene**: Resolved `[PLAINTEXT_FOUND]` audit warnings by moving sensitive keys from `.env` to the secure OpenClaw secret store via SecretRef.

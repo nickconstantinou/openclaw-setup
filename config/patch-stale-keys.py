@@ -78,7 +78,7 @@ def main():
     desired_minimax = {
         'baseUrl': 'https://api.minimax.io/anthropic',
         'api': 'anthropic-messages',
-        'apiKey': os.environ.get('MINIMAX_API_KEY', ''),
+        'apiKey': {"source": "env", "provider": "default", "id": "MINIMAX_API_KEY"},
         'models': [
             {
                 'id': 'MiniMax-M2.5',
@@ -130,7 +130,7 @@ def main():
         providers['nvidia'] = {
             'baseUrl': 'https://integrate.api.nvidia.com/v1',
             'api': 'openai-completions',
-            'apiKey': _nvidia_key,
+            'apiKey': {"source": "env", "provider": "default", "id": "NVIDIA_API_KEY"},
             'models': [
                 {
                     'id': 'moonshotai/kimi-k2-thinking',

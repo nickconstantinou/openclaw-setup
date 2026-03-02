@@ -24,6 +24,8 @@ curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/nickcons
     chmod 600 ~/.openclaw/.env
     nano ~/.openclaw/.env  # Fill in your keys
     ```
+    > [!NOTE]
+    > On first run, `openclaw-self-heal.sh` automatically migrates sensitive API keys from `.env` to OpenClaw's secure SecretRef system. Your `.env` will be scrubbed of plaintext keys, and values will be moved to `~/.config/environment.d/openclaw.conf` to maintain systemd environment compatibility.
 
 3.  **Run the deployment**:
     ```bash

@@ -46,6 +46,13 @@ resolve_user_context() {
     set -o allexport
     # shellcheck source=/dev/null
     source "$ENV_FILE"
+    
+    # Fallback: source systemd environment.d if .env was scrubbed
+    local envd_file="$ACTUAL_HOME/.config/environment.d/openclaw.conf"
+    if [[ -f "$envd_file" ]]; then
+        # shellcheck source=/dev/null
+        source "$envd_file"
+    fi
     set +o allexport
 }
 
