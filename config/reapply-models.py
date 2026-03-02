@@ -24,8 +24,12 @@ def main():
         'minimax/MiniMax-M2.5':               {'alias': 'minimax'},
         'minimax/MiniMax-M2.1':               {'alias': 'minimax-m21'},
         'minimax/MiniMax-M2':                  {'alias': 'minimax-m2'},
-        'nvidia/moonshotai/kimi-k2-instruct':  {'alias': 'kimi'},
-        'nvidia/qwen/qwen3-235b-a22b':         {'alias': 'qwen3'},
+        'nvidia/moonshotai/kimi-k2-thinking':  {'alias': 'kimi'},
+        'nvidia/qwen/qwen3.5-397b-a17b':         {'alias': 'qwen3'},
+        'nvidia/qwen/qwen3-coder-480b-a35b-instruct':  {'alias': 'qwen3-coder'},
+        'nvidia/deepseek-ai/deepseek-v3.1-terminus':   {'alias': 'deepseek-terminus'},
+        'nvidia/mistralai/devstral-2-123b-instruct-2512':   {'alias': 'devstral'},
+        'nvidia/z-ai/glm4.7':                          {'alias': 'glm4-7'},
     }
     config.setdefault('agents', {}).setdefault('defaults', {})['models'] = catalog
 
