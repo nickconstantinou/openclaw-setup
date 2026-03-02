@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+# 
+# @intent Installation of core services and tools (§6-§7g).
+# @complexity 3
+# 
+
+# ── 6. INSTALL OPENCLAW ───────────────────────────────────────────────────────
+install_openclaw() {
+    log "Installing OpenClaw (checksum enforced)..."
+    local installer_dir; installer_dir=$(mktemp -d)
+    chmod 700 "$installer_dir"
+    local installer_path="$installer_dir/openclaw-install.sh"
+
+    # Early AppArmor cleanup to prevent node EACCES during install
+    if [[ -f /etc/apparmor.d/openclaw-gateway ]]; then
+        sudo apparmor_parser -R /etc/apparmor.d/openclaw-gateway 2>/dev/null || true
+    fi
+
+    log "Downloading OpenClaw installer..."
+    curl -fsSL "https://openclaw.ai/install.sh" -o "$installer_path"
+    chmod 600 "$installer_path"
+
+    log "Verifying installer checksum..."
+    local actual_sha; actual_sha=$(sha256sum "$installer_path" | awk '{print $1}')
+    if [[ "$actual_sha" != "$OPENCLAW_INSTALLER_SHA256" ]]; then
+        rm -rf "$installer_dir"
+        die "Installer checksum mismatch! Expected: $OPENCLAW_INSTALLER_SHA256, Got: $actual_sha"
+    fi
+
+    log "Checksum verified. Running installer..."
+    sudo HOME="$ACTUAL_HOME" \
+        XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
+        XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
+        bash "$installer_path" --no-onboard
+
+    rm -rf "$installer_dir"
+
+    if [[ "$ACTUAL_HOME" != "/root" ]] && [[ -d "/root/.openclaw" ]]; then
+        log "Cleaning up stale /root/.openclaw..."
+        rm -rf /root/.openclaw
+    fi
+
+    command -v openclaw >/dev/null 2>&1 || die "'openclaw' binary not found after install."
+    log "OpenClaw installed: $(command -v openclaw)"
+}
+
+# ── 7. INSTALL PLAYWRIGHT ─────────────────────────────────────────────────────
+install_playwright() {
+    log "Installing Chromium dependencies..."
+    if command -v chromium >/dev/null 2>&1 || command -v chromium-browser >/dev/null 2>&1; then
+        log "Chromium already installed — skipping Playwright install."
+    else
+        local npm_cache; npm_cache=$(mktemp -d)
+        wait_for_apt
+        if sudo DEBIAN_FRONTEND=noninteractive NPM_CONFIG_CACHE="$npm_cache" \
+            npx -y playwright install --with-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
+            log "Chromium dependencies installed."
+        else
+            log "WARNING: Playwright install failed. Browser tools may be unavailable."
+        fi
+        rm -rf "$npm_cache"
+    fi
+}
+
+# ── 7b. INSTALL PYTHON PACKAGES ───────────────────────────────────────────────
+install_python_packages() {
+    log "Installing Python packages for agent use..."
+    local pip_packages=(
+        pytest pytest-asyncio requests python-dotenv rich yt-dlp
+        python-docx openpyxl python-pptx markitdown
+        faster-whisper av markdown pyyaml
+    )
+    for pkg in "${pip_packages[@]}"; do
+        uas python3 -m pip install --user --quiet --break-system-packages "$pkg" \
+            && log "  pip: installed $pkg" \
+            || log "  WARNING: pip install $pkg failed."
+    done
+}
+
+# ── 7c. INSTALL PANDOC TOOLCHAIN ──────────────────────────────────────────────
+install_pandoc_toolchain() {
+    log "Installing pandoc, PDF engine, and ffmpeg..."
+    local pkgs=(pandoc texlive-xetex poppler-utils ffmpeg sqlite3)
+    local missing=()
+    for p in "${pkgs[@]}"; do
+        dpkg -s "$p" >/dev/null 2>&1 || missing+=("$p")
+    done
+
+    if [[ ${#missing[@]} -eq 0 ]]; then
+        log "pandoc/ffmpeg toolchain already installed."
+    else
+        wait_for_apt
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q "${missing[@]}" \
+            && log "pandoc toolchain installed." \
+            || log "WARNING: pandoc install failed."
+    fi
+}
+
+# ── 7d. INSTALL GOGCLI ────────────────────────────────────────────────────────
+install_gogcli() {
+    log "Installing gogcli (Google Workspace CLI)..."
+    if command -v gog >/dev/null 2>&1; then
+        log "gogcli already installed: $(gog --version 2>/dev/null | head -1)"
+    fi
+
+    local latest; latest=$(curl -fsSL -H "Accept: application/vnd.github+json" "https://api.github.com/repos/steipete/gogcli/releases/latest" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'])" 2>/dev/null || echo "")
+    
+    if [[ -z "$latest" ]]; then
+        log "WARNING: Could not fetch gogcli release info."
+        return
+    fi
+
+    local arch; arch=$(uname -m)
+    local gog_arch=""
+    case "$arch" in
+        x86_64)  gog_arch="linux_amd64" ;;
+        aarch64) gog_arch="linux_arm64" ;;
+    esac
+
+    if [[ -n "$gog_arch" ]]; then
+        local url="https://github.com/steipete/gogcli/releases/download/${latest}/gogcli_${latest#v}_${gog_arch}.tar.gz"
+        local tmp; tmp=$(mktemp -d)
+        if curl -fsSL "$url" -o "$tmp/gogcli.tar.gz" && tar -xzf "$tmp/gogcli.tar.gz" -C "$tmp" && sudo install -m 755 "$tmp/gog" "/usr/local/bin/gog"; then
+            log "gogcli installed: $(gog --version 2>/dev/null | head -1)"
+        else
+            log "WARNING: gogcli binary download failed."
+        fi
+        rm -rf "$tmp"
+    fi
+
+    # Write auth hint
+    local hint="$ACTUAL_HOME/.openclaw/workspace/google-auth-setup.md"
+    mkdir -p "$(dirname "$hint")"
+    cat > "$hint" << 'EOF'
+# Google Workspace Setup (gog)
+1. Run: gog auth credentials ~/Downloads/client_secret_xxx.json
+2. Run: gog auth add you@gmail.com --services all
+3. Add to ~/.openclaw/.env: GOG_ACCOUNT=you@gmail.com, GOG_KEYRING_PASSWORD=xxx
+EOF
+    chown "$ACTUAL_USER":"$ACTUAL_USER" "$hint"
+}
+
+# ── 7f. INSTALL CLAUDE CODE ───────────────────────────────────────────────────
+install_claude_code() {
+    if [[ "${ANTHROPIC_API_KEY:-}" == "sk-ant-REPLACE_ME_WHEN_READY" ]]; then
+        log "Claude Code SKIPPED — placeholder key."
+        return
+    fi
+
+    log "Installing Claude Code..."
+    npm install -g @anthropic-ai/claude-code --quiet || log "WARNING: Claude Code install failed."
+    
+    local bin; bin=$(command -v claude 2>/dev/null || true)
+    if [[ -n "$bin" ]]; then
+        local wrapper="$ACTUAL_HOME/.openclaw/bin/cc"
+        mkdir -p "$(dirname "$wrapper")"
+        cat > "$wrapper" << WRAPEOF
+#!/usr/bin/env bash
+exec "$bin" --print "\$@"
+WRAPEOF
+        chmod 755 "$wrapper"
+        chown "$ACTUAL_USER":"$ACTUAL_USER" "$wrapper"
+    fi
+}
+
+# ── 7g. INSTALL ACPX PLUGIN ───────────────────────────────────────────────────
+install_acpx_plugin() {
+    if [[ "${ANTHROPIC_API_KEY:-}" == "sk-ant-REPLACE_ME_WHEN_READY" ]]; then
+        log "acpx plugin SKIPPED — placeholder key."
+        return
+    fi
+
+    log "Installing acpx plugin..."
+    mkdir -p "$ACTUAL_HOME/.openclaw/plugins"
+    chown "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw/plugins"
+    uas oc plugins install @openclaw/acpx || log "WARNING: acpx plugin install failed."
+}
+
+# ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
+setup_agent_dirs() {
+    log "Creating named agent directories..."
+    for id in main coding frontend; do
+        local dir="$ACTUAL_HOME/.openclaw/agents/$id/agent"
+        mkdir -p "$dir"
+        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw/agents/$id"
+        chmod 700 "$dir"
+    done
+
+    for ws in "$ACTUAL_HOME/.openclaw/workspace-coding" "$ACTUAL_HOME/.openclaw/workspace-frontend"; do
+        mkdir -p "$ws/skills"
+        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ws"
+        # Sync base files
+        for f in AGENTS.md SOUL.md MEMORY.md TOOLS.md; do
+            [[ -f "$ACTUAL_HOME/.openclaw/workspace/$f" ]] && uas cp "$ACTUAL_HOME/.openclaw/workspace/$f" "$ws/$f" 2>/dev/null
+        done
+    done
+}
+
+# ── 7i. INSTALL POST BRIDGE ───────────────────────────────────────────────────
+install_post_bridge() {
+    log "Installing Post Bridge social media skill..."
+    uas oc skill add "jackfriks/post-bridge-social-manager" --dir "$ACTUAL_HOME/.openclaw/workspace/skills" || log "WARNING: Post Bridge skill install failed."
+}
