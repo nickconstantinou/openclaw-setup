@@ -7,10 +7,19 @@
 # ── 6. INSTALL OPENCLAW ───────────────────────────────────────────────────────
 install_openclaw() {
     if uas command -v openclaw >/dev/null 2>&1; then
-        local oc_ver; oc_ver=$(uas openclaw --version 2>/dev/null | head -1 || echo "unknown")
-        log "OpenClaw already installed ($oc_ver) — attempting upgrade..."
+        local oc_ver; oc_ver=$(uas openclaw --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
+        
+        # Check remote version before running slow npm install
+        local latest_ver; latest_ver=$(uas npm view openclaw version 2>/dev/null || echo "unknown")
+        
+        if [[ "$oc_ver" == "$latest_ver" ]] && [[ "$oc_ver" != "unknown" ]]; then
+            log "OpenClaw already installed ($oc_ver) and is up-to-date. Skipping upgrade."
+            return 0
+        fi
+
+        log "OpenClaw update available: $oc_ver → $latest_ver. Attempting upgrade..."
         if uas npm install -g openclaw@latest --quiet 2>/dev/null; then
-            local new_ver; new_ver=$(uas openclaw --version 2>/dev/null | head -1 || echo "unknown")
+            local new_ver; new_ver=$(uas openclaw --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
             log "OpenClaw upgraded: $oc_ver → $new_ver"
         else
             log "WARNING: Upgrade failed — continuing with existing version ($oc_ver)."
