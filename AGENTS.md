@@ -10,8 +10,10 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 3.  **Self-Contained**: Each workflow should contain its own procedural knowledge.
 
 ## 🏗️ Architecture Patterns
+- **Modular Bash**: Large scripts MUST be decomposed into `lib/XX-name.sh` modules and sourced by a thin orchestrator.
+- **Skill Folders**: Skills MUST follow the folder-per-skill pattern with a `SKILL.md` (YAML frontmatter + Markdown).
+- **Hardening**: All shell scripts MUST pass ShellCheck analysis.
 - **Technology Layer**: Workflows assume a Supabase (Backend) + Expo (Frontend) stack unless otherwise specified.
-- **Strictness**: Enforce the **Result Pattern**, **Atomic Modularity**, and **Strict Types** in all generated plans.
 
 ## 🔄 Available Workflows
 - **[/create-issue](file://./.agent/workflows/create-issue.md)**: Architecture Discovery.
