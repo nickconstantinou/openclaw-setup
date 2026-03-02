@@ -8,7 +8,13 @@
 install_openclaw() {
     if uas command -v openclaw >/dev/null 2>&1; then
         local oc_ver; oc_ver=$(uas openclaw --version 2>/dev/null | head -1 || echo "unknown")
-        log "OpenClaw already installed ($oc_ver) — skipping installer."
+        log "OpenClaw already installed ($oc_ver) — attempting upgrade..."
+        if uas npm install -g openclaw@latest --quiet 2>/dev/null; then
+            local new_ver; new_ver=$(uas openclaw --version 2>/dev/null | head -1 || echo "unknown")
+            log "OpenClaw upgraded: $oc_ver → $new_ver"
+        else
+            log "WARNING: Upgrade failed — continuing with existing version ($oc_ver)."
+        fi
         return 0
     fi
 
