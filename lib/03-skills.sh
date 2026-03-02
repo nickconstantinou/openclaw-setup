@@ -16,10 +16,22 @@ deploy_skills() {
         local target_dir="$skill_root/$skill_name"
         mkdir -p "$target_dir"
 
-        # shellcheck disable=SC2094
+        # Copy all files from the skill directory (as root, then fix ownership)
         for f in "$skill_dir"*; do
             [[ -f "$f" ]] || continue
-            uas tee "$target_dir/$(basename "$f")" < "$f" > /dev/null
+            cp -f "$f" "$target_dir/$(basename "$f")"
+        done
+
+        # Handle nested subdirectories (e.g. marketing/brand-voice/)
+        for sub in "$skill_dir"*/; do
+            [[ -d "$sub" ]] || continue
+            local sub_name; sub_name=$(basename "$sub")
+            local sub_target="$target_dir/$sub_name"
+            mkdir -p "$sub_target"
+            for f in "$sub"*; do
+                [[ -f "$f" ]] || continue
+                cp -f "$f" "$sub_target/$(basename "$f")"
+            done
         done
 
         # Ensure generate.py is executable if present

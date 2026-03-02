@@ -185,7 +185,7 @@ install_acpx_plugin() {
     log "Installing acpx plugin..."
     mkdir -p "$ACTUAL_HOME/.openclaw/plugins"
     chown "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw/plugins"
-    uas oc plugins install @openclaw/acpx || log "WARNING: acpx plugin install failed."
+    oc plugins install @openclaw/acpx || log "WARNING: acpx plugin install failed."
 }
 
 # ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
@@ -211,5 +211,5 @@ setup_agent_dirs() {
 # ── 7i. INSTALL POST BRIDGE ───────────────────────────────────────────────────
 install_post_bridge() {
     log "Installing Post Bridge social media skill..."
-    uas oc skill add "jackfriks/post-bridge-social-manager" --dir "$ACTUAL_HOME/.openclaw/workspace/skills" || log "WARNING: Post Bridge skill install failed."
+    oc skill add "jackfriks/post-bridge-social-manager" --dir "$ACTUAL_HOME/.openclaw/workspace/skills" || log "WARNING: Post Bridge skill install failed."
 }
