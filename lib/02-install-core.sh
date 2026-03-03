@@ -29,7 +29,7 @@ install_openclaw() {
         else
             log "WARNING: Upgrade failed — continuing with existing version ($oc_ver)."
             local new_sha
-            new_sha=$(curl -fsSL "https://openclaw.ai/install.sh" 2>/dev/null | sha256sum | awk '{print $1}')
+            new_sha=$(curl -fsSL "https://openclaw.ai/install.sh" 2>/dev/null | sha256sum | awk '{print $1}' || true)
             
             # Use OPENCLAW_INSTALLER_SHA256 if defined, otherwise ensure we log the fetched SHA
             if [[ -n "$new_sha" ]]; then
