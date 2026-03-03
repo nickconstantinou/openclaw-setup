@@ -111,7 +111,7 @@ profile openclaw-gateway {
   @{HOME}/.local/lib/                              r,
   @{HOME}/.local/lib/python3*/                     r,
   @{HOME}/.local/lib/python3*/site-packages/       r,
-  @{HOME}/.local/lib/python3*/site-packages/**     mrk,
+  @{HOME}/.local/lib/python3*/site-packages/**     mrwixk,
   # System pip cache
   @{HOME}/.cache/pip/                  rw,
   @{HOME}/.cache/pip/**                rw,
@@ -183,6 +183,7 @@ profile openclaw-gateway {
   # ffmpeg/ffprobe are ELF binaries called by yt-dlp for muxing/extraction.
   # dist-packages: yt-dlp imports from /usr/local/lib/python3.x/dist-packages/
   # (covered by the python3 block above, but listed explicitly to be unambiguous).
+  @{HOME}/.local/bin/**                mrix,
   @{HOME}/.local/bin/yt-dlp            rix,
   /usr/local/bin/yt-dlp                rix,
   /usr/bin/yt-dlp                      rix,
@@ -402,7 +403,7 @@ profile openclaw-gateway {
   # ── Chromium/Playwright ─────────────────────────────────────────────────────
   /usr/bin/chromium                    ix,
   /usr/bin/chromium-browser            ix,
-  @{HOME}/.cache/ms-playwright/**      rw,
+  @{HOME}/.cache/ms-playwright/**      mrwix,
   userns,
 
   # ── Logging ─────────────────────────────────────────────────────────────────
