@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AppArmor Fallback**: Restored missing fallback logic for non-AppArmor systems in the gateway module.
 - **API Key Handling**: Corrected inconsistent environment variable names for GITHUB_TOKEN and GEMINI_API_KEY.
 - **Security Hygiene**: Resolved `[PLAINTEXT_FOUND]` audit warnings by moving sensitive keys from `.env` to the secure OpenClaw secret store via SecretRef.
+- **Node/NPM Environment Execution**: Added `/bin` and `/sbin` back into the default `$PATH` of `uas`/`oc` wrappers to prevent `ENOENT spawn sh` during subshell hook executions.
+- **AppArmor Execution Policies**: Refined the `openclaw-gateway` profile with missing `mrix` permissions, unblocking `playwright` driver spawning, browser binaries, and local pip utilities like `yt-dlp`.
 - **Playwright Sandbox**: Added `userns` support to AppArmor profile and fixed venv execution permissions.
 - **Skill Deployment**: Updated `lib/03-skills.sh` to use `cp -a`, preserving symlinks for Playwright virtual environments.
 - **Core Installation**: Updated `install_playwright` to run as the actual user, ensuring correct browser cache location.
