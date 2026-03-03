@@ -5,39 +5,50 @@
 # 
 
 deploy_skills() {
-    log "Deploying agent skills from external files..."
-    local skill_root="$ACTUAL_HOME/.openclaw/workspace/skills"
+    log "Deploying categorized agent skills (Tri-Agent Architecture)..."
     local local_skills_dir="$SCRIPT_DIR/skills"
 
-    # Each skill is a folder containing SKILL.md and optional supporting files.
-    # This loop copies the entire folder structure to the target workspace.
-    for skill_dir in "$local_skills_dir"/*/; do
-        local skill_name; skill_name=$(basename "$skill_dir")
-        local target_dir="$skill_root/$skill_name"
-        mkdir -p "$target_dir"
+    # Categories to map to agents
+    local categories=("general-agent" "coding-agent" "marketing-agent")
 
-        # Copy all files from the skill directory (as root, then fix ownership)
-        for f in "$skill_dir"*; do
+    for category in "${categories[@]}"; do
+        local category_dir="$local_skills_dir/$category"
+        [[ -d "$category_dir" ]] || continue
+
+        # Resolve target agent ID and workspace
+        local agent_id="${category%-agent}"
+        local target_workspace
+        if [[ "$agent_id" == "general" ]]; then
+            agent_id="main"
+            target_workspace="$ACTUAL_HOME/.openclaw/workspace"
+        else
+            target_workspace="$ACTUAL_HOME/.openclaw/agents/$agent_id/workspace"
+        fi
+
+        log "  Deploying $category assets to $agent_id workspace..."
+        mkdir -p "$target_workspace/skills"
+
+        # 1. Deploy Workspace Templates (top-level .md files in category folder)
+        for f in "$category_dir"/*.md; do
             [[ -f "$f" ]] || continue
-            cp -f "$f" "$target_dir/$(basename "$f")"
+            cp -f "$f" "$target_workspace/$(basename "$f")"
         done
 
-        # Handle nested subdirectories (e.g. marketing/brand-voice/)
-        for sub in "$skill_dir"*/; do
-            [[ -d "$sub" ]] || continue
-            local sub_name; sub_name=$(basename "$sub")
-            local sub_target="$target_dir/$sub_name"
-            mkdir -p "$sub_target"
-            for f in "$sub"*; do
-                [[ -f "$f" ]] || continue
-                cp -f "$f" "$sub_target/$(basename "$f")"
-            done
+        # 2. Deploy Skill Modules (subdirectories in category folder)
+        for skill_dir in "$category_dir"/*/; do
+            [[ -d "$skill_dir" ]] || continue
+            local skill_name; skill_name=$(basename "$skill_dir")
+            local target_skill_dir="$target_workspace/skills/$skill_name"
+            
+            mkdir -p "$target_skill_dir"
+            cp -rf "$skill_dir"* "$target_skill_dir/" 2>/dev/null || true
+            
+            # Ensure generate.py executable
+            [[ -f "$target_skill_dir/generate.py" ]] && chmod +x "$target_skill_dir/generate.py"
         done
 
-        # Ensure generate.py is executable if present
-        [[ -f "$target_dir/generate.py" ]] && chmod +x "$target_dir/generate.py"
-
-        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$target_dir"
-        log "  Skill deployed: $skill_name"
+        # Finalize ownership
+        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$target_workspace"
+        log "  Verification: $agent_id workspace populated."
     done
 }

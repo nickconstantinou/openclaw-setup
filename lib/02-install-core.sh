@@ -205,21 +205,27 @@ install_acpx_plugin() {
 
 # ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
 setup_agent_dirs() {
-    log "Creating named agent directories..."
-    for id in main coding frontend; do
-        local dir="$ACTUAL_HOME/.openclaw/agents/$id/agent"
-        mkdir -p "$dir"
-        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw/agents/$id"
-        chmod 700 "$dir"
-    done
-
-    for ws in "$ACTUAL_HOME/.openclaw/workspace-coding" "$ACTUAL_HOME/.openclaw/workspace-frontend"; do
-        mkdir -p "$ws/skills"
-        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ws"
-        # Sync base files
+    log "Creating named agent directories (Tri-Agent Architecture)..."
+    for id in main coding marketing; do
+        local agent_root="$ACTUAL_HOME/.openclaw/agents/$id"
+        local agent_state_dir="$agent_root/agent"
+        local agent_workspace_dir="$agent_root/workspace"
+        
+        # Create directories
+        mkdir -p "$agent_state_dir" "$agent_workspace_dir"
+        
+        # Sync base files (AGENTS.md, SOUL.md, MEMORY.md, TOOLS.md) 
+        # Note: Subagents only load AGENT/TOOLS but we sync all for consistency
         for f in AGENTS.md SOUL.md MEMORY.md TOOLS.md; do
-            [[ -f "$ACTUAL_HOME/.openclaw/workspace/$f" ]] && uas cp "$ACTUAL_HOME/.openclaw/workspace/$f" "$ws/$f" 2>/dev/null
+            if [[ -f "$ACTUAL_HOME/.openclaw/workspace/$f" ]]; then
+                uas cp "$ACTUAL_HOME/.openclaw/workspace/$f" "$agent_workspace_dir/$f" 2>/dev/null || true
+            fi
         done
+
+        # Harden permissions
+        chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$agent_root"
+        chmod 700 "$agent_state_dir"
+        chmod 755 "$agent_workspace_dir"
     done
 }
 
