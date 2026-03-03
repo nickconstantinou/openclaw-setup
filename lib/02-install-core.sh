@@ -28,15 +28,17 @@ install_openclaw() {
             log "OpenClaw upgraded: $oc_ver → $new_ver"
         else
             log "WARNING: Upgrade failed — continuing with existing version ($oc_ver)."
-            local new_sha
-            new_sha=$(curl -fsSL "https://openclaw.ai/install.sh" 2>/dev/null | sha256sum | awk '{print $1}' || true)
-            
-            # Use OPENCLAW_INSTALLER_SHA256 if defined, otherwise ensure we log the fetched SHA
-            if [[ -n "$new_sha" ]]; then
-                if [[ -z "$OPENCLAW_INSTALLER_SHA256" ]] || [[ "$new_sha" != "$OPENCLAW_INSTALLER_SHA256" ]]; then
-                    log "INFO: New installer checksum for review: $new_sha"
+            local tmp_installer; tmp_installer=$(mktemp)
+            if curl -fsSL "https://openclaw.ai/install.sh" -o "$tmp_installer" 2>/dev/null; then
+                local new_sha
+                new_sha=$(sha256sum "$tmp_installer" | awk '{print $1}')
+                if [[ -n "$new_sha" ]]; then
+                    if [[ -z "${OPENCLAW_INSTALLER_SHA256:-}" ]] || [[ "$new_sha" != "$OPENCLAW_INSTALLER_SHA256" ]]; then
+                        log "INFO: New installer checksum for review: $new_sha"
+                    fi
                 fi
             fi
+            rm -f "$tmp_installer"
         fi
         return 0
     fi
