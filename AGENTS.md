@@ -13,6 +13,7 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - **Modular Bash**: Large scripts MUST be decomposed into `lib/XX-name.sh` modules and sourced by a thin orchestrator.
 - **Skill Folders**: Skills MUST follow the folder-per-skill pattern with a `SKILL.md` (YAML frontmatter + Markdown).
 - **Hardening**: All shell scripts MUST pass ShellCheck analysis.
+- **Tri-Agent Architecture**: High-complexity tasks SHOULD be decomposed into `main` (planner), `coding` (executor), and `marketing` (strategist) agents with strictly scoped workspaces (`AGENTS.md`, `MEMORY.md`, `TOOLS.md`).
 - **SecretRef Migration**: Non-interactive secrets migration MUST use ephemeral JSON plans (`migrate_secrets.py`) and a `systemd environment.d` fallback for scrubbed `.env` resilience.
 - **Technology Layer**: Workflows assume a Supabase (Backend) + Expo (Frontend) stack unless otherwise specified.
 
@@ -38,6 +39,7 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[GLOB_RECURSION]` -> **Pattern**: Deployment loops using `dir/*` fail when content is moved to sub-subfolders. | **Fix**: Use `find` or recursive globs in deployment logic.
 - `[HYPHENATED_PYTHON_MODULE]` -> **Pattern**: Naming scripts with hyphens (e.g., `migrate-secrets.py`) prevents Python imports in tests. | **Fix**: Use underscores for Python scripts intended for unit testing.
 - `[VARIABLE_PRUNING_ORPHAN]` -> **Pattern**: Refactoring complex config blocks can orphan dependent variables (e.g., `skill_key`). | **Fix**: Audit all f-string references in a block after removing any assignment lines.
+- `[SUBAGENT_PERSONA_TRAP]` -> **Pattern**: Subagents in OpenClaw skip `SOUL.md`. | **Fix**: Persona and identity rules MUST be merged directly into `AGENTS.md` for any agent intended for `sessions_spawn`.
 
 '' Openclaw Docs
 - Read all docs in `docs/` directory.

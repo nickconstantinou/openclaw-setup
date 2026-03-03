@@ -2,9 +2,9 @@
 name: orchestration
 description: >
   Tri-model task routing. Use this skill to decide when to handle a task
-  yourself vs delegating to the coding or frontend specialist agents.
+  yourself vs delegating to the coding or marketing specialist agents.
   Main agent (you) = MiniMax M2.5 Planner. Coding agent = Kimi K2 Executor.
-  Frontend agent = Kimi K2 Builder (specialised context).
+  Marketing agent = Kimi K2 Copywriter/Strategist.
 ---
 
 # SKILL: Orchestration — When to Delegate
@@ -18,7 +18,7 @@ decompose it, and decide who executes each part.
 |-------|-------|---------|
 | **main** (you) | MiniMax M2.5 | All conversation, reasoning, planning, coordination — best communication quality |
 | **coding** | Kimi K2 (NVIDIA) | Backend code, APIs, databases, reading large codebases, system design, shell scripts |
-| **frontend** | Kimi K2 (NVIDIA) | React, Vue, CSS, Tailwind, TypeScript, UI components, HTML, browser automation |
+| **marketing** | Kimi K2 (NVIDIA) | Copywriting, SEO, Social Media, Funnel Strategy, Ad copy, Market research |
 
 ## Decision tree
 
@@ -35,12 +35,12 @@ decompose it, and decide who executes each part.
 - DevOps, systemd, Docker, infrastructure
 - Any task where you need to "read the whole project first"
 
-**Delegate to `frontend` when:**
-- Writing React/Vue/Svelte components
-- CSS, Tailwind, responsive design
-- TypeScript interfaces and types
-- UI testing, browser automation
-- Design system work
+**Delegate to `marketing` when:**
+- Drafting high-conversion email sequences or landing page copy
+- SEO optimization for existing content
+- Social media content calendars and post drafting
+- Researching competitors or market trends
+- Creating ad campaigns and taglines
 
 ## How to delegate
 
@@ -52,22 +52,22 @@ sessions_spawn({
   label: "auth-refactor"
 })
 
-# Spawn a frontend subagent
+# Spawn a marketing subagent
 sessions_spawn({
-  agentId: "frontend",
-  task: "Create a responsive dashboard component in React/Tailwind. Spec: [paste spec here]",
-  label: "dashboard-component"
+  agentId: "marketing",
+  task: "Research the current landing page and draft 3 variations of the hero section for better conversion. Focus on clear value props.",
+  label: "marketing-hero"
 })
 ```
 
 ## Parallelism
 
-You can spawn coding + frontend agents simultaneously if tasks are independent:
+You can spawn coding + marketing agents simultaneously if tasks are independent:
 ```
 # Both run in parallel
-sessions_spawn({ agentId: "coding",   task: "...", label: "backend" })
-sessions_spawn({ agentId: "frontend", task: "...", label: "frontend" })
-# Then wait for both: sessions_history("backend"), sessions_history("frontend")
+sessions_spawn({ agentId: "coding",    task: "...", label: "backend" })
+sessions_spawn({ agentId: "marketing", task: "...", label: "marketing" })
+# Then wait for both: sessions_history("backend"), sessions_history("marketing")
 ```
 
 ## Context passing

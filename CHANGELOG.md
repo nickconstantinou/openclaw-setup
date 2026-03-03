@@ -8,13 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Automated SecretRef Migration**: Implemented a non-interactive migration path for `.env` API keys (Minimax, NVIDIA, Tavily, Post Bridge) using OpenClaw's `SecretRef` system.
-- **Migration Plan Utility**: Created `config/migrate_secrets.py` to generate `oc secrets apply` JSON plans from existing plaintext configurations; fixed root-user ownership conflict in plan generation.
-- **Modular Architecture**: Decomposed the monolithic `openclaw-self-heal.sh` into 13 single-responsibility bash modules in `lib/`.
-- **Advanced Verification**: Created `tests/verify-repo.sh` with ShellCheck integration, function resolution audits, and environment variable coverage.
-- **Anthropic-Standard Skills**: Reorganized `skills/` into a folder-per-skill structure with YAML-frontmatter `SKILL.md` files.
-- **Agent Skill Integration**: Integrated 6 new skills (`requirement-gatherer`, `refactoring`, `rca`, `mobile-app-dev`, `frontend-design`, `code-review`) from `.agent/skills/`.
-- **Bootstrap Installer**: Added `install.sh` for one-liner `curl | bash` deployments.
+- **Tri-Agent Architecture**: Implemented a specialized multi-agent system consisting of `main` (planner), `coding` (executor), and `marketing` (strategist) agents.
+- **Isolated Workspace Scaffolding**: Created dedicated `AGENTS.md`, `MEMORY.md`, and `TOOLS.md` for each agent to ensure strict context isolation and security boundaries.
+- **Specialized Tool Access**: Implemented hard tool restriction matrices in `apply-config.py` (e.g., blocking `exec` for marketing, blocking `sessions_spawn` for subagents).
 - **Environment Template**: Added `.env.example` with comprehensive documentation for all required API keys.
 
 ### Changed
@@ -24,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Config Hardening**: Updated `patch-stale-keys.py` and `apply-config.py` to inject `SecretRef` objects directly, preventing plaintext regressions in subsequent deployments.
 - **Environment Resilience**: Added a fallback in `lib/01-env.sh` to load secrets from `~/.config/environment.d/openclaw.conf` for scrubbed `.env` files.
 - **Subagent Best Practices**: Updated `apply-config.py` with recommended defaults for `maxSpawnDepth` (2), `maxChildrenPerAgent` (5), and `runTimeoutSeconds` (900) to support the orchestrator pattern.
-- **Orchestration Persona**: Harmonized `orchestration` skill documentation to correctly identify `MiniMax M2.5` as the main planner model.
+- **Orchestration Persona**: Harmonized `orchestration` skill documentation to correctly identify `MiniMax M2.5` as the main planner model and `Chas` as the primary identity.
 
 ### Fixed
 - **Gateway Installation**: Resolved systemd symlink collisions during re-runs.

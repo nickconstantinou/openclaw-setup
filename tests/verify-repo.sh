@@ -114,10 +114,10 @@ ASSETS=(
     "config/apply-config.py"
     "config/patch-stale-keys.py"
     "config/reapply-models.py"
-    "skills/transcription/SKILL.md"
-    "skills/ffmpeg/SKILL.md"
-    "skills/nvidia-imagegen/SKILL.md"
-    "skills/nvidia-imagegen/generate.py"
+    "skills/general-agent/transcription/SKILL.md"
+    "skills/marketing-agent/ffmpeg/SKILL.md"
+    "skills/general-agent/nvidia-imagegen/SKILL.md"
+    "skills/general-agent/nvidia-imagegen/generate.py"
 )
 
 for asset in "${ASSETS[@]}"; do

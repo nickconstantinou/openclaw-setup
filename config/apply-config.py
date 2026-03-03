@@ -97,15 +97,15 @@ def main():
         _coding_fallback  = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1', 'nvidia/qwen/qwen3.5-397b-a17b',
                              'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
                              'nvidia/z-ai/glm4.7']
-        _frontend_primary  = 'nvidia/moonshotai/kimi-k2-thinking'
-        _frontend_fallback = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1', 'nvidia/qwen/qwen3.5-397b-a17b',
-                              'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
-                              'nvidia/z-ai/glm4.7']
+        _marketing_primary  = 'nvidia/moonshotai/kimi-k2-thinking'
+        _marketing_fallback = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1', 'nvidia/qwen/qwen3.5-397b-a17b',
+                               'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
+                               'nvidia/z-ai/glm4.7']
     else:
         _coding_primary   = 'minimax/MiniMax-M2.5'
         _coding_fallback  = ['minimax/MiniMax-M2.1']
-        _frontend_primary  = 'minimax/MiniMax-M2.5'
-        _frontend_fallback = ['minimax/MiniMax-M2.1']
+        _marketing_primary  = 'minimax/MiniMax-M2.5'
+        _marketing_fallback = ['minimax/MiniMax-M2.1']
 
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
@@ -120,28 +120,32 @@ def main():
                 'primary':   os.environ.get('MINIMAX_DEFAULT', 'minimax/MiniMax-M2.5'),
                 'fallbacks': _fallbacks,
             },
-            'subagents': {'allowAgents': ['coding', 'frontend']},
+            'subagents': {'allowAgents': ['coding', 'marketing']},
             'tools': {'profile': 'full'},
         },
         {
             'id':       'coding',
             'name':     'Coder',
-            'workspace': f'{_home}/.openclaw/workspace-coding',
+            'workspace': f'{_home}/.openclaw/agents/coding/workspace',
             'agentDir':  f'{_home}/.openclaw/agents/coding/agent',
             'model': {'primary': _coding_primary, 'fallbacks': _coding_fallback},
-            'tools':    {'profile': 'coding'},
-            'subagents': {'allowAgents': ['*']},
+            'tools': {
+                'allow': ['read', 'write', 'edit', 'apply_patch', 'exec', 'process', 'bash', 'sessions_list', 'sessions_history', 'sessions_send', 'session_status']
+            },
+            'subagents': {'allowAgents': []},
             'identity': {'name': 'Coder', 'emoji': '💻'},
         },
         {
-            'id':       'frontend',
-            'name':     'Frontend',
-            'workspace': f'{_home}/.openclaw/workspace-frontend',
-            'agentDir':  f'{_home}/.openclaw/agents/frontend/agent',
-            'model': {'primary': _frontend_primary, 'fallbacks': _frontend_fallback},
-            'tools':    {'profile': 'coding'},
-            'subagents': {'allowAgents': ['*']},
-            'identity': {'name': 'Frontend', 'emoji': '🎨'},
+            'id':       'marketing',
+            'name':     'Marketing',
+            'workspace': f'{_home}/.openclaw/agents/marketing/workspace',
+            'agentDir':  f'{_home}/.openclaw/agents/marketing/agent',
+            'model': {'primary': _marketing_primary, 'fallbacks': _marketing_fallback},
+            'tools': {
+                'deny': ['exec', 'process', 'bash', 'apply_patch', 'sessions_spawn']
+            },
+            'subagents': {'allowAgents': []},
+            'identity': {'name': 'Marketing', 'emoji': '📣'},
         },
     ]
 
@@ -153,11 +157,13 @@ def main():
         else:
             for entry in existing_list:
                 if entry.get('id') == agent['id']:
-                    entry['model']    = agent['model']
-                    entry['agentDir'] = agent['agentDir']
-                    entry.setdefault('tools',    agent['tools'])
-                    entry.setdefault('subagents', agent['subagents'])
-                    entry.get('subagents', {}).pop('maxConcurrent', None)
+                    entry['name']      = agent['name']
+                    entry['model']     = agent['model']
+                    entry['workspace'] = agent['workspace']
+                    entry['agentDir']  = agent['agentDir']
+                    entry['tools']     = agent['tools']
+                    entry['subagents'] = agent['subagents']
+                    entry['identity']  = agent.get('identity', entry.get('identity', {}))
 
     ds(c, 'tools.sessions.visibility', 'tree')
     ds(c, 'tools.subagents.tools.deny', [])

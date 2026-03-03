@@ -36,7 +36,7 @@ curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/nickcons
 
 - `openclaw-self-heal.sh`: Main deployment orchestrator.
 - `lib/`: Modular shell scripts for environment setup, installations, and configuration.
-- `skills/`: External SKILL.md and helper scripts for the OpenClaw agent.
+- `skills/`: Categorized tri-agent skills (`general`, `coding`, `marketing`) and specialized workspace scaffolds.
 - `templates/`: AppArmor profile templates and systemd units.
 - `config/`: Python-based JSON configuration patchers.
 
