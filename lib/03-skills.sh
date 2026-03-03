@@ -41,7 +41,7 @@ deploy_skills() {
             local target_skill_dir="$target_workspace/skills/$skill_name"
             
             mkdir -p "$target_skill_dir"
-            cp -rf "$skill_dir"* "$target_skill_dir/" 2>/dev/null || true
+            cp -a "$skill_dir"* "$target_skill_dir/" 2>/dev/null || true
             
             # Ensure generate.py executable
             [[ -f "$target_skill_dir/generate.py" ]] && chmod +x "$target_skill_dir/generate.py"

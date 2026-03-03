@@ -1,3 +1,8 @@
+# ── OPENCLAW GATEWAY APPARMOR PROFILE ──────────────────────────────────────────
+# @intent Security sandbox for the OpenClaw agent gateway.
+# @complexity 4
+# 
+
 #include <tunables/global>
 
 profile openclaw-gateway {
@@ -368,6 +373,7 @@ profile openclaw-gateway {
   @{HOME}/.openclaw/**                 rwk,
   @{HOME}/.openclaw/workspace/**       rwk,
   @{HOME}/.openclaw/workspace/skills/**/*.py  rix,   # allow agent to exec Python skill scripts
+  @{HOME}/.openclaw/workspace/skills/**/venv/bin/python[0-9.]* rix, # allow venv python execution
   @{HOME}/.openclaw/workspace/images/         rwk,   # image generation output dir
   @{HOME}/.openclaw/workspace/images/**       rwk,
   @{HOME}/.openclaw/agents/                  rw,    # named agent dirs (coding, frontend)
@@ -397,6 +403,7 @@ profile openclaw-gateway {
   /usr/bin/chromium                    ix,
   /usr/bin/chromium-browser            ix,
   @{HOME}/.cache/ms-playwright/**      rw,
+  userns,
 
   # ── Logging ─────────────────────────────────────────────────────────────────
   /var/log/openclaw-deploy.log         w,

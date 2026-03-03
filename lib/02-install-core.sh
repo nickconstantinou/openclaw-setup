@@ -78,9 +78,8 @@ install_playwright() {
     else
         local npm_cache; npm_cache=$(mktemp -d)
         wait_for_apt
-        if sudo DEBIAN_FRONTEND=noninteractive NPM_CONFIG_CACHE="$npm_cache" \
-            npx -y playwright install --with-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
-            log "Chromium dependencies installed."
+        if uas npx -y playwright install --with-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
+            log "Chromium and dependencies installed for agent."
         else
             log "WARNING: Playwright install failed. Browser tools may be unavailable."
         fi
