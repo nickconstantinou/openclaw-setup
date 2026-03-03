@@ -40,6 +40,8 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[HYPHENATED_PYTHON_MODULE]` -> **Pattern**: Naming scripts with hyphens (e.g., `migrate-secrets.py`) prevents Python imports in tests. | **Fix**: Use underscores for Python scripts intended for unit testing.
 - `[VARIABLE_PRUNING_ORPHAN]` -> **Pattern**: Refactoring complex config blocks can orphan dependent variables (e.g., `skill_key`). | **Fix**: Audit all f-string references in a block after removing any assignment lines.
 - `[SUBAGENT_PERSONA_TRAP]` -> **Pattern**: Subagents in OpenClaw skip `SOUL.md`. | **Fix**: Persona and identity rules MUST be merged directly into `AGENTS.md` for any agent intended for `sessions_spawn`.
+- `[APPARMOR_USERNS]` -> **Pattern**: Chromium (Playwright) requires unprivileged user namespaces. | **Fix**: Add `userns,` to AppArmor profile and use `rix` for venv python binaries.
+- `[GIT_SYMLINK_PATHSPEC]` -> **Pattern**: `git add` fails on paths traversing symlinks to external repositories. | **Fix**: Archive issue records in a local `archive/` directory within the current repo.
 
 '' Openclaw Docs
 - Read all docs in `docs/` directory.
