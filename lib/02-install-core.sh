@@ -26,21 +26,10 @@ install_openclaw() {
         if uas npm install -g openclaw@latest --quiet 2>/dev/null; then
             local new_ver; new_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
             log "OpenClaw upgraded: $oc_ver → $new_ver"
+            return 0
         else
-            log "WARNING: Upgrade failed — continuing with existing version ($oc_ver)."
-            local tmp_installer; tmp_installer=$(mktemp)
-            if curl -fsSL "https://openclaw.ai/install.sh" -o "$tmp_installer" 2>/dev/null; then
-                local new_sha
-                new_sha=$(sha256sum "$tmp_installer" | awk '{print $1}')
-                if [[ -n "$new_sha" ]]; then
-                    if [[ -z "${OPENCLAW_INSTALLER_SHA256:-}" ]] || [[ "$new_sha" != "$OPENCLAW_INSTALLER_SHA256" ]]; then
-                        log "INFO: New installer checksum for review: $new_sha"
-                    fi
-                fi
-            fi
-            rm -f "$tmp_installer"
+            log "WARNING: Upgrade failed — falling back to core installer."
         fi
-        return 0
     fi
 
     log "Installing OpenClaw (checksum enforced)..."
