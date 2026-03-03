@@ -78,8 +78,17 @@ install_playwright() {
     else
         local npm_cache; npm_cache=$(mktemp -d)
         wait_for_apt
-        if uas npx -y playwright install --with-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
-            log "Chromium and dependencies installed for agent."
+        
+        log "  Running playbook: playwright install-deps (as root)..."
+        if env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" HOME=/root npm_config_cache="$npm_cache" npx -y playwright install-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright-deps: $line"; done; then
+            log "  System dependencies installed."
+        else
+            log "  WARNING: Failed to install Playwright OS dependencies."
+        fi
+
+        log "  Running playbook: playwright install (as user)..."
+        if uas env npm_config_cache="$npm_cache" npx -y playwright install chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
+            log "Chromium browser binaries installed for agent."
         else
             log "WARNING: Playwright install failed. Browser tools may be unavailable."
         fi
