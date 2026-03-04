@@ -153,7 +153,19 @@ def main():
             ],
         }
     providers.pop('ollama', None)
-    providers.pop('google', None)
+
+    # Google Gemini — media processing (image/audio/video)
+    # GEMINI_API_KEY is required; GOOGLE_API_KEY is the env var openclaw uses internally
+    providers['google'] = {
+        'apiKey': {"source": "env", "provider": "default", "id": "GOOGLE_API_KEY"},
+    }
+
+    # Anthropic — optional fallback model provider
+    _anthropic_key = os.environ.get('ANTHROPIC_API_KEY', '')
+    if _anthropic_key:
+        providers['anthropic'] = {
+            'apiKey': {"source": "env", "provider": "default", "id": "ANTHROPIC_API_KEY"},
+        }
 
     config.setdefault('tools', {}).setdefault('media', {}).update({
         'concurrency': 2,
