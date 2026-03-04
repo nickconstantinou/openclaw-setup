@@ -7,6 +7,47 @@
 # ── 18. INSTALL & START GATEWAY ───────────────────────────────────────────────
 install_gateway_service() {
     log "Installing gateway service..."
+
+    # Work around a bug in openclaw's isSystemdServiceEnabled():
+    # systemctl --user is-enabled writes "not-found" to STDOUT (not stderr), but
+    # Node.js execFileUtf8 substitutes error.message ("Command failed: ...") as the
+    # stderr fallback when stderr is empty. readSystemctlDetail prefers stderr, so it
+    # sees "Command failed: ..." which matches no known pattern and throws
+    # "systemctl is-enabled unavailable".
+    #
+    # Fix: pre-seed a stub unit file and enable it so is-enabled returns exit code 0.
+    # With code 0, openclaw returns true immediately without any pattern matching.
+    # oc gateway install --force then sees the service as already-loaded + --force,
+    # falls through to full reinstall, and overwrites the stub with the real unit file.
+    local unit_dir="$ACTUAL_HOME/.config/systemd/user"
+    local unit_file="$unit_dir/openclaw-gateway.service"
+    if [[ ! -f "$unit_file" ]]; then
+        local oc_bin; oc_bin=$(command -v openclaw)
+        mkdir -p "$unit_dir"
+        chown "$ACTUAL_USER:$ACTUAL_USER" "$unit_dir"
+        cat > "$unit_file" <<EOF
+[Unit]
+Description=OpenClaw Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=$oc_bin gateway run
+Restart=always
+RestartSec=5
+KillMode=control-group
+
+[Install]
+WantedBy=default.target
+EOF
+        chown "$ACTUAL_USER:$ACTUAL_USER" "$unit_file"
+        uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" \
+            systemctl --user daemon-reload || true
+        uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" \
+            systemctl --user enable openclaw-gateway.service || true
+        log "Stub unit pre-seeded (workaround for openclaw is-enabled stdout/stderr bug)."
+    fi
+
     oc gateway install --force || die "Gateway install failed."
 
     local unit="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service"
