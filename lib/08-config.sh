@@ -103,4 +103,51 @@ patch_config() {
         OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" \
         ACTUAL_HOME="$ACTUAL_HOME" \
         python3 "$SCRIPT_DIR/config/apply-config.py" --config "$config_file"
+
+    # 3. Patch Telegram groupPolicy to 'open'
+    log "  Step 3: Patching Telegram groupPolicy to 'open'..."
+    uas python3 - <<'EOF' "$config_file"
+import json, sys
+config_file = sys.argv[1]
+try:
+    with open(config_file) as f:
+        config = json.load(f)
+    tg = config.setdefault("channels", {}).setdefault("telegram", {})
+    if tg.get("groupPolicy") != "open":
+        tg["groupPolicy"] = "open"
+        with open(config_file, "w") as f:
+            json.dump(config, f, indent=2)
+        print("ok")
+    else:
+        print("already open")
+except Exception as e:
+    print(f"error: {e}")
+EOF
+
+    # 4. Patch Tailscale config (trustedProxies + tailscale.mode)
+    if command -v tailscale >/dev/null 2>&1 && tailscale status --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if (d.get('BackendState')=='Running' or d.get('TailscaleIPs')) else 1)" 2>/dev/null; then
+        log "  Step 4: Patching Tailscale config (trustedProxies + tailscale.mode)..."
+        uas python3 - <<'EOF' "$config_file"
+import json, sys
+config_file = sys.argv[1]
+try:
+    with open(config_file) as f:
+        config = json.load(f)
+    gw = config.setdefault("gateway", {})
+    # Set trustedProxies to include loopback for Tailscale Serve
+    proxies = gw.get("trustedProxies", [])
+    if "127.0.0.1" not in proxies:
+        proxies.append("127.0.0.1")
+        gw["trustedProxies"] = proxies
+    # Set tailscale.mode so `oc status` reports correctly
+    ts = gw.setdefault("tailscale", {})
+    if ts.get("mode") != "serve":
+        ts["mode"] = "serve"
+    with open(config_file, "w") as f:
+        json.dump(config, f, indent=2)
+    print("ok")
+except Exception as e:
+    print(f"error: {e}")
+EOF
+    fi
 }

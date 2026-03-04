@@ -25,6 +25,72 @@ migrate_secrets() {
     rm -f "$plan_file"
 }
 
+# ── 16.2 AUTH PROFILE SCRUBBING ──────────────────────────────────────────────
+scrub_auth_profile_plaintext() {
+    log "Scrubbing plaintext keys from auth-profiles.json..."
+    local needs_scrub=false
+
+    # Primary: use oc secrets audit if available
+    local audit_out
+    audit_out=$(oc secrets audit --check 2>&1 || true)
+    if echo "$audit_out" | grep -q "PLAINTEXT_FOUND.*auth-profiles"; then
+        needs_scrub=true
+    fi
+
+    # Fallback: direct filesystem scan if audit didn't find anything
+    # (handles case where oc secrets audit --check is unavailable or output format changes)
+    if [[ "$needs_scrub" == false ]]; then
+        for agent_id in main coding marketing; do
+            local ap="$ACTUAL_HOME/.openclaw/agents/$agent_id/agent/auth-profiles.json"
+            if [[ -f "$ap" ]] && python3 -c "
+import json, sys
+with open(sys.argv[1]) as f: data = json.load(f)
+for p in data.get('profiles', {}).values():
+    for a in p.values():
+        if isinstance(a, dict) and 'key' in a and isinstance(a['key'], str):
+            sys.exit(0)
+sys.exit(1)" "$ap" 2>/dev/null; then
+                needs_scrub=true
+                break
+            fi
+        done
+    fi
+
+    if [[ "$needs_scrub" == true ]]; then
+        log "  Found plaintext keys in auth-profiles.json — applying SecretRef conversion..."
+        for agent_id in main coding marketing; do
+            local ap="$ACTUAL_HOME/.openclaw/agents/$agent_id/agent/auth-profiles.json"
+            [[ -f "$ap" ]] || continue
+            uas python3 - <<'PYEOF' "$ap"
+import json, sys
+ap_file = sys.argv[1]
+try:
+    with open(ap_file) as f:
+        data = json.load(f)
+    changed = False
+    for profile_key, profile in data.get("profiles", {}).items():
+        for account_key, account in profile.items():
+            if isinstance(account, dict) and "key" in account and isinstance(account["key"], str):
+                # Replace plaintext key with SecretRef
+                provider_name = profile_key.split(":")[0] if ":" in profile_key else profile_key
+                env_var = provider_name.upper().replace("-", "_") + "_API_KEY"
+                account["key"] = {"source": "env", "provider": "default", "id": env_var}
+                changed = True
+    if changed:
+        with open(ap_file, "w") as f:
+            json.dump(data, f, indent=2)
+        print(f"Converted plaintext keys to SecretRefs in {ap_file}")
+    else:
+        print(f"No plaintext keys found in {ap_file}")
+except Exception as e:
+    print(f"Error processing {ap_file}: {e}")
+PYEOF
+        done
+    else
+        log "  No plaintext keys in auth-profiles.json."
+    fi
+}
+
 # ── 16. SECURITY AUDIT ────────────────────────────────────────────────────────
 run_security_audit() {
     log "Running security audit..."
@@ -63,7 +129,11 @@ optimize_sqlite() {
 # ── 17. ONBOARDING ────────────────────────────────────────────────────────────
 onboard_gateway() {
     log "Running onboard setup..."
-    oc onboard --non-interactive --accept-risk || true
+    # WS 1006 ("abnormal closure") expected here — onboard triggers a config
+    # hot-reload that drops the WS connection. The onboard changes are still
+    # applied successfully. This is an upstream race condition in the OpenClaw
+    # CLI, not a deployment failure.
+    oc onboard --non-interactive --accept-risk 2>&1 | grep -v "1006 abnormal" || true
 }
 
 # ── 17b. RE-APPLY MODELS ──────────────────────────────────────────────────────

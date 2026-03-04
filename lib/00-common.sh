@@ -36,6 +36,17 @@ wait_for_apt() {
     fi
 }
 
+# apt_install: wrapper that uses systemd-inhibit to avoid contention
+apt_install() {
+    wait_for_apt
+    if command -v systemd-inhibit >/dev/null 2>&1; then
+        sudo systemd-inhibit --what=idle --who="openclaw-deploy" --why="Installing packages" \
+            apt-get install -y -q "$@"
+    else
+        sudo apt-get install -y -q "$@"
+    fi
+}
+
 # ── COMMAND WRAPPERS ──────────────────────────────────────────────────────────
 # oc: wrapper for openclaw CLI with proper path and user context
 oc() {

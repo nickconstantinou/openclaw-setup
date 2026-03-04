@@ -89,6 +89,7 @@ main() {
 
     # 5. Launch & Operations
     migrate_secrets
+    scrub_auth_profile_plaintext
     run_security_audit
     optimize_sqlite
     onboard_gateway

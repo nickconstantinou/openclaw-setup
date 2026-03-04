@@ -98,13 +98,32 @@ check_integrations() {
 check_apparmor_denials() {
     local pid; pid=$(uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user show openclaw-gateway.service --property=MainPID --value 2>/dev/null || echo "0")
     if [[ "$pid" != "0" ]]; then
-        local denials; denials=$(sudo journalctl -k --since "10 min ago" | grep -i "apparmor.*DENIED" | grep -c "pid=$pid" || echo "0")
+        local start_time
+        start_time=$(uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user show openclaw-gateway.service --property=ActiveEnterTimestamp --value 2>/dev/null || echo "")
+        local since_arg="10 min ago"
+        [[ -n "$start_time" ]] && since_arg="$start_time"
+        local denials; denials=$(sudo journalctl -k --since="$since_arg" | grep -i "apparmor.*DENIED" | grep -c "pid=$pid" || echo "0")
         if [[ "$denials" -gt 0 ]]; then
             log "[HEALTH] WARN — $denials AppArmor denial(s) for gateway pid $pid"
         else
             log "[HEALTH] PASS — No AppArmor denials for gateway"
         fi
     fi
+}
+
+# ── 22f. TAILSCALE HEALTH ─────────────────────────────────────────────────────
+check_tailscale() {
+    if command -v tailscale >/dev/null 2>&1; then
+        local ts_status; ts_status=$(tailscale status --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('BackendState','unknown'))" 2>/dev/null || echo "unknown")
+        if [[ "$ts_status" == "Running" ]]; then
+            log "[HEALTH] PASS — Tailscale is running"
+            return 0
+        else
+            log "[HEALTH] WARN — Tailscale is not running (state: $ts_status)"
+            return 1
+        fi
+    fi
+    return 0
 }
 
 # ── MASTER HEALTH CHECK ───────────────────────────────────────────────────────
@@ -117,6 +136,7 @@ run_health_suite() {
     check_vault || ((errors++))
     check_integrations
     check_apparmor_denials
+    check_tailscale
 
     if [[ $errors -gt 0 ]]; then
         log "WARNING: $errors critical health check(s) failed."

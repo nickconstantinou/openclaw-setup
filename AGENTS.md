@@ -42,6 +42,9 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[SUBAGENT_PERSONA_TRAP]` -> **Pattern**: Subagents in OpenClaw skip `SOUL.md`. | **Fix**: Persona and identity rules MUST be merged directly into `AGENTS.md` for any agent intended for `sessions_spawn`.
 - `[APPARMOR_USERNS]` -> **Pattern**: Chromium (Playwright) requires unprivileged user namespaces. | **Fix**: Add `userns,` to AppArmor profile and use `rix` for venv python binaries.
 - `[GIT_SYMLINK_PATHSPEC]` -> **Pattern**: `git add` fails on paths traversing symlinks to external repositories. | **Fix**: Archive issue records in a local `archive/` directory within the current repo.
-- `[PLAYWRIGHT_SUDO_TRAP]` -> **Pattern**: Running `npx playwright install-deps` as an unprivileged user triggers a `sudo` password prompt, hanging automated scripts. | **Fix**: Run `install-deps` explicitly as `root` (e.g. `env PATH=... npm_config_cache=... npx playwright install-deps`) prior to installing the browser binaries as the user.
+- `[PLAYWRIGHT_SUDO_TRAP]` -> **Pattern**: `npx playwright install-deps` as user hangs for sudo. | **Fix**: Run `install-deps` as root with specified cache/PATH first.
+- `[EACCES_TEMP_OWNER]` -> **Pattern**: `mktemp -d` under `sudo` creates root-owned dirs, blocking user-phase `npx`. | **Fix**: `chown $ACTUAL_USER:$ACTUAL_USER` immediately after `mktemp -d`.
+- `[APPARMOR_BOOT_RACE]` -> **Pattern**: systemd unit with `aa-exec` crash-loops if profile isn't loaded at boot. | **Fix**: Use conditional `ExecStartPre` and `ExecStart` that falls back to unconfined.
+- `[AUTH_PROFILE_SHADOW]` -> **Pattern**: `auth-profiles.json` plaintext `api_key` entries override config-level SecretRefs. | **Fix**: Scrub plaintext from all agent `auth-profiles.json` and convert to env-based SecretRefs.
 '' Openclaw Docs
 - Read all docs in `docs/` directory.

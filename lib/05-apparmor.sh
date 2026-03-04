@@ -13,7 +13,7 @@ setup_apparmor() {
 
     log "Installing and configuring AppArmor profile..."
     wait_for_apt
-    sudo apt-get install -y -q apparmor apparmor-utils 2>/dev/null || true
+    apt_install apparmor apparmor-utils || log "WARNING: AppArmor install failed."
 
     local profile_path="/etc/apparmor.d/openclaw-gateway"
     local template_path="$SCRIPT_DIR/templates/apparmor-gateway.profile"

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- **Modular Deployment Audit Fixes**: Addressed 17 security and operational issues identified in the audit report.
+    - Improved AppArmor resilience with conditional unconfined fallback for boot-time races.
+    - Implemented automated `SecretRef` migration for agent `auth-profiles.json` to prevent key shadowing.
+    - Hardened systemd service units with robust shell escaping for `ExecStart`.
+    - Integrated `systemd-inhibit` into `apt_install` to prevent package manager contention.
+    - Updated Tailscale health checks and trusted proxy configuration.
+    - Resolved Playwright `EACCES` errors by correcting npm cache ownership.
+    - Added self-upgrade capabilities for `npm` within the deployment flow.
 
 ### Added
 - **Tri-Agent Architecture**: Implemented a specialized multi-agent system consisting of `main` (planner), `coding` (executor), and `marketing` (strategist) agents.

@@ -15,7 +15,7 @@ setup_github_cli() {
         sudo chmod go+r "$keyring"
         echo "deb [arch=$(dpkg --print-architecture) signed-by=$keyring] https://cli.github.com/packages stable main" | sudo tee "$sources" > /dev/null
         wait_for_apt
-        sudo apt-get update -q && sudo apt-get install -y -q gh
+        sudo apt-get update -q && apt_install gh
     fi
 
     log "Configuring GitHub authentication..."

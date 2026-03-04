@@ -4,6 +4,18 @@
 # @complexity 3
 # 
 
+# ── 5.5 UPGRADE NPM ──────────────────────────────────────────────────────────
+upgrade_npm() {
+    local current_major
+    current_major=$(npm --version 2>/dev/null | cut -d. -f1)
+    local latest_major
+    latest_major=$(npm view npm version 2>/dev/null | cut -d. -f1 || echo "$current_major")
+    if [[ "$current_major" != "$latest_major" ]] && [[ -n "$latest_major" ]]; then
+        log "Upgrading npm: $(npm --version) → latest..."
+        npm install -g "npm@$latest_major" --quiet 2>&1 || log "WARNING: npm upgrade failed."
+    fi
+}
+
 # ── 6. INSTALL OPENCLAW ───────────────────────────────────────────────────────
 install_openclaw() {
     # Check for existing binary in common install locations (runs as root, so check explicit paths)
@@ -23,7 +35,8 @@ install_openclaw() {
         fi
 
         log "OpenClaw update available: $oc_ver → $latest_ver. Attempting upgrade..."
-        if uas npm install -g openclaw@latest --quiet 2>/dev/null; then
+        upgrade_npm
+        if uas npm install -g openclaw@latest --quiet 2>&1; then
             local new_ver; new_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
             log "OpenClaw upgraded: $oc_ver → $new_ver"
         else
@@ -86,6 +99,7 @@ install_playwright() {
         log "Chromium already installed — skipping Playwright install."
     else
         local npm_cache; npm_cache=$(mktemp -d)
+        chown "$ACTUAL_USER:$ACTUAL_USER" "$npm_cache"
         wait_for_apt
         
         log "  Running playbook: playwright install-deps (as root)..."
@@ -133,7 +147,7 @@ install_pandoc_toolchain() {
         log "pandoc/ffmpeg toolchain already installed."
     else
         wait_for_apt
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q "${missing[@]}" \
+        apt_install "${missing[@]}" \
             && log "pandoc toolchain installed." \
             || log "WARNING: pandoc install failed."
     fi
@@ -217,7 +231,10 @@ install_acpx_plugin() {
     mkdir -p "$ACTUAL_HOME/.openclaw/plugins"
     chown "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw/plugins"
     # Note: @openclaw/acpx may not be publicly available on npm; skip gracefully
-    oc plugins install @openclaw/acpx 2>/dev/null && log "acpx plugin installed." || log "INFO: acpx plugin not available — skipping."
+    local acpx_err
+    acpx_err=$(oc plugins install @openclaw/acpx 2>&1) \
+        && log "acpx plugin installed." \
+        || log "INFO: acpx plugin not available — skipping. ($acpx_err)"
 }
 
 # ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
