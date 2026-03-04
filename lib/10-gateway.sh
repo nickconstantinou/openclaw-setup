@@ -17,12 +17,14 @@ install_gateway_service() {
             if aa-exec -p openclaw-gateway -- true 2>/dev/null; then
                 local dropin_dir="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service.d"
                 mkdir -p "$dropin_dir"
-                local escaped_cmd; escaped_cmd=$(printf '%q' "$exec_cmd")
+                # $exec_cmd is expanded by bash during heredoc — do NOT use printf '%q' here.
+                # printf '%q' escapes spaces, causing aa-exec to receive the whole command as
+                # a single argument instead of a binary + args, producing "No such file or directory".
                 cat > "$dropin_dir/apparmor.conf" <<EOF
 [Service]
 ExecStartPre=/bin/sh -c 'aa-exec -p openclaw-gateway -- true 2>/dev/null || (echo "AppArmor profile not loaded — starting unconfined" && exit 0)'
 ExecStart=
-ExecStart=/bin/sh -c 'if aa-exec -p openclaw-gateway -- true 2>/dev/null; then exec aa-exec -p openclaw-gateway -- $escaped_cmd; else exec $escaped_cmd; fi'
+ExecStart=/bin/sh -c 'if aa-exec -p openclaw-gateway -- true 2>/dev/null; then exec aa-exec -p openclaw-gateway -- $exec_cmd; else exec $exec_cmd; fi'
 EOF
                 chown -R "$ACTUAL_USER:$ACTUAL_USER" "$dropin_dir"
                 log "AppArmor confinement applied via systemd drop-in."

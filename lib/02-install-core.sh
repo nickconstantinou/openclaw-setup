@@ -40,7 +40,9 @@ install_openclaw() {
 
         log "OpenClaw update available: $oc_ver → $latest_ver. Attempting upgrade..."
         upgrade_npm
-        if uas npm install -g openclaw@latest --quiet 2>&1; then
+        # /usr/lib/node_modules is root-owned, so upgrade must run as root.
+        # Use HOME=/root so root's npm cache stays out of the user's ~/.npm.
+        if HOME=/root npm install -g openclaw@latest --quiet 2>&1; then
             local new_ver; new_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
             log "OpenClaw upgraded: $oc_ver → $new_ver"
         else
@@ -102,24 +104,28 @@ install_playwright() {
     if command -v chromium >/dev/null 2>&1 || command -v chromium-browser >/dev/null 2>&1; then
         log "Chromium already installed — skipping Playwright install."
     else
-        local npm_cache; npm_cache=$(mktemp -d)
-        chown "$ACTUAL_USER:$ACTUAL_USER" "$npm_cache"
         wait_for_apt
-        
+
         log "  Running playbook: playwright install-deps (as root)..."
-        if env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" HOME=/root npm_config_cache="$npm_cache" npx -y playwright install-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright-deps: $line"; done; then
+        # Use a root-owned cache dir so root's writes don't pollute the user's cache.
+        local root_npm_cache; root_npm_cache=$(mktemp -d)
+        if env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" HOME=/root npm_config_cache="$root_npm_cache" npx -y playwright install-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright-deps: $line"; done; then
             log "  System dependencies installed."
         else
             log "  WARNING: Failed to install Playwright OS dependencies."
         fi
+        rm -rf "$root_npm_cache"
 
         log "  Running playbook: playwright install (as user)..."
-        if uas env npm_config_cache="$npm_cache" npx -y playwright install chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
+        # Separate user-owned cache dir — never shared with the root call above.
+        local user_npm_cache; user_npm_cache=$(mktemp -d)
+        chown "$ACTUAL_USER:$ACTUAL_USER" "$user_npm_cache"
+        if uas env npm_config_cache="$user_npm_cache" npx -y playwright install chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
             log "Chromium browser binaries installed for agent."
         else
             log "WARNING: Playwright install failed. Browser tools may be unavailable."
         fi
-        rm -rf "$npm_cache"
+        rm -rf "$user_npm_cache"
     fi
 }
 
