@@ -101,8 +101,17 @@ check_apparmor_denials() {
         local start_time
         start_time=$(uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user show openclaw-gateway.service --property=ActiveEnterTimestamp --value 2>/dev/null || echo "")
         local since_arg="10 min ago"
-        [[ -n "$start_time" ]] && since_arg="$start_time"
-        local denials; denials=$(sudo journalctl -k --since="$since_arg" | grep -i "apparmor.*DENIED" | grep -c "pid=$pid" || echo "0")
+        if [[ -n "$start_time" ]]; then
+            # systemctl returns e.g. "Wed 2026-03-04 10:05:34 GMT" which journalctl
+            # can't parse. Reformat to ISO 8601 (journalctl accepts "YYYY-MM-DD HH:MM:SS").
+            local iso_time; iso_time=$(date -d "$start_time" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "")
+            [[ -n "$iso_time" ]] && since_arg="$iso_time"
+        fi
+        # 'grep -c' outputs "0" on no matches but exits 1, causing '|| echo "0"' to
+        # append a second zero and produce a multiline value that breaks arithmetic.
+        # Capture count and exit code separately to avoid this.
+        local denials=0
+        denials=$(sudo journalctl -k --since="$since_arg" 2>/dev/null | grep -i "apparmor.*DENIED" | grep -c "pid=$pid" 2>/dev/null) || denials=0
         if [[ "$denials" -gt 0 ]]; then
             log "[HEALTH] WARN — $denials AppArmor denial(s) for gateway pid $pid"
         else

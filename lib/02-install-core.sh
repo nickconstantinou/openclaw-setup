@@ -12,7 +12,11 @@ upgrade_npm() {
     latest_major=$(npm view npm version 2>/dev/null | cut -d. -f1 || echo "$current_major")
     if [[ "$current_major" != "$latest_major" ]] && [[ -n "$latest_major" ]]; then
         log "Upgrading npm: $(npm --version) → latest..."
-        npm install -g "npm@$latest_major" --quiet 2>&1 || log "WARNING: npm upgrade failed."
+        # Run with HOME=/root so root's npm cache stays separate from the user's ~/.npm.
+        # Without this, npm writes root-owned files into $ACTUAL_HOME/.npm, causing
+        # subsequent 'uas npm install' calls to fail with EACCES.
+        HOME=/root npm install -g "npm@$latest_major" --quiet 2>&1 || log "WARNING: npm upgrade failed."
+        chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
     fi
 }
 
