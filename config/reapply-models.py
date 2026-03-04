@@ -53,6 +53,7 @@ def main():
     }
     config.setdefault('tools', {}).setdefault('media', {}).update(media_cfg)
 
+    config.setdefault('models', {}).setdefault('providers', {}).pop('google', None)
     config.setdefault('models', {}).setdefault('providers', {}).pop('ollama', None)
 
     with open(cfg, 'w') as f:

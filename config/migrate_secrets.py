@@ -29,8 +29,6 @@ def run_migration(config):
         # (Config Path, Env Var Name, Target Type, Provider ID)
         ("models.providers.minimax.apiKey",    "MINIMAX_API_KEY",    "models.providers.apiKey", "minimax"),
         ("models.providers.nvidia.apiKey",     "NVIDIA_API_KEY",     "models.providers.apiKey", "nvidia"),
-        ("models.providers.google.apiKey",     "GOOGLE_API_KEY",     "models.providers.apiKey", "google"),
-        ("models.providers.anthropic.apiKey",  "ANTHROPIC_API_KEY",  "models.providers.apiKey", "anthropic"),
         ("skills.entries.tavily.apiKey",       "TAVILY_API_KEY",     "skills.entries.apiKey",   "tavily"),
     ]
     
