@@ -56,6 +56,7 @@ oc() {
             XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
             XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
             XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" \
             DEBIAN_FRONTEND=noninteractive \
         openclaw "$@"
 }
@@ -68,5 +69,6 @@ uas() {
             XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
             XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
             XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" \
         "$@"
 }
