@@ -43,32 +43,17 @@ def main():
     ds(c, 'agents.defaults.model.primary',   _main_primary)
     ds(c, 'agents.defaults.model.fallbacks', _fallbacks)
 
-    # ── API keys (env block) ──────────────────────────────────────────────────────
-    ds(c, 'env.MINIMAX_API_KEY',   os.environ.get('MINIMAX_API_KEY', ''))
-    ds(c, 'env.GEMINI_API_KEY',    os.environ.get('GEMINI_API_KEY', ''))
-    ds(c, 'env.GOOGLE_API_KEY',    os.environ.get('GEMINI_API_KEY', ''))
-    ds(c, 'env.ANTHROPIC_API_KEY', os.environ.get('ANTHROPIC_API_KEY', ''))
-    if _nvidia_active:
-        ds(c, 'env.NVIDIA_API_KEY', _nvidia_key)
-
-    gog_account  = os.environ.get('GOG_ACCOUNT', '')
-    gog_password = os.environ.get('GOG_KEYRING_PASSWORD', '')
-    if gog_account and gog_account != 'your@gmail.com':
-        ds(c, 'env.GOG_ACCOUNT', gog_account)
-    if gog_password and gog_password != 'REPLACE_ME':
-        ds(c, 'env.GOG_KEYRING_PASSWORD', gog_password)
+    # ── API keys (skills only — provider keys come from environment.d via systemd) ──────────────
     ds(c, 'env.GOG_KEYRING_BACKEND', 'file')
 
     pb_key = os.environ.get('POST_BRIDGE_API_KEY', '')
     if pb_key and pb_key != 'pb_REPLACE_ME_WHEN_READY':
-        ds(c, 'env.POST_BRIDGE_API_KEY', pb_key)
         skill_key = 'post-bridge-social-manager'
         ds(c, f'skills.entries.{skill_key}.enabled', True)
         ds(c, f'skills.entries.{skill_key}.apiKey', {"source": "env", "provider": "default", "id": "POST_BRIDGE_API_KEY"})
 
     tavily_key = os.environ.get('TAVILY_API_KEY', '')
     if tavily_key and tavily_key != 'tvly-REPLACE_ME_WHEN_READY':
-        ds(c, 'env.TAVILY_API_KEY', tavily_key)
         ds(c, 'skills.entries.tavily.enabled', True)
         ds(c, 'skills.entries.tavily.apiKey', {"source": "env", "provider": "default", "id": "TAVILY_API_KEY"})
 
