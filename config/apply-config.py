@@ -80,6 +80,7 @@ def main():
     ds(c, 'agents.defaults.memorySearch.provider',         'openai')
     ds(c, 'agents.defaults.memorySearch.model',            'nomic-embed-text')
     ds(c, 'agents.defaults.memorySearch.remote.baseUrl',   'http://127.0.0.1:11434/v1')
+    ds(c, 'agents.defaults.memorySearch.remote.apiKey',    {"source": "env", "provider": "default", "id": "OLLAMA_API_KEY"})
 
     ds(c, 'agents.defaults.compaction.mode', 'safeguard')
 

@@ -69,13 +69,20 @@ try:
         data = json.load(f)
     changed = False
     for profile_key, profile in data.get("profiles", {}).items():
-        for account_key, account in profile.items():
-            if isinstance(account, dict) and "key" in account and isinstance(account["key"], str):
-                # Replace plaintext key with SecretRef
-                provider_name = profile_key.split(":")[0] if ":" in profile_key else profile_key
-                env_var = provider_name.upper().replace("-", "_") + "_API_KEY"
-                account["key"] = {"source": "env", "provider": "default", "id": env_var}
-                changed = True
+        if not isinstance(profile, dict):
+            continue
+        provider_name = profile_key.split(":")[0] if ":" in profile_key else profile_key
+        env_var = provider_name.upper().replace("-", "_") + "_API_KEY"
+        # Flat format: profiles["minimax:default"] = {"key": "sk-...", ...}
+        if "key" in profile and isinstance(profile["key"], str):
+            profile["key"] = {"source": "env", "provider": "default", "id": env_var}
+            changed = True
+        else:
+            # Nested format: profiles["minimax"] = {"default": {"key": "sk-...", ...}}
+            for account_key, account in profile.items():
+                if isinstance(account, dict) and "key" in account and isinstance(account["key"], str):
+                    account["key"] = {"source": "env", "provider": "default", "id": env_var}
+                    changed = True
     if changed:
         with open(ap_file, "w") as f:
             json.dump(data, f, indent=2)
