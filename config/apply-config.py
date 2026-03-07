@@ -164,6 +164,7 @@ def main():
         'botToken':    _tg_main,
         'dmPolicy':    'open',
         'groupPolicy': 'open',
+        'allowFrom':   ['*'],
     }
 
     if _tg_coding and _tg_coding != _sentinel_coding:
@@ -171,6 +172,7 @@ def main():
             'botToken':    _tg_coding,
             'dmPolicy':    'open',
             'groupPolicy': 'open',
+            'allowFrom':   ['*'],
         }
 
     if _tg_marketing and _tg_marketing != _sentinel_marketing:
@@ -178,10 +180,11 @@ def main():
             'botToken':    _tg_marketing,
             'dmPolicy':    'open',
             'groupPolicy': 'open',
+            'allowFrom':   ['*'],
         }
 
     # ── WhatsApp multi-account (QR-linked, no token needed) ──────────────────────
-    ds(c, 'channels.whatsapp.accounts.family', {'dmPolicy': 'open', 'groupPolicy': 'open'})
+    ds(c, 'channels.whatsapp.accounts.family', {'dmPolicy': 'open', 'groupPolicy': 'open', 'allowFrom': ['*']})
     ds(c, 'channels.whatsapp.defaultAccount', 'family')
 
     # ── Bindings: route each Telegram account to the matching agent ───────────────
