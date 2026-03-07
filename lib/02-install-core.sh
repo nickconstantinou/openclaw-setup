@@ -163,8 +163,31 @@ install_pandoc_toolchain() {
     fi
 }
 
-# ── 7d. INSTALL GWS (Google Workspace CLI) ────────────────────────────────────
+# ── 7d. INSTALL GCLOUD CLI ────────────────────────────────────────────────────
+install_gcloud() {
+    log "Installing Google Cloud CLI (gcloud)..."
+    if command -v gcloud >/dev/null 2>&1; then
+        log "gcloud already installed: $(gcloud version 2>/dev/null | head -1 || echo 'unknown')"
+        return 0
+    fi
+
+    local keyring=/usr/share/keyrings/cloud.google.gpg
+    local list=/etc/apt/sources.list.d/google-cloud-sdk.list
+
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+        | gpg --dearmor -o "$keyring" 2>&1 \
+        && echo "deb [signed-by=$keyring] https://packages.cloud.google.com/apt cloud-sdk main" \
+            > "$list" \
+        && apt-get update -qq \
+        && apt_install google-cloud-cli \
+        && log "gcloud installed: $(gcloud version 2>/dev/null | head -1)" \
+        || log "WARNING: gcloud install failed — gws auth setup will not work."
+}
+
+# ── 7e. INSTALL GWS (Google Workspace CLI) ────────────────────────────────────
 install_gws() {
+    install_gcloud
+
     log "Installing @googleworkspace/cli (gws)..."
     if command -v gws >/dev/null 2>&1; then
         log "gws already installed: $(gws --version 2>/dev/null | head -1 || echo 'unknown')"
