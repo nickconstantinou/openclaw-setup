@@ -9,7 +9,7 @@ deploy_skills() {
     local local_skills_dir="$SCRIPT_DIR/skills"
 
     # Categories to map to agents
-    local categories=("general-agent" "coding-agent" "marketing-agent")
+    local categories=("general-agent" "coding-agent" "marketing-agent" "family-agent")
 
     for category in "${categories[@]}"; do
         local category_dir="$local_skills_dir/$category"
@@ -46,6 +46,19 @@ deploy_skills() {
             # Ensure generate.py executable
             [[ -f "$target_skill_dir/generate.py" ]] && chmod +x "$target_skill_dir/generate.py"
         done
+
+        # For family-agent: also copy all general-agent skill modules
+        if [[ "$category" == "family-agent" ]]; then
+            local general_skills="$local_skills_dir/general-agent"
+            for skill_dir in "$general_skills"/*/; do
+                [[ -d "$skill_dir" ]] || continue
+                local skill_name; skill_name=$(basename "$skill_dir")
+                local target_skill_dir="$target_workspace/skills/$skill_name"
+                mkdir -p "$target_skill_dir"
+                cp -a "$skill_dir"* "$target_skill_dir/" 2>/dev/null || true
+                [[ -f "$target_skill_dir/generate.py" ]] && chmod +x "$target_skill_dir/generate.py"
+            done
+        fi
 
         # Finalize ownership
         chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$target_workspace"

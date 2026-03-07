@@ -29,17 +29,8 @@ def main():
         c = json.load(f)
 
     # ── Model Architecture ────────────────────────────────────────────────────────
-    _nvidia_key = os.environ.get('NVIDIA_API_KEY', '')
-    _nvidia_active = bool(_nvidia_key and _nvidia_key not in ('', 'nvapi-REPLACE_ME_WHEN_READY'))
-
     _main_primary = 'minimax/MiniMax-M2.5'
-    _fallbacks = (
-        ['minimax/MiniMax-M2.1', 'nvidia/moonshotai/kimi-k2-thinking', 'nvidia/qwen/qwen3.5-397b-a17b',
-         'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
-         'nvidia/z-ai/glm4.7']
-        if _nvidia_active else
-        ['minimax/MiniMax-M2.1']
-    )
+    _fallbacks    = ['minimax/MiniMax-M2.1']
     ds(c, 'agents.defaults.model.primary',   _main_primary)
     ds(c, 'agents.defaults.model.fallbacks', _fallbacks)
 
@@ -56,10 +47,6 @@ def main():
     if tavily_key and tavily_key != 'tvly-REPLACE_ME_WHEN_READY':
         ds(c, 'skills.entries.tavily.enabled', True)
         ds(c, 'skills.entries.tavily.apiKey', {"source": "env", "provider": "default", "id": "TAVILY_API_KEY"})
-
-    if _nvidia_active:
-        ds(c, 'skills.entries.nvidia-imagegen.enabled', True)
-        ds(c, 'skills.entries.nvidia-imagegen.apiKey', {"source": "env", "provider": "default", "id": "NVIDIA_API_KEY"})
 
     ds(c, 'agents.defaults.memorySearch.enabled',          True)
     ds(c, 'agents.defaults.memorySearch.provider',         'openai')
@@ -78,20 +65,10 @@ def main():
     ds(c, 'agents.defaults.subagents.maxChildrenPerAgent', 5)
     ds(c, 'agents.defaults.subagents.runTimeoutSeconds', 900)
 
-    if _nvidia_active:
-        _coding_primary   = 'nvidia/moonshotai/kimi-k2-thinking'
-        _coding_fallback  = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1', 'nvidia/qwen/qwen3.5-397b-a17b',
-                             'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
-                             'nvidia/z-ai/glm4.7']
-        _marketing_primary  = 'nvidia/moonshotai/kimi-k2-thinking'
-        _marketing_fallback = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1', 'nvidia/qwen/qwen3.5-397b-a17b',
-                               'nvidia/qwen/qwen3-coder-480b-a35b-instruct', 'nvidia/deepseek-ai/deepseek-v3.1-terminus',
-                               'nvidia/z-ai/glm4.7']
-    else:
-        _coding_primary   = 'minimax/MiniMax-M2.5'
-        _coding_fallback  = ['minimax/MiniMax-M2.1']
-        _marketing_primary  = 'minimax/MiniMax-M2.5'
-        _marketing_fallback = ['minimax/MiniMax-M2.1']
+    _coding_primary     = 'minimax/MiniMax-M2.5'
+    _coding_fallback    = ['minimax/MiniMax-M2.1']
+    _marketing_primary  = 'minimax/MiniMax-M2.5'
+    _marketing_fallback = ['minimax/MiniMax-M2.1']
 
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
@@ -133,6 +110,16 @@ def main():
             'subagents': {'allowAgents': []},
             'identity': {'name': 'Marketing', 'emoji': '📣'},
         },
+        {
+            'id':        'family',
+            'name':      'Family',
+            'workspace':  f'{_home}/.openclaw/agents/family/workspace',
+            'agentDir':   f'{_home}/.openclaw/agents/family/agent',
+            'model':     {'primary': 'minimax/MiniMax-M2.5', 'fallbacks': ['minimax/MiniMax-M2.1']},
+            'subagents': {'allowAgents': []},
+            'tools':     {'profile': 'full'},
+            'identity':  {'name': 'Family', 'emoji': '🎪'},
+        },
     ]
 
     existing_list = c.setdefault('agents', {}).setdefault('list', [])
@@ -159,11 +146,59 @@ def main():
     ds(c, 'gateway.trustedProxies',  ['127.0.0.1', '::1'])
     ds(c, 'gateway.auth.mode',      'token')
     ds(c, 'gateway.auth.token',     os.environ.get('OPENCLAW_GATEWAY_TOKEN', ''))
-    
+
     # Reset trusted proxies to empty as per original script's final override
     ds(c, 'gateway.trustedProxies', [])
 
     ds(c, 'browser.headless', True)
+
+    # ── Multi-account Telegram (one bot per agent) ────────────────────────────────
+    _tg_main      = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    _tg_coding    = os.environ.get('TELEGRAM_BOT_TOKEN_CODING', '')
+    _tg_marketing = os.environ.get('TELEGRAM_BOT_TOKEN_MARKETING', '')
+
+    _sentinel_coding    = 'tg-REPLACE_ME_CODING'
+    _sentinel_marketing = 'tg-REPLACE_ME_MARKETING'
+
+    tg_accounts = c.setdefault('channels', {}).setdefault('telegram', {}).setdefault('accounts', {})
+
+    tg_accounts['default'] = {
+        'botToken':    _tg_main,
+        'dmPolicy':    'open',
+        'groupPolicy': 'open',
+    }
+
+    if _tg_coding and _tg_coding != _sentinel_coding:
+        tg_accounts['coding'] = {
+            'botToken':    _tg_coding,
+            'dmPolicy':    'open',
+            'groupPolicy': 'open',
+        }
+
+    if _tg_marketing and _tg_marketing != _sentinel_marketing:
+        tg_accounts['marketing'] = {
+            'botToken':    _tg_marketing,
+            'dmPolicy':    'open',
+            'groupPolicy': 'open',
+        }
+
+    # ── WhatsApp multi-account (QR-linked, no token needed) ──────────────────────
+    ds(c, 'channels.whatsapp.accounts.family', {'dmPolicy': 'open', 'groupPolicy': 'open'})
+    ds(c, 'channels.whatsapp.defaultAccount', 'family')
+
+    # ── Bindings: route each Telegram account to the matching agent ───────────────
+    bindings = c.setdefault('bindings', [])
+    # Remove stale Telegram bindings before re-applying
+    bindings[:] = [b for b in bindings if b.get('match', {}).get('channel') != 'telegram']
+    bindings.append({'agentId': 'main', 'match': {'channel': 'telegram', 'accountId': 'default'}})
+    if _tg_coding and _tg_coding != _sentinel_coding:
+        bindings.append({'agentId': 'coding', 'match': {'channel': 'telegram', 'accountId': 'coding'}})
+    if _tg_marketing and _tg_marketing != _sentinel_marketing:
+        bindings.append({'agentId': 'marketing', 'match': {'channel': 'telegram', 'accountId': 'marketing'}})
+
+    # WhatsApp binding — remove stale entries then re-apply
+    bindings[:] = [b for b in bindings if b.get('match', {}).get('channel') != 'whatsapp']
+    bindings.append({'agentId': 'family', 'match': {'channel': 'whatsapp', 'accountId': 'family'}})
 
     with open(cfg, 'w') as f:
         json.dump(c, f, indent=2)

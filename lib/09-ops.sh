@@ -40,7 +40,7 @@ scrub_auth_profile_plaintext() {
     # Fallback: direct filesystem scan if audit didn't find anything
     # (handles case where oc secrets audit --check is unavailable or output format changes)
     if [[ "$needs_scrub" == false ]]; then
-        for agent_id in main coding marketing; do
+        for agent_id in main coding marketing family; do
             local ap="$ACTUAL_HOME/.openclaw/agents/$agent_id/agent/auth-profiles.json"
             if [[ -f "$ap" ]] && python3 -c "
 import json, sys
@@ -58,7 +58,7 @@ sys.exit(1)" "$ap" 2>/dev/null; then
 
     if [[ "$needs_scrub" == true ]]; then
         log "  Found plaintext keys in auth-profiles.json — applying SecretRef conversion..."
-        for agent_id in main coding marketing; do
+        for agent_id in main coding marketing family; do
             local ap="$ACTUAL_HOME/.openclaw/agents/$agent_id/agent/auth-profiles.json"
             [[ -f "$ap" ]] || continue
             uas python3 - <<'PYEOF' "$ap"
