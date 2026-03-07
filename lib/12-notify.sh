@@ -41,6 +41,26 @@ print_summary() {
         fi
         
         log "==================================================================="
+        log ""
+        log "  NEXT STEPS (manual setup required)"
+        log "  -----------------------------------"
+        log ""
+        log "  1. WhatsApp — link the 'family' account:"
+        log "       Open: https://${host}/#token=${token}"
+        log "       Go to: Channels > WhatsApp > family"
+        log "       Scan the QR code with your phone to authenticate."
+        log ""
+
+        local _gws_sentinel="GWS_CLIENT_ID_REPLACE_ME"
+        if [[ -n "${GOOGLE_WORKSPACE_CLI_CLIENT_ID:-}" && "${GOOGLE_WORKSPACE_CLI_CLIENT_ID}" != *"REPLACE_ME"* ]]; then
+            log "  2. Google Workspace — complete OAuth login:"
+            log "       Run as ${ACTUAL_USER}:"
+            log "         gws auth setup"
+            log "         gws auth login"
+            log ""
+        fi
+
+        log "==================================================================="
     fi
 }
 
