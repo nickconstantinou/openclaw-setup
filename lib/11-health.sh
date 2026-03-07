@@ -88,10 +88,10 @@ check_integrations() {
         && log "[HEALTH] PASS — pandoc available" \
         || log "[HEALTH] WARN — pandoc not found"
 
-    # Gogcli
-    command -v gog >/dev/null 2>&1 \
-        && log "[HEALTH] PASS — gogcli available" \
-        || log "[HEALTH] WARN — gogcli not found"
+    # Google Workspace CLI (gws)
+    command -v gws >/dev/null 2>&1 \
+        && log "[HEALTH] PASS — gws (Google Workspace CLI) available" \
+        || log "[HEALTH] WARN — gws not found"
 }
 
 # ── 22e. APPARMOR HEALTH ──────────────────────────────────────────────────────

@@ -163,46 +163,33 @@ install_pandoc_toolchain() {
     fi
 }
 
-# ── 7d. INSTALL GOGCLI ────────────────────────────────────────────────────────
-install_gogcli() {
-    log "Installing gogcli (Google Workspace CLI)..."
-    if command -v gog >/dev/null 2>&1; then
-        log "gogcli already installed: $(gog --version 2>/dev/null | head -1)"
+# ── 7d. INSTALL GWS (Google Workspace CLI) ────────────────────────────────────
+install_gws() {
+    log "Installing @googleworkspace/cli (gws)..."
+    if command -v gws >/dev/null 2>&1; then
+        log "gws already installed: $(gws --version 2>/dev/null | head -1 || echo 'unknown')"
+        return 0
     fi
 
-    local latest; latest=$(curl -fsSL -H "Accept: application/vnd.github+json" "https://api.github.com/repos/steipete/gogcli/releases/latest" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'])" 2>/dev/null || echo "")
-    
-    if [[ -z "$latest" ]]; then
-        log "WARNING: Could not fetch gogcli release info."
+    if HOME=/root npm install -g @googleworkspace/cli --quiet 2>&1; then
+        log "gws installed: $(command -v gws 2>/dev/null || echo 'not found in PATH')"
+    else
+        log "WARNING: gws install failed."
         return
-    fi
-
-    local arch; arch=$(uname -m)
-    local gog_arch=""
-    case "$arch" in
-        x86_64)  gog_arch="linux_amd64" ;;
-        aarch64) gog_arch="linux_arm64" ;;
-    esac
-
-    if [[ -n "$gog_arch" ]]; then
-        local url="https://github.com/steipete/gogcli/releases/download/${latest}/gogcli_${latest#v}_${gog_arch}.tar.gz"
-        local tmp; tmp=$(mktemp -d)
-        if curl -fsSL "$url" -o "$tmp/gogcli.tar.gz" && tar -xzf "$tmp/gogcli.tar.gz" -C "$tmp" && sudo install -m 755 "$tmp/gog" "/usr/local/bin/gog"; then
-            log "gogcli installed: $(gog --version 2>/dev/null | head -1)"
-        else
-            log "WARNING: gogcli binary download failed."
-        fi
-        rm -rf "$tmp"
     fi
 
     # Write auth hint
     local hint="$ACTUAL_HOME/.openclaw/workspace/google-auth-setup.md"
     mkdir -p "$(dirname "$hint")"
     cat > "$hint" << 'EOF'
-# Google Workspace Setup (gog)
-1. Run: gog auth credentials ~/Downloads/client_secret_xxx.json
-2. Run: gog auth add you@gmail.com --services all
-3. Add to ~/.openclaw/.env: GOG_ACCOUNT=you@gmail.com, GOG_KEYRING_PASSWORD=xxx
+# Google Workspace Setup (gws)
+1. Obtain OAuth 2.0 credentials from Google Cloud Console:
+   https://console.cloud.google.com/ → APIs & Services → Credentials → Create OAuth client ID
+2. Add to ~/.openclaw/.env:
+   GOOGLE_WORKSPACE_CLI_CLIENT_ID=<your-client-id>
+   GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=<your-client-secret>
+3. Run: gws auth setup   (one-time: configures the OAuth client)
+4. Run: gws auth login   (browser OAuth flow; creds stored in ~/.config/gws/)
 EOF
     chown "$ACTUAL_USER":"$ACTUAL_USER" "$hint"
 }

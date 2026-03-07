@@ -64,7 +64,7 @@ main() {
     install_playwright
     install_python_packages
     install_pandoc_toolchain
-    install_gogcli
+    install_gws
     install_claude_code
     install_acpx_plugin
     setup_agent_dirs

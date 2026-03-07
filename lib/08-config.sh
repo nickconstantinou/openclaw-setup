@@ -30,13 +30,14 @@ setup_systemd_env() {
 MINIMAX_API_KEY=${MINIMAX_API_KEY}
 GEMINI_API_KEY=${GEMINI_API_KEY}
 GOOGLE_API_KEY=${GEMINI_API_KEY}
-NVIDIA_API_KEY=${NVIDIA_API_KEY:-}
 ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 TAVILY_API_KEY=${TAVILY_API_KEY:-}
 GITHUB_TOKEN=${GITHUB_PAT:-}
 POST_BRIDGE_API_KEY=${POST_BRIDGE_API_KEY:-}
-GOG_ACCOUNT=${GOG_ACCOUNT:-}
-GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD:-}
+GOOGLE_WORKSPACE_CLI_CLIENT_ID=${GOOGLE_WORKSPACE_CLI_CLIENT_ID:-}
+GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=${GOOGLE_WORKSPACE_CLI_CLIENT_SECRET:-}
+TELEGRAM_BOT_TOKEN_CODING=${TELEGRAM_BOT_TOKEN_CODING:-}
+TELEGRAM_BOT_TOKEN_MARKETING=${TELEGRAM_BOT_TOKEN_MARKETING:-}
 EOF
     chmod 600 "$envd_file"
 }
@@ -97,37 +98,17 @@ patch_config() {
         MINIMAX_API_KEY="$MINIMAX_API_KEY" \
         GEMINI_API_KEY="$GEMINI_API_KEY" \
         ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" \
-        GOG_ACCOUNT="${GOG_ACCOUNT:-}" \
-        GOG_KEYRING_PASSWORD="${GOG_KEYRING_PASSWORD:-}" \
         POST_BRIDGE_API_KEY="${POST_BRIDGE_API_KEY:-}" \
-        NVIDIA_API_KEY="${NVIDIA_API_KEY:-}" \
         OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" \
+        TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}" \
+        TELEGRAM_BOT_TOKEN_CODING="${TELEGRAM_BOT_TOKEN_CODING:-}" \
+        TELEGRAM_BOT_TOKEN_MARKETING="${TELEGRAM_BOT_TOKEN_MARKETING:-}" \
         ACTUAL_HOME="$ACTUAL_HOME" \
         python3 "$SCRIPT_DIR/config/apply-config.py" --config "$config_file"
 
-    # 3. Patch Telegram groupPolicy to 'open'
-    log "  Step 3: Patching Telegram groupPolicy to 'open'..."
-    uas python3 - <<'EOF' "$config_file"
-import json, sys
-config_file = sys.argv[1]
-try:
-    with open(config_file) as f:
-        config = json.load(f)
-    tg = config.setdefault("channels", {}).setdefault("telegram", {})
-    if tg.get("groupPolicy") != "open":
-        tg["groupPolicy"] = "open"
-        with open(config_file, "w") as f:
-            json.dump(config, f, indent=2)
-        print("ok")
-    else:
-        print("already open")
-except Exception as e:
-    print(f"error: {e}")
-EOF
-
-    # 4. Patch Tailscale config (trustedProxies + tailscale.mode)
+    # 3. Patch Tailscale config (trustedProxies + tailscale.mode)
     if command -v tailscale >/dev/null 2>&1 && tailscale status --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if (d.get('BackendState')=='Running' or d.get('TailscaleIPs')) else 1)" 2>/dev/null; then
-        log "  Step 4: Patching Tailscale config (trustedProxies + tailscale.mode)..."
+        log "  Step 3: Patching Tailscale config (trustedProxies + tailscale.mode)..."
         uas python3 - <<'EOF' "$config_file"
 import json, sys
 config_file = sys.argv[1]

@@ -21,12 +21,13 @@ resolve_user_context() {
     # Inject placeholder values for optional keys if not already present
     local placeholders=(
         "ANTHROPIC_API_KEY=sk-ant-REPLACE_ME_WHEN_READY"
-        "GOG_ACCOUNT=your@gmail.com"
-        "GOG_KEYRING_PASSWORD=REPLACE_ME"
+        "GOOGLE_WORKSPACE_CLI_CLIENT_ID=REPLACE_ME"
+        "GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=REPLACE_ME"
         "POST_BRIDGE_API_KEY=pb_REPLACE_ME_WHEN_READY"
-        "NVIDIA_API_KEY=nvapi-REPLACE_ME_WHEN_READY"
         "TAVILY_API_KEY=tvly-REPLACE_ME_WHEN_READY"
         "GITHUB_PAT=ghp_REPLACE_ME_WHEN_READY"
+        "TELEGRAM_BOT_TOKEN_CODING=tg-REPLACE_ME_CODING"
+        "TELEGRAM_BOT_TOKEN_MARKETING=tg-REPLACE_ME_MARKETING"
     )
 
     for p in "${placeholders[@]}"; do

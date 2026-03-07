@@ -170,12 +170,12 @@ profile openclaw-gateway {
   /tmp/pandoc-*/                       rw,
   /tmp/pandoc-*/**                     rw,
 
-  # ── Google Workspace CLI (gog / gogcli) ─────────────────────────────────────
-  # gogcli binary — installed to /usr/local/bin/gog
-  /usr/local/bin/gog                   rix,
-  # gogcli config dir — OAuth credentials and encrypted keyring file
-  @{HOME}/.config/gogcli/              rw,
-  @{HOME}/.config/gogcli/**            rw,
+  # ── Google Workspace CLI (gws / @googleworkspace/cli) ───────────────────────
+  # gws is an npm global package — binary symlink at /usr/local/bin/gws
+  /usr/local/bin/gws                   rix,
+  # gws config dir — OAuth credentials stored after `gws auth login`
+  @{HOME}/.config/gws/                 rw,
+  @{HOME}/.config/gws/**               rw,
 
   # ── Media download tools ─────────────────────────────────────────────────────
   # yt-dlp is a Python script — needs rix (read + inherit + execute), not just ix.

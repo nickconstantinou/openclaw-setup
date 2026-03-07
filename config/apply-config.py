@@ -35,8 +35,6 @@ def main():
     ds(c, 'agents.defaults.model.fallbacks', _fallbacks)
 
     # ── API keys (skills only — provider keys come from environment.d via systemd) ──────────────
-    ds(c, 'env.GOG_KEYRING_BACKEND', 'file')
-
     pb_key = os.environ.get('POST_BRIDGE_API_KEY', '')
     if pb_key and pb_key != 'pb_REPLACE_ME_WHEN_READY':
         skill_key = 'post-bridge-social-manager'
