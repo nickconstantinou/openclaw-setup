@@ -46,6 +46,11 @@ def main():
         'minimax/MiniMax-M2.5-highspeed',
         'minimax/MiniMax-M2.1-highspeed',
         'nvidia/mistralai/devstral-2-123b-instruct-2512',
+        'nvidia/moonshotai/kimi-k2-thinking',
+        'nvidia/qwen/qwen3.5-397b-a17b',
+        'nvidia/qwen/qwen3-coder-480b-a35b-instruct',
+        'nvidia/deepseek-ai/deepseek-v3.1-terminus',
+        'nvidia/z-ai/glm4.7',
     }
     _defaults = config.get('agents', {}).get('defaults', {})
     _model = _defaults.get('model', {})
@@ -111,47 +116,15 @@ def main():
     }
 
     desired_models_catalog = {
-        'minimax/MiniMax-M2.5':               {'alias': 'minimax'},
-        'minimax/MiniMax-M2.1':               {'alias': 'minimax-m21'},
-        'minimax/MiniMax-M2':                  {'alias': 'minimax-m2'},
-        'nvidia/moonshotai/kimi-k2-thinking':  {'alias': 'kimi'},
-        'nvidia/qwen/qwen3.5-397b-a17b':         {'alias': 'qwen3'},
-        'nvidia/qwen/qwen3-coder-480b-a35b-instruct':  {'alias': 'qwen3-coder'},
-        'nvidia/deepseek-ai/deepseek-v3.1-terminus':   {'alias': 'deepseek-terminus'},
-        'nvidia/z-ai/glm4.7':                          {'alias': 'glm4-7'},
+        'minimax/MiniMax-M2.5': {'alias': 'minimax'},
+        'minimax/MiniMax-M2.1': {'alias': 'minimax-m21'},
+        'minimax/MiniMax-M2':   {'alias': 'minimax-m2'},
     }
 
     config.setdefault('models', {})['mode'] = 'merge'
     providers = config['models'].setdefault('providers', {})
     providers['minimax'] = desired_minimax
-
-    _nvidia_key = os.environ.get('NVIDIA_API_KEY', '')
-    if _nvidia_key and _nvidia_key not in ('', 'nvapi-REPLACE_ME_WHEN_READY'):
-        providers['nvidia'] = {
-            'baseUrl': 'https://integrate.api.nvidia.com/v1',
-            'api': 'openai-completions',
-            'apiKey': {"source": "env", "provider": "default", "id": "NVIDIA_API_KEY"},
-            'models': [
-                {
-                    'id': 'moonshotai/kimi-k2-thinking',
-                    'name': 'Kimi K2 Thinking',
-                    'reasoning': True,
-                    'input': ['text'],
-                    'cost': {'input': 1, 'output': 3},
-                    'contextWindow': 131072,
-                    'maxTokens': 8192,
-                },
-                {
-                    'id': 'qwen/qwen3.5-397b-a17b',
-                    'name': 'Qwen3.5 397B',
-                    'reasoning': True,
-                    'input': ['text'],
-                    'cost': {'input': 0.6, 'output': 2.4},
-                    'contextWindow': 40960,
-                    'maxTokens': 4096,
-                },
-            ],
-        }
+    providers.pop('nvidia', None)
     providers.pop('ollama', None)
     providers.pop('google', None)
 
@@ -173,6 +146,10 @@ def main():
     })
 
     existing_catalog = config.get('agents', {}).get('defaults', {}).get('models', {})
+    # Remove any stale nvidia entries from the catalog
+    for k in list(existing_catalog.keys()):
+        if k.startswith('nvidia/'):
+            del existing_catalog[k]
     existing_catalog.update(desired_models_catalog)
     config.setdefault('agents', {}).setdefault('defaults', {})['models'] = existing_catalog
 

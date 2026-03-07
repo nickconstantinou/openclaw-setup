@@ -91,7 +91,7 @@ def main():
             'agentDir':  f'{_home}/.openclaw/agents/coding/agent',
             'model': {'primary': _coding_primary, 'fallbacks': _coding_fallback},
             'tools': {
-                'allow': ['read', 'write', 'edit', 'apply_patch', 'exec', 'process', 'bash', 'sessions_list', 'sessions_history', 'sessions_send', 'session_status']
+                'allow': ['read', 'write', 'edit', 'apply_patch', 'exec', 'process', 'bash', 'sessions_list', 'sessions_history', 'sessions_send', 'session_status', 'google-workspace', 'browser', 'tavily', 'claude-code']
             },
             'subagents': {'allowAgents': []},
             'identity': {'name': 'Coder', 'emoji': '💻'},
@@ -103,7 +103,7 @@ def main():
             'agentDir':  f'{_home}/.openclaw/agents/marketing/agent',
             'model': {'primary': _marketing_primary, 'fallbacks': _marketing_fallback},
             'tools': {
-                'allow': ['read', 'write', 'exec', 'process', 'bash', 'sessions_list', 'sessions_history', 'sessions_send', 'session_status']
+                'allow': ['read', 'write', 'exec', 'process', 'bash', 'sessions_list', 'sessions_history', 'sessions_send', 'session_status', 'google-workspace', 'browser', 'tavily']
             },
             'subagents': {'allowAgents': []},
             'identity': {'name': 'Marketing', 'emoji': '📣'},
