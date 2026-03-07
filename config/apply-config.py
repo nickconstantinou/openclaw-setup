@@ -103,7 +103,7 @@ def main():
             'agentDir':  f'{_home}/.openclaw/agents/marketing/agent',
             'model': {'primary': _marketing_primary, 'fallbacks': _marketing_fallback},
             'tools': {
-                'deny': ['exec', 'process', 'bash', 'apply_patch', 'sessions_spawn']
+                'allow': ['read', 'write', 'exec', 'process', 'bash', 'sessions_list', 'sessions_history', 'sessions_send', 'session_status']
             },
             'subagents': {'allowAgents': []},
             'identity': {'name': 'Marketing', 'emoji': '📣'},
@@ -137,6 +137,7 @@ def main():
                     entry['identity']  = agent.get('identity', entry.get('identity', {}))
 
     ds(c, 'tools.sessions.visibility', 'tree')
+    ds(c, 'tools.profile', 'full')
     ds(c, 'tools.subagents.tools.deny', [])
 
     ds(c, 'gateway.mode',           'local')
