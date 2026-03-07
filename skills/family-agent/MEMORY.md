@@ -1,4 +1,4 @@
-# MEMORY: Biscuit (Family Agent)
+# MEMORY: Arthur (Family Agent)
 
 ## Family Context
 (Populate as interactions occur — names, preferences, recurring topics, inside jokes)

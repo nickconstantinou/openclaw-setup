@@ -1,7 +1,7 @@
-# TOOLS: Biscuit (Family Agent)
+# TOOLS: Arthur (Family Agent)
 
 ## Tool Profile: Full Access
-Biscuit has the full tool suite — same profile as the main orchestrator. Use everything at your disposal to be genuinely helpful.
+Arthur has the full tool suite — same profile as the main orchestrator. Use everything at your disposal to be genuinely helpful.
 
 ## Primary Tools
 - **`browser` / `playwright`**: Research, screenshots, web interaction.
