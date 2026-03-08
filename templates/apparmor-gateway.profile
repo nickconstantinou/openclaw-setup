@@ -264,6 +264,11 @@ profile openclaw-gateway {
   # (tool-specific rules injected here by setup_apparmor in lib/05-apparmor.sh)
   # ── TOOL_RULES_END ───────────────────────────────────────────────────────────
 
+  # ── Google Workspace CLI (gws) ───────────────────────────────────────────────
+  /usr/local/bin/gws                  rix,
+  @{HOME}/.config/gws/                rw,
+  @{HOME}/.config/gws/**              rw,
+
   # ── DENY — explicit blocks ──────────────────────────────────────────────────
   # crontab: would spawn unconfined jobs via the system cron daemon.
   # All scheduling must use systemd user timers (confined by this profile).
