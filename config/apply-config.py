@@ -160,7 +160,16 @@ def main():
     # Elevated mode lets authorized senders escape sandbox for host-level exec
     # (e.g. gws auth login needs to run on the host, not inside Docker)
     ds(c, 'tools.elevated.enabled', True)
-    ds(c, 'tools.elevated.allowFrom', ['*'])
+    # allowFrom expects a record keyed by provider, not an array
+    _elevated_allow = {}
+    if os.environ.get('TELEGRAM_BOT_TOKEN') or os.environ.get('TELEGRAM_BOT_TOKEN_CODING') or os.environ.get('TELEGRAM_BOT_TOKEN_MARKETING'):
+        _elevated_allow['telegram'] = ['*']
+    if os.environ.get('WHATSAPP_PHONE') or os.environ.get('WHATSAPP_ACCOUNT_PHONE'):
+        _elevated_allow['whatsapp'] = ['*']
+    # Fallback: if no channels detected, allow from all known providers
+    if not _elevated_allow:
+        _elevated_allow = {'telegram': ['*'], 'whatsapp': ['*']}
+    ds(c, 'tools.elevated.allowFrom', _elevated_allow)
 
     # ── Multi-account Telegram (one bot per agent) ────────────────────────────────
     _tg_main      = os.environ.get('TELEGRAM_BOT_TOKEN', '')
