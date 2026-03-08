@@ -422,9 +422,11 @@ openclaw sessions view SESSION_ID
 
 - `openclaw-self-heal.sh`: Main deployment orchestrator.
 - `lib/`: Modular shell scripts for environment setup, installations, and configuration.
+  - `lib/tools/`: **Tool modules** — one file per 3rd-party tool. Each file is the single source of truth for that tool's install logic, AppArmor rules, env var placeholders, and systemd exports.
 - `skills/`: Categorized tri-agent skills (`general`, `coding`, `marketing`) and specialized workspace scaffolds.
 - `templates/`: AppArmor profile templates and systemd units.
 - `config/`: Python-based JSON configuration patchers.
+- `test/`: Automated test suite (safe to run without sudo or network).
 
 ## Requirements
 
@@ -514,6 +516,50 @@ This repository follows the **Antigravity Workflow** pattern:
 - **Idempotency**: All scripts are safe to run multiple times.
 - **Strict Error Handling**: Bash scripts use `set -Eeuo pipefail`.
 
-### Refactoring
+### Adding a New Tool
 
-To refactor or add new components, maintain the sourced module structure in `lib/` and update the main orchestrator accordingly.
+Each 3rd-party tool is fully self-contained in `lib/tools/<toolname>.sh`. To add one:
+
+**1. Create `lib/tools/mytool.sh`:**
+
+```bash
+# AppArmor rules injected into the gateway profile
+TOOL_APPARMOR_RULES[mytool]=$(cat <<'RULES'
+  /usr/local/bin/mytool               rix,
+  @{HOME}/.config/mytool/             rw,
+  @{HOME}/.config/mytool/**           rw,
+RULES
+)
+
+# Placeholder keys added to ~/.openclaw/.env on first run
+TOOL_ENV_PLACEHOLDERS[mytool]="MYTOOL_API_KEY=REPLACE_ME"
+
+# Vars written to ~/.config/environment.d/openclaw.conf (systemd inherits these)
+TOOL_SYSTEMD_EXPORTS[mytool]="MYTOOL_API_KEY"
+
+install_mytool() {
+    log "Installing mytool..."
+    npm install -g mytool --quiet || log "WARNING: mytool install failed."
+}
+
+register_tool mytool
+```
+
+**2. Add one line to `config/apply-config.py`:**
+
+```python
+TOOL_REGISTRY = {
+    ...
+    'mytool': ['coding'],   # agents that can use this tool
+}
+```
+
+That's the complete contract. No other files need editing.
+
+### Running Tests
+
+```bash
+bash test/test-tool-registry.sh
+```
+
+The test suite runs 38 assertions with no sudo, no network, and no system changes. It covers tool registration, AppArmor marker injection, `apply-config.py` TOOL_REGISTRY output, and a full dummy-tool end-to-end proof.
