@@ -203,9 +203,11 @@ def main():
 
     # ── Exec Tool Configuration ─────────────────────────────────────────────────
     # Run exec on gateway (host) for tools that need host access (gws, claude_code)
-    # Use allowlist security for explicit path control
+    # NOTE: 'allowlist' blocks ALL exec commands not in exec-approvals.json, which
+    # prevents agents from running basic commands (git, echo, etc.). Use 'full'
+    # to allow normal exec; elevated commands are still gated by tools.elevated.
     ds(c, 'tools.exec.host', 'gateway')
-    ds(c, 'tools.exec.security', 'allowlist')
+    ds(c, 'tools.exec.security', 'full')
 
     # ── Multi-account Telegram (one bot per agent) ────────────────────────────────
     _tg_main      = os.environ.get('TELEGRAM_BOT_TOKEN', '')
