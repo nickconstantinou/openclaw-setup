@@ -75,6 +75,7 @@ def main():
         'browser':          ['coding', 'marketing'],
         'tavily':           ['coding', 'marketing'],
         'claude-code':      ['coding'],
+        'gws':              ['coding'],
         # 'my-new-tool':   ['coding'],
     }
 
@@ -190,6 +191,12 @@ def main():
     if not _elevated_allow:
         _elevated_allow = {'telegram': ['*'], 'whatsapp': ['*']}
     ds(c, 'tools.elevated.allowFrom', _elevated_allow)
+
+    # ── Exec Tool Configuration ─────────────────────────────────────────────────
+    # Run exec on gateway (host) for tools that need host access (gws, claude_code)
+    # Use allowlist security for explicit path control
+    ds(c, 'tools.exec.host', 'gateway')
+    ds(c, 'tools.exec.security', 'allowlist')
 
     # ── Multi-account Telegram (one bot per agent) ────────────────────────────────
     _tg_main      = os.environ.get('TELEGRAM_BOT_TOKEN', '')

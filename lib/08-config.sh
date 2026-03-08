@@ -82,6 +82,36 @@ backup_config() {
 }
 
 # ── 15. PATCH CONFIG ──────────────────────────────────────────────────────────
+
+# ── 15a. EXEC APPROVALS FOR HOST-LEVEL TOOLS ─────────────────────────────────
+setup_exec_approvals() {
+    log "Setting up exec-approvals.json for host-level tools..."
+    local approvals_file="$ACTUAL_HOME/.openclaw/exec-approvals.json"
+    
+    # Create the exec-approvals.json with allowlist for gws and claude_code
+    # These tools need to run on the gateway (host) not in sandbox
+    cat << 'EOF' | uas tee "$approvals_file" > /dev/null
+{
+  "version": 1,
+  "defaults": {
+    "security": "allowlist",
+    "ask": "on-miss",
+    "askFallback": "deny"
+  },
+  "allowlist": [
+    "/usr/local/bin/gws",
+    "/usr/bin/gws",
+    "/usr/local/bin/claude",
+    "/usr/bin/claude",
+    "/home/*/.local/bin/claude",
+    "/root/.local/bin/claude"
+  ]
+}
+EOF
+    chmod 600 "$approvals_file"
+    log "Exec-approvals configured for gws and claude_code."
+}
+
 patch_config() {
     log "Applying configuration patches..."
     local config_file="$ACTUAL_HOME/.openclaw/openclaw.json"
@@ -98,7 +128,10 @@ patch_config() {
         export OPENCLAW_GATEWAY_TOKEN
     fi
 
-    # 2. Run Python Patch Scripts
+    # 2. Setup exec-approvals.json for host-level tools (gws, claude_code)
+    setup_exec_approvals
+
+    # 3. Run Python Patch Scripts
     log "  Step 1: Cleanup stale keys..."
     uas python3 "$SCRIPT_DIR/config/patch-stale-keys.py" --config "$config_file"
 
