@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-@intent Apply core JSON configuration to openclaw.json including API keys, models, and agents.
-@complexity 3
+@intent Apply core JSON configuration to openclaw.json including API keys, models, agents, and security policies.
+@complexity 5
 """
 import json
 import os
@@ -142,14 +142,17 @@ def main():
 
     ds(c, 'gateway.mode',           'local')
     ds(c, 'gateway.bind',           'loopback')
-    ds(c, 'gateway.trustedProxies',  ['127.0.0.1', '::1'])
     ds(c, 'gateway.auth.mode',      'token')
     ds(c, 'gateway.auth.token',     os.environ.get('OPENCLAW_GATEWAY_TOKEN', ''))
 
-    # Reset trusted proxies to empty as per original script's final override
+    # Loopback-only gateway — no reverse proxies to trust
     ds(c, 'gateway.trustedProxies', [])
 
     ds(c, 'browser.headless', True)
+
+    # ── Security: Sandbox defaults (all agents confined to their workspace) ───
+    ds(c, 'agents.defaults.sandbox.mode', 'all')
+    ds(c, 'tools.fs.workspaceOnly', True)
 
     # ── Multi-account Telegram (one bot per agent) ────────────────────────────────
     _tg_main      = os.environ.get('TELEGRAM_BOT_TOKEN', '')
@@ -159,33 +162,85 @@ def main():
     _sentinel_coding    = 'tg-REPLACE_ME_CODING'
     _sentinel_marketing = 'tg-REPLACE_ME_MARKETING'
 
+    # Security: Get allowed user list from environment with per-bot granularity
+    def parse_allowed_users(env_var, default_list=None):
+        """Parse allowed users from env var, handling REPLACE_ME, INHERIT, and empty values."""
+        raw = os.environ.get(env_var, '')
+
+        # If explicitly set to INHERIT, use default list
+        if raw.strip() == 'INHERIT' and default_list is not None:
+            return default_list
+
+        # Parse comma-separated list, filtering out sentinels
+        candidates = [
+            uid.strip() for uid in raw.split(',')
+            if uid.strip() and uid.strip() not in ('REPLACE_ME', 'INHERIT')
+        ]
+
+        # Telegram user IDs and WhatsApp numbers are always numeric
+        users = [uid for uid in candidates if uid.isdigit()]
+        skipped = len(candidates) - len(users)
+        if skipped > 0:
+            print(f"WARNING: {env_var} contained {skipped} non-numeric entry(ies) that were skipped", file=sys.stderr)
+
+        return users
+
+    # Base allowlist for all Telegram bots (unless overridden)
+    _tg_allowed_base = parse_allowed_users('TELEGRAM_ALLOWED_USERS')
+
+    # Per-bot allowlists (inherit from base if set to INHERIT)
+    _tg_allowed_default = _tg_allowed_base  # Default bot always uses base list
+    _tg_allowed_coding = parse_allowed_users('TELEGRAM_ALLOWED_USERS_CODING', _tg_allowed_base)
+    _tg_allowed_marketing = parse_allowed_users('TELEGRAM_ALLOWED_USERS_MARKETING', _tg_allowed_base)
+
     tg_accounts = c.setdefault('channels', {}).setdefault('telegram', {}).setdefault('accounts', {})
 
+    # Default bot configuration
+    _dm_policy_default = 'allowlist' if _tg_allowed_default else 'pairing'
     tg_accounts['default'] = {
         'botToken':    _tg_main,
-        'dmPolicy':    'open',
-        'groupPolicy': 'open',
-        'allowFrom':   ['*'],
+        'dmPolicy':    _dm_policy_default,
+        'groupPolicy': 'pairing',  # Groups require explicit pairing
+        'allowFrom':   _tg_allowed_default,
     }
 
+    # Coding bot configuration (has bash/exec — should be most restricted!)
     if _tg_coding and _tg_coding != _sentinel_coding:
+        _dm_policy_coding = 'allowlist' if _tg_allowed_coding else 'pairing'
         tg_accounts['coding'] = {
             'botToken':    _tg_coding,
-            'dmPolicy':    'open',
-            'groupPolicy': 'open',
-            'allowFrom':   ['*'],
+            'dmPolicy':    _dm_policy_coding,
+            'groupPolicy': 'pairing',
+            'allowFrom':   _tg_allowed_coding,
         }
 
+    # Marketing bot configuration
     if _tg_marketing and _tg_marketing != _sentinel_marketing:
+        _dm_policy_marketing = 'allowlist' if _tg_allowed_marketing else 'pairing'
         tg_accounts['marketing'] = {
             'botToken':    _tg_marketing,
-            'dmPolicy':    'open',
-            'groupPolicy': 'open',
-            'allowFrom':   ['*'],
+            'dmPolicy':    _dm_policy_marketing,
+            'groupPolicy': 'pairing',
+            'allowFrom':   _tg_allowed_marketing,
         }
 
     # ── WhatsApp multi-account (QR-linked, no token needed) ──────────────────────
-    ds(c, 'channels.whatsapp.accounts.family', {'dmPolicy': 'open', 'groupPolicy': 'open', 'allowFrom': ['*']})
+    # Security: Get allowed WhatsApp numbers from environment (international format, no +)
+    _wa_allowed_raw = os.environ.get('WHATSAPP_ALLOWED_USERS', '')
+    # Filter out placeholder/sentinel values and empty strings
+    _wa_allowed_users = [
+        num.strip() for num in _wa_allowed_raw.split(',')
+        if num.strip() and num.strip() != 'REPLACE_ME'
+    ]
+
+    _wa_dm_policy = 'allowlist' if _wa_allowed_users else 'pairing'
+    _wa_allow_from = _wa_allowed_users if _wa_allowed_users else []
+
+    ds(c, 'channels.whatsapp.accounts.family', {
+        'dmPolicy': _wa_dm_policy,
+        'groupPolicy': 'pairing',  # Groups require explicit pairing
+        'allowFrom': _wa_allow_from
+    })
     ds(c, 'channels.whatsapp.defaultAccount', 'family')
 
     # ── Bindings: route each Telegram account to the matching agent ───────────────
