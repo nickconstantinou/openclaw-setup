@@ -151,6 +151,23 @@ setup_docker_permissions() {
 
     # Ensure AppArmor profile allows docker (required for sandbox mode)
     patch_apparmor_docker
+
+    # Add SupplementaryGroups=docker to the gateway service drop-in so the
+    # systemd user service inherits the docker group without requiring logout.
+    local dropin_dir="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service.d"
+    local dropin_file="$dropin_dir/docker-group.conf"
+    mkdir -p "$dropin_dir"
+    if [[ ! -f "$dropin_file" ]] || ! grep -q "SupplementaryGroups=docker" "$dropin_file"; then
+        log "Adding docker group drop-in for gateway service..."
+        cat > "$dropin_file" <<EOF
+[Service]
+SupplementaryGroups=docker
+EOF
+        uas systemctl --user daemon-reload || true
+        log "  Gateway service will use docker group on next restart."
+    else
+        log "  Gateway service docker group drop-in already present."
+    fi
 }
 
 setup_sandbox() {
