@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- **Security Audit Remediation**: Hardened channel DM policies and trust boundaries.
+    - Switched all Telegram/WhatsApp `dmPolicy` from `"open"` to `"allowlist"` with env-driven user ID allowlists.
+    - Added `INHERIT` pattern for per-bot Telegram allowlist inheritance.
+    - Added `agents.defaults.sandbox.mode='all'` and `tools.fs.workspaceOnly=true` for workspace isolation.
+    - Cleaned up dead `trustedProxies` configuration code.
+    - Added numeric validation to `parse_allowed_users` to reject malformed entries.
+    - Added unit tests for allowlist parsing (9 cases).
 - **Modular Deployment Audit Fixes**: Addressed 17 security and operational issues identified in the audit report.
     - Improved AppArmor resilience with conditional unconfined fallback for boot-time races.
     - Implemented automated `SecretRef` migration for agent `auth-profiles.json` to prevent key shadowing.

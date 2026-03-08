@@ -46,5 +46,6 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[EACCES_TEMP_OWNER]` -> **Pattern**: `mktemp -d` under `sudo` creates root-owned dirs, blocking user-phase `npx`. | **Fix**: `chown $ACTUAL_USER:$ACTUAL_USER` immediately after `mktemp -d`.
 - `[APPARMOR_BOOT_RACE]` -> **Pattern**: systemd unit with `aa-exec` crash-loops if profile isn't loaded at boot. | **Fix**: Use conditional `ExecStartPre` and `ExecStart` that falls back to unconfined.
 - `[AUTH_PROFILE_SHADOW]` -> **Pattern**: `auth-profiles.json` plaintext `api_key` entries override config-level SecretRefs. | **Fix**: Scrub plaintext from all agent `auth-profiles.json` and convert to env-based SecretRefs.
+- `[OPEN_DM_SURFACE]` -> **Pattern**: `dmPolicy="open"` on messaging channels allows any user to interact with agents, including those with exec/bash tools. | **Fix**: Use `dmPolicy="allowlist"` with env-driven user ID lists; fall back to `"pairing"` when unset. Always pair with `sandbox.mode="all"` + `workspaceOnly=true`.
 '' Openclaw Docs
 - Read all docs in `docs/` directory.
