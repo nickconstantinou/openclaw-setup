@@ -74,8 +74,13 @@ main() {
     configure_ollama
     setup_apparmor
     setup_network
-    setup_docker_permissions
-    setup_sandbox
+    # Sandbox setup - only if explicitly enabled
+    if [[ "${OPENCLAW_SANDBOX_MODE:-}" == "all" ]]; then
+        setup_docker_permissions
+        setup_sandbox
+    else
+        log "Skipping sandbox setup (OPENCLAW_SANDBOX_MODE=${OPENCLAW_SANDBOX_MODE:-not set})"
+    fi
 
     # 4. Configuration
     setup_github_cli

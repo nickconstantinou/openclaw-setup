@@ -48,6 +48,11 @@ PYEOF
 # Ensures the deployed AppArmor profile allows docker execution (sandbox support).
 # Idempotent: no-op if rules already present.
 patch_apparmor_docker() {
+    # Only patch docker rules if sandbox mode is enabled
+    if [[ "${OPENCLAW_SANDBOX_MODE:-}" != "all" ]]; then
+        log "Skipping AppArmor docker patch (sandbox not enabled)."
+        return 0
+    fi
     local profile_path="/etc/apparmor.d/openclaw-gateway"
 
     if [[ ! -f "$profile_path" ]]; then
