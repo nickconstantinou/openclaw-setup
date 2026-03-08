@@ -13,6 +13,7 @@ profile openclaw-gateway {
   # ── Node runtime ────────────────────────────────────────────────────────────
   /usr/bin/node                        ix,
   /usr/bin/node                        mr,
+  /usr/bin/env                         ix,
 
   # Node.js modules — native addons (.node ELF shared libs) need mr for dlopen
   /usr/lib/node_modules/**             r,
@@ -266,6 +267,7 @@ profile openclaw-gateway {
 
   # ── Google Workspace CLI (gws) ───────────────────────────────────────────────
   /usr/local/bin/gws                  rix,
+  /usr/bin/gws                        rix,
   @{HOME}/.config/gws/                rw,
   @{HOME}/.config/gws/**              rw,
 
