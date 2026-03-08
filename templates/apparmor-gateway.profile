@@ -336,6 +336,11 @@ profile openclaw-gateway {
   /run/user/@{uid}/systemd/           rw,
   /run/user/@{uid}/systemd/**         rw,
 
+  # ── Docker (sandbox execution) ─────────────────────────────────────────────
+  # OpenClaw spawns docker to run agent sandboxes (agents.defaults.sandbox)
+  /usr/bin/docker                      ix,
+  /var/run/docker.sock                 rw,
+
   # ── Network / ip ────────────────────────────────────────────────────────────
   /usr/bin/ip                          ix,
   /usr/sbin/ip                         ix,
