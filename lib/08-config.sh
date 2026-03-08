@@ -90,24 +90,41 @@ setup_exec_approvals() {
     
     # Create the exec-approvals.json with allowlist for gws and claude_code
     # These tools need to run on the gateway (host) not in sandbox
+    # Schema: per-agent allowlists under agents.<id>.allowlist (see docs/tools/exec-approvals.md)
     cat << EOF | uas tee "$approvals_file" > /dev/null
 {
   "version": 1,
   "defaults": {
-    "security": "allowlist",
+    "security": "full",
     "ask": "on-miss",
     "askFallback": "deny"
   },
-  "allowlist": [
-    "$ACTUAL_HOME/.local/bin/gws",
-    "$ACTUAL_HOME/.local/bin/claude",
-    "/usr/local/bin/gws",
-    "/usr/bin/gws",
-    "/usr/local/bin/claude",
-    "/usr/bin/claude",
-    "/root/.local/bin/gws",
-    "/root/.local/bin/claude"
-  ]
+  "agents": {
+    "main": {
+      "allowlist": [
+        {"pattern": "$ACTUAL_HOME/.local/bin/gws"},
+        {"pattern": "$ACTUAL_HOME/.local/bin/claude"},
+        {"pattern": "/usr/local/bin/gws"},
+        {"pattern": "/usr/bin/gws"},
+        {"pattern": "/usr/local/bin/claude"},
+        {"pattern": "/usr/bin/claude"},
+        {"pattern": "/root/.local/bin/gws"},
+        {"pattern": "/root/.local/bin/claude"}
+      ]
+    },
+    "coding": {
+      "allowlist": [
+        {"pattern": "$ACTUAL_HOME/.local/bin/gws"},
+        {"pattern": "$ACTUAL_HOME/.local/bin/claude"},
+        {"pattern": "/usr/local/bin/gws"},
+        {"pattern": "/usr/bin/gws"},
+        {"pattern": "/usr/local/bin/claude"},
+        {"pattern": "/usr/bin/claude"},
+        {"pattern": "/root/.local/bin/gws"},
+        {"pattern": "/root/.local/bin/claude"}
+      ]
+    }
+  }
 }
 EOF
     chmod 600 "$approvals_file"
@@ -152,6 +169,7 @@ patch_config() {
         TELEGRAM_ALLOWED_USERS_CODING="${TELEGRAM_ALLOWED_USERS_CODING:-}" \
         TELEGRAM_ALLOWED_USERS_MARKETING="${TELEGRAM_ALLOWED_USERS_MARKETING:-}" \
         WHATSAPP_ALLOWED_USERS="${WHATSAPP_ALLOWED_USERS:-}" \
+        OPENCLAW_SANDBOX_MODE="${OPENCLAW_SANDBOX_MODE:-}" \
         ACTUAL_HOME="$ACTUAL_HOME" \
         python3 "$SCRIPT_DIR/config/apply-config.py" --config "$config_file"
 
