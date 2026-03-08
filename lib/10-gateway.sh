@@ -90,6 +90,20 @@ EOF
     chown -R "$ACTUAL_USER:$ACTUAL_USER" "$tuning_dir"
     log "Performance tuning (NODE_COMPILE_CACHE, etc.) applied via systemd drop-in."
 
+    # GAP 2: Docker group drop-in — ensures sandbox mode can reach the Docker socket.
+    # systemd user services don't inherit group changes made after session start,
+    # so SupplementaryGroups=docker is required for reliable docker access.
+    if command -v docker >/dev/null 2>&1; then
+        local docker_dropin_dir="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service.d"
+        mkdir -p "$docker_dropin_dir"
+        cat > "$docker_dropin_dir/docker-group.conf" <<EOF
+[Service]
+SupplementaryGroups=docker
+EOF
+        chown -R "$ACTUAL_USER:$ACTUAL_USER" "$docker_dropin_dir"
+        log "Docker group drop-in applied for sandbox support."
+    fi
+
     log "Starting OpenClaw gateway service..."
     uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user daemon-reload
     
