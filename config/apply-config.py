@@ -150,8 +150,11 @@ def main():
 
     ds(c, 'browser.headless', True)
 
-    # ── Security: Sandbox defaults (all agents confined to their workspace) ───
-    ds(c, 'agents.defaults.sandbox.mode', 'all')
+    # ── Security: Sandbox defaults ────────────────────────────────────────────
+    # OPENCLAW_SANDBOX_MODE: "untrusted" (default, no docker) or "all" (docker)
+    _sandbox_env = os.environ.get('OPENCLAW_SANDBOX_MODE', 'untrusted')
+    _sandbox_mode = 'off' if _sandbox_env == 'untrusted' else _sandbox_env
+    ds(c, 'agents.defaults.sandbox.mode', _sandbox_mode)
     ds(c, 'tools.fs.workspaceOnly', True)
 
     # ── Multi-account Telegram (one bot per agent) ────────────────────────────────
