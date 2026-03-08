@@ -35,6 +35,16 @@ def main():
     config.get('commands', {}).pop('ownerDisplay', None)
     config.get('channels', {}).get('telegram', {}).pop('streaming', None)
 
+    # Remove stale top-level telegram channel keys (old single-account format).
+    # apply-config.py writes channels.telegram.accounts.* — top-level groupPolicy/dmPolicy etc. are stale.
+    _tg = config.get('channels', {}).get('telegram', {})
+    for _stale_tg_key in ('groupPolicy', 'dmPolicy', 'allowFrom', 'groupAllowFrom', 'botToken'):
+        _tg.pop(_stale_tg_key, None)
+
+    # Remove channels.whatsapp.accounts.default — created by doctor migration from old top-level format.
+    # apply-config.py uses accounts.family; accounts.default is stale and triggers groupPolicy warnings.
+    config.get('channels', {}).get('whatsapp', {}).get('accounts', {}).pop('default', None)
+
     # Remove keys that were set by older deploy versions but don't exist in
     # this OpenClaw schema (2026.2.21-2). Gateway refuses to start if present.
     config.pop('acp', None)                                          # acp.* namespace
