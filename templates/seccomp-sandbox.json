@@ -1,0 +1,46 @@
+{
+  "defaultAction": "SCMP_ACT_ALLOW",
+  "archMap": [
+    {
+      "architecture": "SCMP_ARCH_X86_64",
+      "subArchitectures": [
+        "SCMP_ARCH_X86",
+        "SCMP_ARCH_X32"
+      ]
+    },
+    {
+      "architecture": "SCMP_ARCH_ARM",
+      "subArchitectures": [
+        "SCMP_ARCH_ARM"
+      ]
+    },
+    {
+      "architecture": "SCMP_ARCH_AARCH64",
+      "subArchitectures": [
+        "SCMP_ARCH_AARCH64"
+      ]
+    }
+  ],
+  "syscalls": [
+    {
+      "names": [
+        "ptrace",
+        "setuid",
+        "setgid",
+        "mount",
+        "umount2",
+        "pivot_root",
+        "chroot",
+        "unshare",
+        "keyctl",
+        "add_key",
+        "request_key"
+      ],
+      "action": "SCMP_ACT_ERRNO",
+      "args": [],
+      "comment": "Block sensitive syscalls in OpenClaw sandbox",
+      "includes": {},
+      "excludes": {}
+    }
+  ]
+}

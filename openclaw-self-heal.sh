@@ -79,7 +79,8 @@ main() {
         setup_docker_permissions
         setup_sandbox
     else
-        log "Skipping sandbox setup (OPENCLAW_SANDBOX_MODE=${OPENCLAW_SANDBOX_MODE:-not set})"
+        log "INFO: OPENCLAW_SANDBOX_MODE='${OPENCLAW_SANDBOX_MODE:-non-main}' — skipping Docker sandbox setup."
+        log "      (Sandbox policy still applies at the config level for agents)."
     fi
 
     # 4. Configuration

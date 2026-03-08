@@ -4,6 +4,16 @@
 # @complexity 3
 # 
 
+# ── PRE-LOAD STATE ────────────────────────────────────────────────────────────
+APPARMOR_UNCONFINED=0
+
+warn_apparmor_unconfined() {
+    log "----------------------------------------------------------------------"
+    log "[SEC-004] WARNING: AppArmor profile load failed. Falling back to UNCONFINED."
+    log "----------------------------------------------------------------------"
+    export APPARMOR_UNCONFINED=1
+}
+
 # ── 18. INSTALL & START GATEWAY ───────────────────────────────────────────────
 install_gateway_service() {
     log "Installing gateway service..."
@@ -70,7 +80,7 @@ EOF
                 chown -R "$ACTUAL_USER:$ACTUAL_USER" "$dropin_dir"
                 log "AppArmor confinement applied via systemd drop-in."
             else
-                log "WARNING: aa-exec found but profile 'openclaw-gateway' is not loaded. Skipping AppArmor confinement."
+                warn_apparmor_unconfined
             fi
         fi
     fi
@@ -109,8 +119,7 @@ EOF
         log "WARNING: Gateway start failed! Checking logs..."
         local journal; journal=$(uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" journalctl --user -u openclaw-gateway.service -n 25 --no-pager 2>/dev/null || true)
         while IFS= read -r line; do log "  $line"; done <<< "$journal"
-        
-        log "Retrying without AppArmor confinement (drop-in removed)..."
+        warn_apparmor_unconfined
         local dropin_file="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service.d/apparmor.conf"
         rm -f "$dropin_file" 2>/dev/null || true
         uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user daemon-reload
@@ -122,8 +131,7 @@ EOF
         log "WARNING: Gateway did not bind under AppArmor confinement. Checking logs..."
         local journal; journal=$(uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" journalctl --user -u openclaw-gateway.service -n 25 --no-pager 2>/dev/null || true)
         while IFS= read -r line; do log "  $line"; done <<< "$journal"
-        
-        log "Retrying without AppArmor confinement (drop-in removed)..."
+        warn_apparmor_unconfined
         local dropin_file="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service.d/apparmor.conf"
         rm -f "$dropin_file" 2>/dev/null || true
         uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user daemon-reload

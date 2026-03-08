@@ -135,6 +135,41 @@ check_tailscale() {
     return 0
 }
 
+# ── 22e-2. APPARMOR ENFORCED ──────────────────────────────────────────────────
+check_apparmor_enforced() {
+    # If kernel has no AppArmor or it's disabled
+    if [[ ! -f /sys/module/apparmor/parameters/enabled ]] || [[ "$(cat /sys/module/apparmor/parameters/enabled)" == "N" ]]; then
+        log "[HEALTH] INFO — AppArmor not supported or disabled by kernel"
+        return 0
+    fi
+
+    # Check APPARMOR_UNCONFINED flag from gateway module
+    if [[ "${APPARMOR_UNCONFINED:-0}" == "1" ]]; then
+        log "[HEALTH] FAIL — [SEC-003] Gateway running UNCONFINED (fallback used)"
+        return 1
+    fi
+
+    local profile="openclaw-gateway"
+    # Check if aa-status is available to verify enforcement list
+    if command -v aa-status >/dev/null 2>&1; then
+        local status_json; status_json=$(sudo aa-status --json 2>/dev/null || echo "{}")
+        # Check if openclaw-gateway is in 'enforce' list
+        if ! echo "$status_json" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if '$profile' in d.get('profiles', {}) and d['profiles']['$profile'] == 'enforce' else 1)" 2>/dev/null; then
+            # Check if it's in complain mode
+            if echo "$status_json" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if '$profile' in d.get('profiles', {}) and d['profiles']['$profile'] == 'complain' else 1)" 2>/dev/null; then
+                log "[HEALTH] WARN — AppArmor profile '$profile' in COMPLAIN mode"
+                return 0
+            else
+                log "[HEALTH] FAIL — [SEC-003] AppArmor profile '$profile' NOT ENFORCED"
+                return 1
+            fi
+        fi
+    fi
+
+    log "[HEALTH] PASS — AppArmor profile '$profile' is enforced"
+    return 0
+}
+
 # ── MASTER HEALTH CHECK ───────────────────────────────────────────────────────
 run_health_suite() {
     log "Running post-deployment health checks..."
@@ -144,6 +179,7 @@ run_health_suite() {
     check_gateway || ((errors++))
     check_vault || ((errors++))
     check_integrations
+    check_apparmor_enforced || ((errors++))
     check_apparmor_denials
     check_tailscale
 

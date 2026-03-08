@@ -18,6 +18,16 @@ fi
 
 echo "Building OpenClaw Sandbox image: openclaw-sandbox:bookworm-slim..."
 
+# Install seccomp profile
+SECCOMP_DEST="/etc/docker/seccomp/openclaw-sandbox.json"
+echo "Installing seccomp profile to $SECCOMP_DEST..."
+if sudo mkdir -p /etc/docker/seccomp && sudo cp "$SCRIPT_DIR/../templates/seccomp-sandbox.json" "$SECCOMP_DEST"; then
+    sudo chmod 644 "$SECCOMP_DEST"
+    echo "✅ Seccomp profile installed."
+else
+    echo "WARNING: [SEC-005] Could not write seccomp profile to $SECCOMP_DEST. Docker will use default profile." >&2
+fi
+
 # Check if docker is installed
 if ! command -v docker >/dev/null 2>&1; then
     echo "ERROR: Docker is not installed. Please install Docker first." >&2

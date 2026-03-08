@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import argparse
+import shutil
 
 def ds(obj, dotted_path, value):
     """Deep-set a dotted key path, creating intermediate dicts as needed."""
@@ -158,7 +159,11 @@ def main():
 
     ds(c, 'tools.sessions.visibility', 'tree')
     ds(c, 'tools.profile', 'full')
-    ds(c, 'tools.subagents.tools.deny', [])
+    # Append group:automation to subagent tool deny list if not already present
+    _subagent_deny = c.get('tools', {}).get('subagents', {}).get('tools', {}).get('deny', [])
+    if "group:automation" not in _subagent_deny:
+        _subagent_deny.append("group:automation")
+    ds(c, 'tools.subagents.tools.deny', _subagent_deny)
 
     ds(c, 'gateway.mode',           'local')
     ds(c, 'gateway.bind',           'loopback')
@@ -171,26 +176,34 @@ def main():
     ds(c, 'browser.headless', True)
 
     # ── Security: Sandbox defaults ────────────────────────────────────────────
-    # OPENCLAW_SANDBOX_MODE: "untrusted" (default, no docker) or "all" (docker)
-    _sandbox_env = os.environ.get('OPENCLAW_SANDBOX_MODE', 'untrusted')
-    _sandbox_mode = 'off' if _sandbox_env == 'untrusted' else _sandbox_env
+    # OPENCLAW_SANDBOX_MODE: "off", "non-main" (default), or "all" (docker required)
+    _sandbox_env = os.environ.get('OPENCLAW_SANDBOX_MODE', 'non-main')
+    _sandbox_mode = _sandbox_env
+
+    # Docker availability check: if mode != 'off' but docker is missing, fall back to 'off'
+    if _sandbox_mode != 'off' and shutil.which('docker') is None:
+        print(f"INFO: Docker not found. Falling back to sandbox.mode=off (requested: {_sandbox_mode})", file=sys.stderr)
+        _sandbox_mode = 'off'
+
     ds(c, 'agents.defaults.sandbox.mode', _sandbox_mode)
     ds(c, 'tools.fs.workspaceOnly', True)
 
-    # Elevated mode lets authorized senders escape sandbox for host-level exec
-    # (e.g. gws auth login needs to run on the host, not inside Docker)
-    # allowFrom is set after channel user lists are parsed below.
-    ds(c, 'tools.elevated.enabled', True)
-    # allowFrom expects a record keyed by provider, not an array
-    _elevated_allow = {}
-    if os.environ.get('TELEGRAM_BOT_TOKEN') or os.environ.get('TELEGRAM_BOT_TOKEN_CODING') or os.environ.get('TELEGRAM_BOT_TOKEN_MARKETING'):
-        _elevated_allow['telegram'] = ['*']
-    if os.environ.get('WHATSAPP_PHONE') or os.environ.get('WHATSAPP_ACCOUNT_PHONE'):
-        _elevated_allow['whatsapp'] = ['*']
-    # Fallback: if no channels detected, allow from all known providers
-    if not _elevated_allow:
-        _elevated_allow = {'telegram': ['*'], 'whatsapp': ['*']}
-    ds(c, 'tools.elevated.allowFrom', _elevated_allow)
+    if _sandbox_mode != 'off':
+        # Resource limits (read-before-write to avoid overwriting operator overrides)
+        res = c.setdefault('agents', {}).setdefault('defaults', {}).setdefault('sandbox', {}).setdefault('resources', {})
+        if 'cpus' not in res:
+            res['cpus'] = 2.0
+        if 'memory' not in res:
+            res['memory'] = "2g"
+        
+        # Seccomp profile wiring
+        seccomp_path = '/etc/docker/seccomp/openclaw-sandbox.json'
+        if os.path.exists(seccomp_path):
+            ds(c, 'agents.defaults.sandbox.seccompProfile', seccomp_path)
+        else:
+            print(f"WARNING: [SEC-005] Seccomp profile not found at {seccomp_path}", file=sys.stderr)
+
+    # Elevated mode configuration (allowFrom set after channel parsing below)
 
     # ── Exec Tool Configuration ─────────────────────────────────────────────────
     # Run exec on gateway (host) for tools that need host access (gws, claude_code)
@@ -249,32 +262,44 @@ def main():
 
     # Default bot configuration
     _dm_policy_default = 'allowlist' if _tg_allowed_default else 'pairing'
-    tg_accounts['default'] = {
+    _tg_default_acc = tg_accounts.get('default', {})
+    _tg_default_acc.update({
         'botToken':    _tg_main,
         'dmPolicy':    _dm_policy_default,
         'groupPolicy': 'disabled',  # Groups disabled by default (use allowlist if needed)
         'allowFrom':   _tg_allowed_default,
-    }
+    })
+    if 'dmScope' not in _tg_default_acc:
+        _tg_default_acc['dmScope'] = 'per-channel-peer'
+    tg_accounts['default'] = _tg_default_acc
 
     # Coding bot configuration (has bash/exec — should be most restricted!)
     if _tg_coding and _tg_coding != _sentinel_coding:
         _dm_policy_coding = 'allowlist' if _tg_allowed_coding else 'pairing'
-        tg_accounts['coding'] = {
+        _tg_coding_acc = tg_accounts.get('coding', {})
+        _tg_coding_acc.update({
             'botToken':    _tg_coding,
             'dmPolicy':    _dm_policy_coding,
             'groupPolicy': 'disabled',
             'allowFrom':   _tg_allowed_coding,
-        }
+        })
+        if 'dmScope' not in _tg_coding_acc:
+            _tg_coding_acc['dmScope'] = 'per-channel-peer'
+        tg_accounts['coding'] = _tg_coding_acc
 
     # Marketing bot configuration
     if _tg_marketing and _tg_marketing != _sentinel_marketing:
         _dm_policy_marketing = 'allowlist' if _tg_allowed_marketing else 'pairing'
-        tg_accounts['marketing'] = {
+        _tg_marketing_acc = tg_accounts.get('marketing', {})
+        _tg_marketing_acc.update({
             'botToken':    _tg_marketing,
             'dmPolicy':    _dm_policy_marketing,
             'groupPolicy': 'disabled',
             'allowFrom':   _tg_allowed_marketing,
-        }
+        })
+        if 'dmScope' not in _tg_marketing_acc:
+            _tg_marketing_acc['dmScope'] = 'per-channel-peer'
+        tg_accounts['marketing'] = _tg_marketing_acc
 
     # ── WhatsApp multi-account (QR-linked, no token needed) ──────────────────────
     # Security: Get allowed WhatsApp numbers from environment (international format, no +)
@@ -288,11 +313,16 @@ def main():
     _wa_dm_policy = 'allowlist' if _wa_allowed_users else 'pairing'
     _wa_allow_from = _wa_allowed_users if _wa_allowed_users else []
 
-    ds(c, 'channels.whatsapp.accounts.family', {
+    _wa_accounts = c.setdefault('channels', {}).setdefault('whatsapp', {}).setdefault('accounts', {})
+    _wa_family = _wa_accounts.get('family', {})
+    _wa_family.update({
         'dmPolicy': _wa_dm_policy,
         'groupPolicy': 'disabled',  # Groups disabled by default (use allowlist if needed)
         'allowFrom': _wa_allow_from
     })
+    if 'dmScope' not in _wa_family:
+        _wa_family['dmScope'] = 'per-channel-peer'
+    _wa_accounts['family'] = _wa_family
     ds(c, 'channels.whatsapp.defaultAccount', 'family')
 
     # ── Bindings: route each Telegram account to the matching agent ───────────────
@@ -311,12 +341,21 @@ def main():
 
     # Elevated allowFrom — use explicit user IDs (never wildcard) to avoid security audit CRITICAL.
     # Only users already in channel allowlists can use elevated mode.
+    # If no allowlists are configured, elevated mode is disabled (fail-closed).
     _elevated_allow = {}
     if _tg_allowed_default:
         _elevated_allow['telegram'] = _tg_allowed_default
     if _wa_allow_from:
         _elevated_allow['whatsapp'] = _wa_allow_from
-    ds(c, 'tools.elevated.allowFrom', _elevated_allow)
+
+    if _elevated_allow:
+        ds(c, 'tools.elevated.enabled', True)
+        ds(c, 'tools.elevated.allowFrom', _elevated_allow)
+    else:
+        ds(c, 'tools.elevated.enabled', False)
+        if 'tools' in c and 'elevated' in c['tools']:
+            c['tools']['elevated'].pop('allowFrom', None)
+        print("WARNING: [SEC-002] Elevated mode disabled — no channel allowlists configured.", file=sys.stderr)
 
     with open(cfg, 'w') as f:
         json.dump(c, f, indent=2)

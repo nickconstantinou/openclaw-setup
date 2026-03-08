@@ -77,6 +77,10 @@ validate_env() {
         fi
     done
 
+    if [[ "${OPENCLAW_SANDBOX_MODE:-}" == "untrusted" ]]; then
+        die "[SEC-001] OPENCLAW_SANDBOX_MODE=untrusted is deprecated. Use: off | non-main | all"
+    fi
+
     if ! [[ "$OPENCLAW_INSTALLER_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
         die "OPENCLAW_INSTALLER_SHA256 does not look like a valid SHA256 hash."
     fi

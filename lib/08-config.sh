@@ -90,7 +90,7 @@ setup_exec_approvals() {
     
     # Create the exec-approvals.json with allowlist for gws and claude_code
     # These tools need to run on the gateway (host) not in sandbox
-    cat << 'EOF' | uas tee "$approvals_file" > /dev/null
+    cat << EOF | uas tee "$approvals_file" > /dev/null
 {
   "version": 1,
   "defaults": {
@@ -99,11 +99,13 @@ setup_exec_approvals() {
     "askFallback": "deny"
   },
   "allowlist": [
+    "$ACTUAL_HOME/.local/bin/gws",
+    "$ACTUAL_HOME/.local/bin/claude",
     "/usr/local/bin/gws",
     "/usr/bin/gws",
     "/usr/local/bin/claude",
     "/usr/bin/claude",
-    "/home/*/.local/bin/claude",
+    "/root/.local/bin/gws",
     "/root/.local/bin/claude"
   ]
 }
