@@ -133,6 +133,62 @@ optimize_sqlite() {
     fi
 }
 
+# ── 16.8 SANDBOX SETUP ────────────────────────────────────────────────────────
+setup_docker_permissions() {
+    log "Checking Docker group permissions for $ACTUAL_USER..."
+    if ! command -v docker >/dev/null 2>&1; then
+        log "Docker not found; skipping permission setup."
+        return
+    fi
+
+    if ! id -nG "$ACTUAL_USER" | grep -qw "docker"; then
+        log "Adding $ACTUAL_USER to the docker group..."
+        usermod -aG docker "$ACTUAL_USER"
+        log "WARNING: You may need to log out and back in for Docker permissions to fully apply."
+    else
+        log "  $ACTUAL_USER is already in the docker group."
+    fi
+}
+
+setup_sandbox() {
+    log "Checking OpenClaw Docker sandbox requirement..."
+    local config_file="$ACTUAL_HOME/.openclaw/openclaw.json"
+    
+    # Simple check for sandbox mode string in config or env
+    local sandbox_enabled=false
+    
+    if [[ -f "$config_file" ]] && grep -q '"mode"[[:space:]]*:[[:space:]]*"all"' "$config_file"; then
+        sandbox_enabled=true
+    elif grep -q 'OPENCLAW_SANDBOX_MODE="all"' "$ACTUAL_HOME/.openclaw/.env" 2>/dev/null || \
+         grep -q 'OPENCLAW_SANDBOX_MODE=all' "$ACTUAL_HOME/.openclaw/.env" 2>/dev/null; then
+        sandbox_enabled=true
+    fi
+    
+    # Check if the image exists
+    local image_exists=false
+    if command -v docker >/dev/null 2>&1; then
+        if sudo -u "$ACTUAL_USER" docker images | grep -q "openclaw-sandbox"; then
+            image_exists=true
+        fi
+    fi
+
+    if [[ "$sandbox_enabled" == true ]] || [[ "$image_exists" == false ]]; then
+        log "Building OpenClaw sandbox base image (this may take a minute)..."
+        if [[ -x "$SCRIPT_DIR/scripts/sandbox-setup.sh" ]]; then
+            # Run the setup script as the actual user to preserve ownership/context
+            if uas bash "$SCRIPT_DIR/scripts/sandbox-setup.sh"; then
+                log "  Sandbox image built successfully."
+            else
+                log "  WARNING: Failed to build sandbox image."
+            fi
+        else
+            log "  WARNING: $SCRIPT_DIR/scripts/sandbox-setup.sh not found or not executable."
+        fi
+    else
+        log "  Sandbox image already exists and sandbox mode is not explicitly 'all'."
+    fi
+}
+
 # ── 17. ONBOARDING ────────────────────────────────────────────────────────────
 onboard_gateway() {
     log "Running onboard setup..."

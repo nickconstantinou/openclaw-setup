@@ -282,6 +282,22 @@ openclaw channels whatsapp link family
 ~/.openclaw/venv/bin/playwright install
 ```
 
+#### "spawn docker EACCES" Error (Sandbox)
+
+If your agents fail with a "spawn docker EACCES" error, the sandbox is missing or misconfigured.
+
+1. Ensure sandbox mode is configured in `~/.openclaw/.env`:
+   ```bash
+   OPENCLAW_SANDBOX_MODE="all" # Enable
+   # or
+   OPENCLAW_SANDBOX_MODE="untrusted" # Disable
+   ```
+2. Re-run deployment to automatically build the `openclaw-sandbox:bookworm-slim` image and add your user to the `docker` group:
+   ```bash
+   sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
+   ```
+3. If the user was just added to the `docker` group, you may need to **log out and log back in** for permissions to apply.
+
 #### Permission Denied Errors
 
 ```bash

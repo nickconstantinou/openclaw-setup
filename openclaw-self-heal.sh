@@ -76,6 +76,8 @@ main() {
     configure_ollama
     setup_apparmor
     setup_network
+    setup_docker_permissions
+    setup_sandbox
 
     # 4. Configuration
     setup_github_cli
