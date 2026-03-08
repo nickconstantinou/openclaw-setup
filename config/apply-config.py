@@ -188,6 +188,14 @@ def main():
     # Base allowlist for all Telegram bots (unless overridden)
     _tg_allowed_base = parse_allowed_users('TELEGRAM_ALLOWED_USERS')
 
+    # Fallback: If no allowlist provided, use TELEGRAM_CHAT_ID (install notification recipient)
+    # This allows solo users to access their own bot without manual allowlist configuration
+    if not _tg_allowed_base:
+        chat_id = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
+        if chat_id and chat_id.isdigit():
+            _tg_allowed_base = [chat_id]
+            print(f"INFO: Auto-populated allowlist with TELEGRAM_CHAT_ID={chat_id}", file=sys.stderr)
+
     # Per-bot allowlists (inherit from base if set to INHERIT)
     _tg_allowed_default = _tg_allowed_base  # Default bot always uses base list
     _tg_allowed_coding = parse_allowed_users('TELEGRAM_ALLOWED_USERS_CODING', _tg_allowed_base)
@@ -200,7 +208,7 @@ def main():
     tg_accounts['default'] = {
         'botToken':    _tg_main,
         'dmPolicy':    _dm_policy_default,
-        'groupPolicy': 'pairing',  # Groups require explicit pairing
+        'groupPolicy': 'disabled',  # Groups disabled by default (use allowlist if needed)
         'allowFrom':   _tg_allowed_default,
     }
 
@@ -210,7 +218,7 @@ def main():
         tg_accounts['coding'] = {
             'botToken':    _tg_coding,
             'dmPolicy':    _dm_policy_coding,
-            'groupPolicy': 'pairing',
+            'groupPolicy': 'disabled',
             'allowFrom':   _tg_allowed_coding,
         }
 
@@ -220,7 +228,7 @@ def main():
         tg_accounts['marketing'] = {
             'botToken':    _tg_marketing,
             'dmPolicy':    _dm_policy_marketing,
-            'groupPolicy': 'pairing',
+            'groupPolicy': 'disabled',
             'allowFrom':   _tg_allowed_marketing,
         }
 
@@ -238,7 +246,7 @@ def main():
 
     ds(c, 'channels.whatsapp.accounts.family', {
         'dmPolicy': _wa_dm_policy,
-        'groupPolicy': 'pairing',  # Groups require explicit pairing
+        'groupPolicy': 'disabled',  # Groups disabled by default (use allowlist if needed)
         'allowFrom': _wa_allow_from
     })
     ds(c, 'channels.whatsapp.defaultAccount', 'family')

@@ -146,16 +146,18 @@ TELEGRAM_ALLOWED_USERS_MARKETING=987654321,555111222
 - Coding bot → Only you (user 123456789)
 - Marketing bot → Only users 987654321 and 555111222
 
-#### Example 3: Maximum Security (Pairing Mode)
+#### Example 3: Smart Default (Auto-allowlist)
 
 ```bash
-# Leave as REPLACE_ME for pairing mode
+# Leave as REPLACE_ME to auto-populate with TELEGRAM_CHAT_ID
 TELEGRAM_ALLOWED_USERS=REPLACE_ME
 TELEGRAM_ALLOWED_USERS_CODING=INHERIT
 TELEGRAM_ALLOWED_USERS_MARKETING=INHERIT
 ```
 
-✅ All bots use `pairing` mode — users must send `/pair` command to authenticate
+✅ Auto-populated with your `TELEGRAM_CHAT_ID` — you get instant access
+✅ Other users still blocked (no pairing needed since you're pre-authorized)
+✅ Group messages always disabled for security
 
 ### Getting Your IDs
 
@@ -202,7 +204,7 @@ openclaw security audit
 1. **Telegram**:
    - Search for your bot(s) using the bot tokens you configured
    - Send `/start` or a test message
-   - If using pairing mode, send `/pair` to authenticate
+   - If you used the smart default (REPLACE_ME), you'll have instant access via TELEGRAM_CHAT_ID fallback
 
 2. **WhatsApp**:
    - Run: `openclaw channels whatsapp link family`
@@ -429,11 +431,18 @@ openclaw sessions view SESSION_ID
    TELEGRAM_ALLOWED_USERS_CODING=123456789,987654321
    ```
 
-2. **🔒 Use Pairing Mode for Public Deployments**
+2. **🔒 Smart Default for Solo Users**
 
-   If your bot tokens might be exposed, use pairing mode:
+   The default config auto-allowlists you using `TELEGRAM_CHAT_ID`:
    ```bash
-   TELEGRAM_ALLOWED_USERS=REPLACE_ME  # Requires /pair command
+   TELEGRAM_ALLOWED_USERS=REPLACE_ME  # Auto-populated with TELEGRAM_CHAT_ID
+   ```
+   ✅ You get instant access, other users blocked
+   ✅ No pairing needed — you're pre-authorized
+
+   **For WhatsApp pairing mode** (no auto-allowlist):
+   ```bash
+   WHATSAPP_ALLOWED_USERS=REPLACE_ME  # Requires openclaw pairing approve
    ```
 
 3. **🔄 Rotate Gateway Token Regularly**
