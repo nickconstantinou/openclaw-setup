@@ -42,8 +42,9 @@ EOF
     for name in "${TOOL_NAMES[@]:-}"; do
         local exports="${TOOL_SYSTEMD_EXPORTS[$name]:-}"
         [[ -z "$exports" ]] && continue
-        local var
-        for var in $exports; do
+        local _export_vars var
+        IFS=' ' read -ra _export_vars <<< "$exports"
+        for var in "${_export_vars[@]}"; do
             echo "${var}=${!var:-}" | uas tee -a "$envd_file" > /dev/null
         done
     done
