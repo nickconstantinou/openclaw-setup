@@ -18,11 +18,9 @@ resolve_user_context() {
         die "No .env file found at $ENV_FILE. Please create it with required secrets."
     fi
 
-    # Inject placeholder values for optional keys if not already present
+    # Inject placeholder values for core (non-tool) keys if not already present
+    # Tool-specific placeholders are injected later by inject_tool_env_placeholders()
     local placeholders=(
-        "ANTHROPIC_API_KEY=sk-ant-REPLACE_ME_WHEN_READY"
-        "GOOGLE_WORKSPACE_CLI_CLIENT_ID=REPLACE_ME"
-        "GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=REPLACE_ME"
         "POST_BRIDGE_API_KEY=pb_REPLACE_ME_WHEN_READY"
         "TAVILY_API_KEY=tvly-REPLACE_ME_WHEN_READY"
         "GITHUB_PAT=ghp_REPLACE_ME_WHEN_READY"
@@ -108,6 +106,26 @@ check_resources() {
     (( avail_disk >= min_disk )) \
         || die "Insufficient disk: ${avail_disk}GB available (minimum ${min_disk}GB required)."
     log "Resources OK — RAM: ${total_ram}GB, Disk free: ${avail_disk}GB"
+}
+
+# ── 1b. TOOL ENV PLACEHOLDERS ─────────────────────────────────────────────────
+# Called after load_tool_modules() — injects per-tool placeholder keys into .env
+inject_tool_env_placeholders() {
+    local name
+    for name in "${TOOL_NAMES[@]:-}"; do
+        local raw="${TOOL_ENV_PLACEHOLDERS[$name]:-}"
+        [[ -z "$raw" ]] && continue
+        local p
+        while IFS= read -r p; do
+            [[ -z "$p" ]] && continue
+            local key="${p%%=*}"
+            local val="${p#*=}"
+            if ! grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+                echo "${key}=${val}" >> "$ENV_FILE"
+                log "  Added placeholder (${name}): ${key}"
+            fi
+        done <<< "$raw"
+    done
 }
 
 # ── 5. SHELL PROFILE TUNING ───────────────────────────────────────────────────

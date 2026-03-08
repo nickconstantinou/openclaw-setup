@@ -18,13 +18,30 @@ setup_apparmor() {
     local profile_path="/etc/apparmor.d/openclaw-gateway"
     local template_path="$SCRIPT_DIR/templates/apparmor-gateway.profile"
 
-    if [[ -f "$template_path" ]]; then
-        sudo cp "$template_path" "$profile_path"
-        sudo apparmor_parser -r "$profile_path" || log "WARNING: Failed to load AppArmor profile."
-        log "AppArmor profile loaded: $profile_path"
-    else
+    if [[ ! -f "$template_path" ]]; then
         log "WARNING: AppArmor template missing: $template_path"
+        return
     fi
+
+    # Collect rules from loaded tool modules
+    local tool_rules=""
+    local name
+    for name in "${TOOL_NAMES[@]:-}"; do
+        [[ -n "${TOOL_APPARMOR_RULES[$name]:-}" ]] && tool_rules+="${TOOL_APPARMOR_RULES[$name]}"$'\n'
+    done
+
+    # Inject tool rules between markers using python3
+    sudo python3 - "$template_path" "$profile_path" "$tool_rules" <<'PYEOF'
+import sys, re
+tmpl, out, rules = sys.argv[1], sys.argv[2], sys.argv[3]
+content = open(tmpl).read()
+pat = re.compile(r'  # ── TOOL_RULES_BEGIN.*?  # ── TOOL_RULES_END[^\n]*\n', re.DOTALL)
+replacement = "  # ── TOOL_RULES_BEGIN\n" + rules + "  # ── TOOL_RULES_END\n"
+open(out, 'w').write(pat.sub(replacement, content))
+PYEOF
+
+    sudo apparmor_parser -r "$profile_path" || log "WARNING: Failed to load AppArmor profile."
+    log "AppArmor profile assembled and loaded: $profile_path"
 }
 
 # ── 10b. DOCKER PATCHING ──────────────────────────────────────────────────────

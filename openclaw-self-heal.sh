@@ -54,6 +54,8 @@ main() {
 
     # 1. Environment & Requirements
     resolve_user_context
+    load_tool_modules              # source lib/tools/_base.sh + lib/tools/*.sh
+    inject_tool_env_placeholders   # append per-tool .env placeholders
     validate_env
     validate_system
     check_resources
@@ -61,11 +63,7 @@ main() {
 
     # 2. Installation
     install_openclaw
-    install_playwright
-    install_python_packages
-    install_pandoc_toolchain
-    install_gws
-    install_claude_code
+    install_all_tools              # dispatches to install_<name>() for each registered tool
     install_acpx_plugin
     setup_agent_dirs
     install_post_bridge

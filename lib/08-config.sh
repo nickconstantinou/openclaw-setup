@@ -25,20 +25,29 @@ setup_systemd_env() {
     local envd_file="$envd_dir/openclaw.conf"
     uas mkdir -p "$envd_dir"
 
-    # Write environment variables that all timer services inherit
+    # Write core environment variables that all timer services inherit
     cat <<EOF | uas tee "$envd_file" > /dev/null
 MINIMAX_API_KEY=${MINIMAX_API_KEY}
 GEMINI_API_KEY=${GEMINI_API_KEY}
 GOOGLE_API_KEY=${GEMINI_API_KEY}
-ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 TAVILY_API_KEY=${TAVILY_API_KEY:-}
 GITHUB_TOKEN=${GITHUB_PAT:-}
 POST_BRIDGE_API_KEY=${POST_BRIDGE_API_KEY:-}
-GOOGLE_WORKSPACE_CLI_CLIENT_ID=${GOOGLE_WORKSPACE_CLI_CLIENT_ID:-}
-GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=${GOOGLE_WORKSPACE_CLI_CLIENT_SECRET:-}
 TELEGRAM_BOT_TOKEN_CODING=${TELEGRAM_BOT_TOKEN_CODING:-}
 TELEGRAM_BOT_TOKEN_MARKETING=${TELEGRAM_BOT_TOKEN_MARKETING:-}
 EOF
+
+    # Append tool-specific env vars from loaded tool modules
+    local name
+    for name in "${TOOL_NAMES[@]:-}"; do
+        local exports="${TOOL_SYSTEMD_EXPORTS[$name]:-}"
+        [[ -z "$exports" ]] && continue
+        local var
+        for var in $exports; do
+            echo "${var}=${!var:-}" | uas tee -a "$envd_file" > /dev/null
+        done
+    done
+
     chmod 600 "$envd_file"
 }
 

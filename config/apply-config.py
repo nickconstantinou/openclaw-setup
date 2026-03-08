@@ -68,6 +68,19 @@ def main():
     _marketing_primary  = 'minimax/MiniMax-M2.5'
     _marketing_fallback = ['minimax/MiniMax-M2.1']
 
+    # ── TOOL REGISTRY ─────────────────────────────────────────────────────────
+    # ADD NEW TOOLS HERE — tool_name (openclaw tool string) → agent IDs that can use it
+    TOOL_REGISTRY = {
+        'google-workspace': ['coding', 'marketing'],
+        'browser':          ['coding', 'marketing'],
+        'tavily':           ['coding', 'marketing'],
+        'claude-code':      ['coding'],
+        # 'my-new-tool':   ['coding'],
+    }
+
+    def _agent_tools(agent_id, base_tools):
+        return base_tools + [t for t, agents in TOOL_REGISTRY.items() if agent_id in agents]
+
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
     _named_agents = [
@@ -91,7 +104,10 @@ def main():
             'agentDir':  f'{_home}/.openclaw/agents/coding/agent',
             'model': {'primary': _coding_primary, 'fallbacks': _coding_fallback},
             'tools': {
-                'allow': ['read', 'write', 'edit', 'apply_patch', 'exec', 'process', 'bash', 'sessions_list', 'sessions_history', 'sessions_send', 'session_status', 'google-workspace', 'browser', 'tavily', 'claude-code']
+                'allow': _agent_tools('coding', [
+                    'read', 'write', 'edit', 'apply_patch', 'exec', 'process', 'bash',
+                    'sessions_list', 'sessions_history', 'sessions_send', 'session_status'
+                ])
             },
             'subagents': {'allowAgents': []},
             'identity': {'name': 'Coder', 'emoji': '💻'},
@@ -103,7 +119,10 @@ def main():
             'agentDir':  f'{_home}/.openclaw/agents/marketing/agent',
             'model': {'primary': _marketing_primary, 'fallbacks': _marketing_fallback},
             'tools': {
-                'allow': ['read', 'write', 'exec', 'process', 'bash', 'sessions_list', 'sessions_history', 'sessions_send', 'session_status', 'google-workspace', 'browser', 'tavily']
+                'allow': _agent_tools('marketing', [
+                    'read', 'write', 'exec', 'process', 'bash',
+                    'sessions_list', 'sessions_history', 'sessions_send', 'session_status'
+                ])
             },
             'subagents': {'allowAgents': []},
             'identity': {'name': 'Marketing', 'emoji': '📣'},
