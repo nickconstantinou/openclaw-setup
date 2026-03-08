@@ -215,6 +215,29 @@ install_gws() {
 4. Run: gws auth login   (browser OAuth flow; creds stored in ~/.config/gws/)
 EOF
     chown "$ACTUAL_USER":"$ACTUAL_USER" "$hint"
+
+    # Run gws auth setup now if credentials are available
+    local client_id="${GOOGLE_WORKSPACE_CLI_CLIENT_ID:-}"
+    local client_secret="${GOOGLE_WORKSPACE_CLI_CLIENT_SECRET:-}"
+    local sentinel_id="REPLACE_ME"
+    local sentinel_secret="REPLACE_ME"
+
+    if [[ -n "$client_id" && -n "$client_secret" \
+          && "$client_id" != *"$sentinel_id"* \
+          && "$client_secret" != *"$sentinel_secret"* ]]; then
+        log "Running gws auth setup (credentials found)..."
+        if sudo -u "$ACTUAL_USER" env \
+                HOME="$ACTUAL_HOME" \
+                GOOGLE_WORKSPACE_CLI_CLIENT_ID="$client_id" \
+                GOOGLE_WORKSPACE_CLI_CLIENT_SECRET="$client_secret" \
+                gws auth setup 2>&1; then
+            log "gws auth setup completed."
+        else
+            log "WARNING: gws auth setup failed — run manually after install."
+        fi
+    else
+        log "gws auth setup SKIPPED — credentials not set (add to ~/.openclaw/.env and re-run)."
+    fi
 }
 
 # ── 7f. INSTALL CLAUDE CODE ───────────────────────────────────────────────────

@@ -36,6 +36,28 @@ machine goes nowhere — the callback never arrives.
 
 You run the command. The user tunnels the port. Google redirects through the tunnel.
 
+### Step 0 — sandbox mode check
+
+If sandbox mode is `"all"` (exec runs inside Docker), `gws` won't be found
+inside the container. Before running any `gws auth` commands, enable elevated
+mode so exec escapes to the host:
+
+```
+/elevated on
+```
+
+Run `gws auth setup` and `gws auth login` as shown below, then turn it off:
+
+```
+/elevated off
+```
+
+You can check the current sandbox mode with:
+
+```bash
+openclaw sandbox explain
+```
+
 ### Step 1 — one-time setup (configure OAuth client)
 
 ```bash
@@ -45,6 +67,10 @@ gws auth setup
 This is interactive — it reads `GOOGLE_WORKSPACE_CLI_CLIENT_ID` and
 `GOOGLE_WORKSPACE_CLI_CLIENT_SECRET` from the environment and writes them to
 `~/.config/gws/`. Only needed once per machine.
+
+> **Note:** If the install script ran successfully with credentials present,
+> `gws auth setup` was already completed at install time and this step can be
+> skipped.
 
 ### Step 2 — login (browser OAuth flow)
 

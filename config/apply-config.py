@@ -157,6 +157,11 @@ def main():
     ds(c, 'agents.defaults.sandbox.mode', _sandbox_mode)
     ds(c, 'tools.fs.workspaceOnly', True)
 
+    # Elevated mode lets authorized senders escape sandbox for host-level exec
+    # (e.g. gws auth login needs to run on the host, not inside Docker)
+    ds(c, 'tools.elevated.enabled', True)
+    ds(c, 'tools.elevated.allowFrom', ['*'])
+
     # ── Multi-account Telegram (one bot per agent) ────────────────────────────────
     _tg_main      = os.environ.get('TELEGRAM_BOT_TOKEN', '')
     _tg_coding    = os.environ.get('TELEGRAM_BOT_TOKEN_CODING', '')
