@@ -189,18 +189,14 @@ def main():
     ds(c, 'tools.fs.workspaceOnly', True)
 
     if _sandbox_mode != 'off':
-        # Resource limits (read-before-write to avoid overwriting operator overrides)
-        res = c.setdefault('agents', {}).setdefault('defaults', {}).setdefault('sandbox', {}).setdefault('resources', {})
-        if 'cpus' not in res:
-            res['cpus'] = 2.0
-        if 'memory' not in res:
-            res['memory'] = "2g"
-        
-        # Seccomp profile wiring
+        # NOTE: agents.defaults.sandbox.resources (cpus, memory) and seccompProfile
+        # are defined in the security blueprint but NOT yet recognized by OpenClaw's
+        # config schema (tested against 2026.3.7). Writing them causes a crash loop.
+        # Re-enable when upstream adds schema support for these keys.
+        #
+        # Seccomp profile wiring (future)
         seccomp_path = '/etc/docker/seccomp/openclaw-sandbox.json'
-        if os.path.exists(seccomp_path):
-            ds(c, 'agents.defaults.sandbox.seccompProfile', seccomp_path)
-        else:
+        if not os.path.exists(seccomp_path):
             print(f"WARNING: [SEC-005] Seccomp profile not found at {seccomp_path}", file=sys.stderr)
 
     # Elevated mode configuration (allowFrom set after channel parsing below)
@@ -269,8 +265,9 @@ def main():
         'groupPolicy': 'disabled',  # Groups disabled by default (use allowlist if needed)
         'allowFrom':   _tg_allowed_default,
     })
-    if 'dmScope' not in _tg_default_acc:
-        _tg_default_acc['dmScope'] = 'per-channel-peer'
+    # NOTE: dmScope='per-channel-peer' is defined in the security blueprint but NOT
+    # yet recognized by OpenClaw's config schema (tested against 2026.3.7). Writing it
+    # causes a crash loop. Re-enable when upstream adds schema support.
     tg_accounts['default'] = _tg_default_acc
 
     # Coding bot configuration (has bash/exec — should be most restricted!)
@@ -283,8 +280,6 @@ def main():
             'groupPolicy': 'disabled',
             'allowFrom':   _tg_allowed_coding,
         })
-        if 'dmScope' not in _tg_coding_acc:
-            _tg_coding_acc['dmScope'] = 'per-channel-peer'
         tg_accounts['coding'] = _tg_coding_acc
 
     # Marketing bot configuration
@@ -297,8 +292,6 @@ def main():
             'groupPolicy': 'disabled',
             'allowFrom':   _tg_allowed_marketing,
         })
-        if 'dmScope' not in _tg_marketing_acc:
-            _tg_marketing_acc['dmScope'] = 'per-channel-peer'
         tg_accounts['marketing'] = _tg_marketing_acc
 
     # ── WhatsApp multi-account (QR-linked, no token needed) ──────────────────────
@@ -320,8 +313,6 @@ def main():
         'groupPolicy': 'disabled',  # Groups disabled by default (use allowlist if needed)
         'allowFrom': _wa_allow_from
     })
-    if 'dmScope' not in _wa_family:
-        _wa_family['dmScope'] = 'per-channel-peer'
     _wa_accounts['family'] = _wa_family
     ds(c, 'channels.whatsapp.defaultAccount', 'family')
 
