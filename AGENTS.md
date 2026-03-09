@@ -49,5 +49,6 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[OPEN_DM_SURFACE]` -> **Pattern**: `dmPolicy="open"` on messaging channels allows any user to interact with agents, including those with exec/bash tools. | **Fix**: Use `dmPolicy="allowlist"` with env-driven user ID lists; fall back to `"pairing"` when unset. Always pair with `sandbox.mode="all"` + `workspaceOnly=true`.
 - `[MODULAR_SANDBOX_ENV]` -> **Pattern**: Hardcoding sandbox env vars in common config scripts is brittle. | **Fix**: Use a per-tool `TOOL_SANDBOX_ENV` registry to declare requirements at the source.
 - `[AGENT_PROFILE_LOCK]` -> **Pattern**: Trusting agents with `full` profiles on public channels (WhatsApp) is risky. | **Fix**: Permanently lock public agents to specialized profiles (e.g., `messaging`) in `apply-config.py`.
+- `[SANDBOX_BIND_ROOT]` -> **Pattern**: OpenClaw sandbox security unconditionally rejects bind mounts originating outside allowed roots. | **Fix**: Use the explicit schema property `agents.defaults.sandbox.docker.dangerouslyAllowExternalBindSources: true` when mounting local project directories.
 '' Openclaw Docs
 - Read all docs in `docs/` directory.

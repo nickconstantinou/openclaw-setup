@@ -214,6 +214,7 @@ def main():
         ds(c, 'agents.defaults.sandbox.docker.binds', [
             f'{_projects_dir}:/projects:rw',
         ])
+        ds(c, 'agents.defaults.sandbox.docker.dangerouslyAllowExternalBindSources', True)
 
         # NOTE: agents.defaults.sandbox.resources (cpus, memory) and seccompProfile
 
