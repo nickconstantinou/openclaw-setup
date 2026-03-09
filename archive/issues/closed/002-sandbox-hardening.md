@@ -44,3 +44,7 @@ Introduced a new `TOOL_SANDBOX_ENV` registry in the tool module system (`lib/too
 
 ### 3. Family Agent Lockdown
 The `family` agent (intended for WhatsApp use) is now permanently locked to the `messaging` tool profile. This revokes its access to `exec`, `bash`, and the local filesystem, providing a critical layer of safety for public-facing channels.
+
+### 🐛 Regressions & Hotfixes
+- **IFS Word Splitting**: Fixed a bug where `openclaw-self-heal.sh` restricted `IFS` to `\n\t`, preventing the sandbox tool loop from splitting variable names. Fixed by localizing `IFS=$' \n\t'` in the loop.
+- **Env Syntax**: Fixed a trailing comma injected into `.env` placeholders in `01-env.sh`.

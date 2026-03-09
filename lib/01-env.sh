@@ -29,7 +29,7 @@ resolve_user_context() {
         "TELEGRAM_ALLOWED_USERS=REPLACE_ME"
         "TELEGRAM_ALLOWED_USERS_CODING=INHERIT"
         "TELEGRAM_ALLOWED_USERS_MARKETING=INHERIT"
-        "WHATSAPP_ALLOWED_USERS=REPLACE_ME",
+        "WHATSAPP_ALLOWED_USERS=REPLACE_ME"
         "OPENCLAW_SANDBOX_MODE=non-main"
     )
 
@@ -121,6 +121,8 @@ inject_tool_env_placeholders() {
         local raw="${TOOL_ENV_PLACEHOLDERS[$name]:-}"
         [[ -z "$raw" ]] && continue
         local p
+        # Ensure we split on spaces even if the main script restricts IFS (e.g. to \n\t)
+        local IFS=$' \n\t'
         while IFS= read -r p; do
             [[ -z "$p" ]] && continue
             local key="${p%%=*}"

@@ -162,6 +162,8 @@ patch_config() {
         local _sandbox_vars="${TOOL_SANDBOX_ENV[$name]:-}"
         [[ -z "$_sandbox_vars" ]] && continue
         local var
+        # Ensure we split on spaces even if the main script restricts IFS
+        local IFS=$' \n\t'
         for var in $_sandbox_vars; do
             sandbox_env_json+="${_sep}\"${var}\":\"${!var:-}\""
             _sep=","
