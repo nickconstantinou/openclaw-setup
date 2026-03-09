@@ -29,7 +29,8 @@ resolve_user_context() {
         "TELEGRAM_ALLOWED_USERS=REPLACE_ME"
         "TELEGRAM_ALLOWED_USERS_CODING=INHERIT"
         "TELEGRAM_ALLOWED_USERS_MARKETING=INHERIT"
-        "WHATSAPP_ALLOWED_USERS=REPLACE_ME"
+        "WHATSAPP_ALLOWED_USERS=REPLACE_ME",
+        "OPENCLAW_SANDBOX_MODE=non-main"
     )
 
     for p in "${placeholders[@]}"; do

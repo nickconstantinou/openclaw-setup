@@ -155,11 +155,27 @@ patch_config() {
     uas python3 "$SCRIPT_DIR/config/patch-stale-keys.py" --config "$config_file"
 
     log "  Step 2: Apply core configuration..."
+    # Build sandbox env JSON from tool modules
+    local sandbox_env_json="{"
+    local _sep=""
+    for name in "${TOOL_NAMES[@]:-}"; do
+        local _sandbox_vars="${TOOL_SANDBOX_ENV[$name]:-}"
+        [[ -z "$_sandbox_vars" ]] && continue
+        local var
+        for var in $_sandbox_vars; do
+            sandbox_env_json+="${_sep}\"${var}\":\"${!var:-}\""
+            _sep=","
+        done
+    done
+    sandbox_env_json+="}"
+
     # Pass all necessary env vars to the script
     uas env \
         MINIMAX_API_KEY="$MINIMAX_API_KEY" \
         GEMINI_API_KEY="$GEMINI_API_KEY" \
         ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" \
+        TAVILY_API_KEY="${TAVILY_API_KEY:-}" \
+        SANDBOX_ENV_JSON="$sandbox_env_json" \
         POST_BRIDGE_API_KEY="${POST_BRIDGE_API_KEY:-}" \
         OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" \
         TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}" \

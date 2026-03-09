@@ -24,6 +24,7 @@ RULES
 
 TOOL_ENV_PLACEHOLDERS[claude_code]="ANTHROPIC_API_KEY=sk-ant-REPLACE_ME_WHEN_READY"
 TOOL_SYSTEMD_EXPORTS[claude_code]="ANTHROPIC_API_KEY"
+TOOL_SANDBOX_ENV[claude_code]="ANTHROPIC_API_KEY"
 
 # ── 7f. INSTALL CLAUDE CODE ───────────────────────────────────────────────────
 install_claude_code() {

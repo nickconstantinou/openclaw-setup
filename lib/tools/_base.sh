@@ -8,6 +8,7 @@ declare -a  TOOL_NAMES=()
 declare -A  TOOL_APPARMOR_RULES=()
 declare -A  TOOL_ENV_PLACEHOLDERS=()   # "KEY=sentinel\nKEY2=sentinel2"
 declare -A  TOOL_SYSTEMD_EXPORTS=()    # "VAR1 VAR2" (space-separated)
+declare -A  TOOL_SANDBOX_ENV=()         # "VAR1 VAR2" (space-separated env var names for sandbox docker.env)
 
 register_tool() {
     local name="$1"

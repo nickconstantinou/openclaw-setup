@@ -136,7 +136,7 @@ def main():
             'agentDir':   f'{_home}/.openclaw/agents/family/agent',
             'model':     {'primary': 'minimax/MiniMax-M2.5', 'fallbacks': ['minimax/MiniMax-M2.1']},
             'subagents': {'allowAgents': []},
-            'tools':     {'profile': 'full'},
+            'tools':     {'profile': 'messaging'},
             'identity':  {'name': 'Family', 'emoji': '🎪'},
         },
     ]
@@ -189,15 +189,33 @@ def main():
     ds(c, 'tools.fs.workspaceOnly', True)
 
     if _sandbox_mode != 'off':
+        ds(c, 'agents.defaults.sandbox.scope', 'session')
+        ds(c, 'agents.defaults.sandbox.workspaceAccess', 'rw')
+        ds(c, 'agents.defaults.sandbox.docker.network', 'bridge')
+
+        # Collect sandbox env from tool modules (passed as JSON by 08-config.sh)
+        import json as _json
+        _sandbox_env_raw = os.environ.get('SANDBOX_ENV_JSON', '{}')
+        try:
+            _sandbox_env = _json.loads(_sandbox_env_raw)
+        except _json.JSONDecodeError:
+            _sandbox_env = {}
+            print(f"WARNING: Could not parse SANDBOX_ENV_JSON", file=sys.stderr)
+
+        # Add Tavily (native skill, not a tool module)
+        _tavily = os.environ.get('TAVILY_API_KEY', '')
+        if _tavily:
+            _sandbox_env['TAVILY_API_KEY'] = _tavily
+
+        ds(c, 'agents.defaults.sandbox.docker.env', _sandbox_env)
+
+        # Bind mount projects directory
+        _projects_dir = f'{_home}/.openclaw/agents/coding/workspace/projects'
+        ds(c, 'agents.defaults.sandbox.docker.binds', [
+            f'{_projects_dir}:/projects:rw',
+        ])
+
         # NOTE: agents.defaults.sandbox.resources (cpus, memory) and seccompProfile
-        # are defined in the security blueprint but NOT yet recognized by OpenClaw's
-        # config schema (tested against 2026.3.7). Writing them causes a crash loop.
-        # Re-enable when upstream adds schema support for these keys.
-        #
-        # Seccomp profile wiring (future)
-        seccomp_path = '/etc/docker/seccomp/openclaw-sandbox.json'
-        if not os.path.exists(seccomp_path):
-            print(f"WARNING: [SEC-005] Seccomp profile not found at {seccomp_path}", file=sys.stderr)
 
     # Elevated mode configuration (allowFrom set after channel parsing below)
 
