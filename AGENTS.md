@@ -47,5 +47,7 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[APPARMOR_BOOT_RACE]` -> **Pattern**: systemd unit with `aa-exec` crash-loops if profile isn't loaded at boot. | **Fix**: Use conditional `ExecStartPre` and `ExecStart` that falls back to unconfined.
 - `[AUTH_PROFILE_SHADOW]` -> **Pattern**: `auth-profiles.json` plaintext `api_key` entries override config-level SecretRefs. | **Fix**: Scrub plaintext from all agent `auth-profiles.json` and convert to env-based SecretRefs.
 - `[OPEN_DM_SURFACE]` -> **Pattern**: `dmPolicy="open"` on messaging channels allows any user to interact with agents, including those with exec/bash tools. | **Fix**: Use `dmPolicy="allowlist"` with env-driven user ID lists; fall back to `"pairing"` when unset. Always pair with `sandbox.mode="all"` + `workspaceOnly=true`.
+- `[MODULAR_SANDBOX_ENV]` -> **Pattern**: Hardcoding sandbox env vars in common config scripts is brittle. | **Fix**: Use a per-tool `TOOL_SANDBOX_ENV` registry to declare requirements at the source.
+- `[AGENT_PROFILE_LOCK]` -> **Pattern**: Trusting agents with `full` profiles on public channels (WhatsApp) is risky. | **Fix**: Permanently lock public agents to specialized profiles (e.g., `messaging`) in `apply-config.py`.
 '' Openclaw Docs
 - Read all docs in `docs/` directory.

@@ -81,9 +81,9 @@ OpenClaw uses a **tri-agent architecture** with specialized AI agents working to
    │ CODING  │    │ MARKETING│    │  FAMILY   │
    │  AGENT  │    │  AGENT   │    │  AGENT    │
    │         │    │          │    │           │
-   │ bash    │    │ no exec  │    │ WhatsApp  │
-   │ exec    │    │ content  │    │ full      │
-   │ write   │    │ creation │    │ profile   │
+   │ bash    │    │ no exec  │    │ messaging │
+   │ exec    │    │ content  │    │ profile   │
+   │ write   │    │ creation │    │ (secured) │
    └─────────┘    └──────────┘    └───────────┘
 ```
 
@@ -94,7 +94,7 @@ OpenClaw uses a **tri-agent architecture** with specialized AI agents working to
 | **main** | MiniMax M2.5 | Full profile, can spawn subagents | Task planning, orchestration, general queries |
 | **coding** | MiniMax M2.5 | bash, exec, write, edit, git | Development, code generation, system tasks |
 | **marketing** | MiniMax M2.5 | Content tools (no exec) | Content creation, social media, documentation |
-| **family** | MiniMax M2.5 | Full profile | Personal assistant via WhatsApp |
+| **family** | MiniMax M2.5 | Messaging profile (locked) | Personal assistant via WhatsApp (no exec/bash) |
 
 ### Communication Channels
 
@@ -113,7 +113,31 @@ OpenClaw uses **per-channel access control** to protect your AI agents from unau
 | **default** | Full profile | Medium | Personal use only |
 | **coding** | bash, exec, write, edit, process | 🔴 **CRITICAL** | **You only** |
 | **marketing** | No exec/bash/process | Low | Marketing team |
-| **family** (WhatsApp) | Full profile | Medium | Family members |
+| **family** (WhatsApp) | Messaging profile | **SECURE** | Family members |
+
+### 🛡️ Sandboxing & Isolation
+
+OpenClaw enforces a **Docker-first security posture** to protect your host system.
+
+#### Sandbox Modes
+Configure via `OPENCLAW_SANDBOX_MODE` in `~/.openclaw/.env`:
+- `non-main` (Default): All agents run in Docker **except** the `main` agent. Safe experimentation for specialized agents while keeping the host orchestrator unconstrained.
+- `all`: All agents, including `main`, run in Docker.
+- `off`: Sandboxing disabled (not recommended).
+
+#### Features
+- **Network Isolation**: Uses `bridge` networking to allow agents to reach APIs (Anthropic, Google, etc.) while isolating them from the host's private network services.
+- **Projects Mount**: The host directory `~/.openclaw/agents/coding/workspace/projects` is automatically bind-mounted to `/projects` inside the sandbox with Read/Write access. This allows coding/marketing agents to work on local repos safely.
+- **Modular Env Pass-through**: Tools specify which API keys they need in the sandbox via the `TOOL_SANDBOX_ENV` registry.
+
+#### Adding Tools to the Sandbox
+When adding a new tool in `lib/tools/`, declare which environment variables should be passed into the Docker container:
+
+```bash
+# In lib/tools/mytool.sh
+TOOL_SANDBOX_ENV[mytool]="MYTOOL_API_KEY MYTOOL_OTHER_VAR"
+```
+The setup script automatically collects these and passes them to the container's `docker.env`.
 
 ### Configuration Examples
 
@@ -536,6 +560,10 @@ TOOL_ENV_PLACEHOLDERS[mytool]="MYTOOL_API_KEY=REPLACE_ME"
 
 # Vars written to ~/.config/environment.d/openclaw.conf (systemd inherits these)
 TOOL_SYSTEMD_EXPORTS[mytool]="MYTOOL_API_KEY"
+
+# Vars exported into the Docker sandbox environment (space-separated NAMES)
+# These are collected by 08-config.sh and passed to sandbox.docker.env
+TOOL_SANDBOX_ENV[mytool]="MYTOOL_API_KEY"
 
 install_mytool() {
     log "Installing mytool..."

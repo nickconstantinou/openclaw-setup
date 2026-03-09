@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- **Security Hardening & Sandboxing**: Implemented a modular sandbox environment registry and hardened agent profiles.
+    - Added `TOOL_SANDBOX_ENV` registry to `lib/tools/` for modular API key pass-through to Docker containers.
+    - Hardened `family` agent by locking it to the `messaging` tool profile in `apply-config.py`.
+    - Implemented automatic bind-mount of `projects/` directory to `/projects` in the sandbox.
+    - Updated `08-config.sh` to pass a JSON-serialized environment block to `apply-config.py`.
+    - Added `OPENCLAW_SANDBOX_MODE=non-main` default to `01-env.sh`.
 - **Security Audit Remediation**: Hardened channel DM policies and trust boundaries.
     - Switched all Telegram/WhatsApp `dmPolicy` from `"open"` to `"allowlist"` with env-driven user ID allowlists.
     - Added `INHERIT` pattern for per-bot Telegram allowlist inheritance.
