@@ -74,12 +74,12 @@ main() {
     configure_ollama
     setup_apparmor
     setup_network
-    # Sandbox setup - only if explicitly enabled
-    if [[ "${OPENCLAW_SANDBOX_MODE:-}" == "all" ]]; then
+    # Sandbox setup - only if enabled (all or non-main)
+    if [[ "${OPENCLAW_SANDBOX_MODE:-}" != "off" ]]; then
         setup_docker_permissions
         setup_sandbox
     else
-        log "INFO: OPENCLAW_SANDBOX_MODE='${OPENCLAW_SANDBOX_MODE:-non-main}' — skipping Docker sandbox setup."
+        log "INFO: OPENCLAW_SANDBOX_MODE='off' — skipping Docker sandbox setup."
         log "      (Sandbox policy still applies at the config level for agents)."
     fi
 

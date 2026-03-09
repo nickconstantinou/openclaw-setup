@@ -48,3 +48,4 @@ The `family` agent (intended for WhatsApp use) is now permanently locked to the 
 ### 🐛 Regressions & Hotfixes
 - **IFS Word Splitting**: Fixed a bug where `openclaw-self-heal.sh` restricted `IFS` to `\n\t`, preventing the sandbox tool loop from splitting variable names. Fixed by localizing `IFS=$' \n\t'` in the loop.
 - **Env Syntax**: Fixed a trailing comma injected into `.env` placeholders in `01-env.sh`.
+- **Mode-Specific Permission Exclusion**: Fixed a logic error where Docker permissions and AppArmor rules were only applied in `all` mode, blocking the sandbox in the new `non-main` default mode. Fixed by updating conditions to check for `!= "off"`.

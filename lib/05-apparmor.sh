@@ -49,8 +49,8 @@ PYEOF
 # Idempotent: no-op if rules already present.
 patch_apparmor_docker() {
     # Only patch docker rules if sandbox mode is enabled
-    if [[ "${OPENCLAW_SANDBOX_MODE:-}" != "all" ]]; then
-        log "Skipping AppArmor docker patch (sandbox not enabled)."
+    if [[ "${OPENCLAW_SANDBOX_MODE:-}" == "off" ]]; then
+        log "Skipping AppArmor docker patch (sandbox disabled)."
         return 0
     fi
     local profile_path="/etc/apparmor.d/openclaw-gateway"
