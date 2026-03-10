@@ -6,8 +6,13 @@
 
 TOOL_APPARMOR_RULES[gws]=$(cat <<'RULES'
   # ── Google Workspace CLI (gws / @googleworkspace/cli) ───────────────────────
-  # gws is an npm global package — binary symlink at /usr/local/bin/gws
+  # gws is an npm global package
   /usr/local/bin/gws                   rix,
+  /usr/bin/gws                         rix,
+  # env is needed for #!/usr/bin/env node shebang
+  /usr/bin/env                         ix,
+  # node runtime for gws
+  /usr/bin/node                        ix,
   # gws config dir — OAuth credentials stored after `gws auth login`
   @{HOME}/.config/gws/                 rw,
   @{HOME}/.config/gws/**               rw,

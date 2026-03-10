@@ -7,8 +7,9 @@
 TOOL_APPARMOR_RULES[claude_code]=$(cat <<'RULES'
   # ── Claude Code — exec delegation ───────────────────────────────────────────
   # Agent invokes Claude Code via exec tool (claude --print / cc wrapper).
-  # State in ~/.claude/, binary at ~/.local/bin/claude or /usr/local/bin/claude.
-  # Wrapper script lives in ~/.openclaw/bin/cc
+  # env is needed for #!/usr/bin/env node shebang
+  /usr/bin/env                         ix,
+  /usr/bin/node                        ix,
   @{HOME}/.claude/                     rw,
   @{HOME}/.claude/**                   rw,
   @{HOME}/.local/bin/claude            ix,
