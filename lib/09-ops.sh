@@ -149,8 +149,7 @@ setup_docker_permissions() {
         log "  $ACTUAL_USER is already in the docker group."
     fi
 
-    # Ensure AppArmor profile allows docker (required for sandbox mode)
-    patch_apparmor_docker
+    # (Docker rules are now baked natively into the AppArmor template)
 }
 
 setup_sandbox() {

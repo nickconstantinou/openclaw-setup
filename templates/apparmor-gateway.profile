@@ -191,7 +191,10 @@ profile openclaw-gateway {
 
   # ── Docker (sandbox execution) ─────────────────────────────────────────────
   # OpenClaw spawns docker to run agent sandboxes (agents.defaults.sandbox)
-  /usr/bin/docker                      ix,
+  /usr/bin/docker                      rix,
+  /usr/libexec/docker/cli-plugins/     r,
+  /usr/libexec/docker/cli-plugins/**   rix,
+  /run/docker.sock                     rw,
   /var/run/docker.sock                 rw,
 
   # ── Network / ip ────────────────────────────────────────────────────────────

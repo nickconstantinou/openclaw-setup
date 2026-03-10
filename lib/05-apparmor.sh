@@ -44,31 +44,9 @@ PYEOF
     log "AppArmor profile assembled and loaded: $profile_path"
 }
 
-# ── 10b. DOCKER PATCHING ──────────────────────────────────────────────────────
-# Ensures the deployed AppArmor profile allows docker execution (sandbox support).
-# Idempotent: no-op if rules already present.
-patch_apparmor_docker() {
-    # Only patch docker rules if sandbox mode is enabled
-    if [[ "${OPENCLAW_SANDBOX_MODE:-}" == "off" ]]; then
-        log "Skipping AppArmor docker patch (sandbox disabled)."
-        return 0
-    fi
-    local profile_path="/etc/apparmor.d/openclaw-gateway"
-
-    if [[ ! -f "$profile_path" ]]; then
-        log "AppArmor profile not found at $profile_path. Skipping docker patch."
-        return
-    fi
-
-    if sudo grep -qF "/usr/bin/docker" "$profile_path"; then
-        log "AppArmor profile already includes docker rules."
-        return
-    fi
-
-    log "Patching AppArmor profile to allow docker execution..."
-    sudo sed -i 's|  # ── Network / ip|  # ── Docker (sandbox execution) ─────────────────────────────────────────────\n  # OpenClaw spawns docker to run agent sandboxes (agents.defaults.sandbox)\n  /usr/bin/docker                      ix,\n  /var/run/docker.sock                 rw,\n\n  # ── Network / ip|' "$profile_path"
-    sudo apparmor_parser -r "$profile_path" && log "AppArmor profile updated with docker rules." || log "WARNING: AppArmor profile reload failed."
-}
+# ── 10b. DOCKER PATCHING (DEPRECATED) ──────────────────────────────────────────
+# Docker rules are now built natively into the apparmor-gateway.profile template.
+# The patch_apparmor_docker function has been removed.
 
 # ── 11c. VAULT PATCHING ───────────────────────────────────────────────────────
 patch_apparmor_vault() {
