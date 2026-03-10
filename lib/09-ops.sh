@@ -177,8 +177,9 @@ setup_sandbox() {
     if [[ "$sandbox_enabled" == true ]] || [[ "$image_exists" == false ]]; then
         log "Building OpenClaw sandbox base image (this may take a minute)..."
         if [[ -x "$SCRIPT_DIR/scripts/sandbox-setup.sh" ]]; then
-            # Run the setup script as the actual user to preserve ownership/context
-            if uas bash "$SCRIPT_DIR/scripts/sandbox-setup.sh"; then
+            # Run the setup script as the current user (which is root in a sudo context)
+            # to avoid unnecessary privilege dropping and re-sudoing for the password.
+            if bash "$SCRIPT_DIR/scripts/sandbox-setup.sh"; then
                 log "  Sandbox image built successfully."
             else
                 log "  WARNING: Failed to build sandbox image."

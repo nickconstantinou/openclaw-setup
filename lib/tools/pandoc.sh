@@ -159,6 +159,10 @@ install_pandoc() {
     )
     local pkg
     for pkg in "${pip_packages[@]}"; do
+        # Check if package is already installed to avoid slow every-time reinstall
+        if uas python3 -m pip show "$pkg" >/dev/null 2>&1; then
+             continue
+        fi
         uas python3 -m pip install --user --quiet --break-system-packages "$pkg" \
             && log "  pip: installed $pkg" \
             || log "  WARNING: pip install $pkg failed."

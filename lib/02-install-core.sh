@@ -37,10 +37,10 @@ install_openclaw() {
     [[ -z "$oc_bin" ]] && oc_bin=$(sudo -u "$ACTUAL_USER" env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" which openclaw 2>/dev/null || true)
 
     if [[ -n "$oc_bin" ]]; then
-        local oc_ver; oc_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
+        local oc_ver; oc_ver=$("$oc_bin" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
 
         # Check remote version before running slow npm install
-        local latest_ver; latest_ver=$(uas npm view openclaw version 2>/dev/null || echo "unknown")
+        local latest_ver; latest_ver=$(uas npm view openclaw version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
 
         if [[ "$oc_ver" == "$latest_ver" ]] && [[ "$oc_ver" != "unknown" ]]; then
             log "OpenClaw already installed ($oc_ver) and is up-to-date. Skipping upgrade."

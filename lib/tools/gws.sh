@@ -47,8 +47,13 @@ install_gws() {
 
     log "Installing @googleworkspace/cli (gws)..."
     if command -v gws >/dev/null 2>&1; then
-        log "gws already installed: $(gws --version 2>/dev/null | head -1 || echo 'unknown')"
-        return 0
+        local current_ver; current_ver=$(gws --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        local latest_ver; latest_ver=$(uas npm view @googleworkspace/cli version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        if [[ "$current_ver" == "$latest_ver" ]] && [[ "$current_ver" != "unknown" ]]; then
+            log "gws already installed ($current_ver) and is up-to-date. Skipping upgrade."
+            return 0
+        fi
+        log "gws update available: $current_ver → $latest_ver. Attempting upgrade..."
     fi
 
     if HOME=/root npm install -g @googleworkspace/cli --quiet 2>&1; then

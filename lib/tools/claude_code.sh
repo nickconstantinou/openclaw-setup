@@ -34,7 +34,23 @@ install_claude_code() {
     fi
 
     log "Installing Claude Code..."
-    npm install -g @anthropic-ai/claude-code --quiet || log "WARNING: Claude Code install failed."
+    local bin; bin=$(command -v claude 2>/dev/null || true)
+    if [[ -n "$bin" ]]; then
+        local current_ver; current_ver=$("$bin" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        local latest_ver; latest_ver=$(uas npm view @anthropic-ai/claude-code version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        if [[ "$current_ver" == "$latest_ver" ]] && [[ "$current_ver" != "unknown" ]]; then
+            log "Claude Code already installed ($current_ver) and is up-to-date. Skipping upgrade."
+            return 0
+        fi
+        log "Claude Code update available: $current_ver → $latest_ver. Attempting upgrade..."
+    fi
+
+    if HOME=/root npm install -g @anthropic-ai/claude-code --quiet 2>&1; then
+        local new_ver; new_ver=$(command -v claude >/dev/null && claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        log "Claude Code installed/upgraded: $new_ver"
+    else
+        log "WARNING: Claude Code install failed."
+    fi
 
     local bin; bin=$(command -v claude 2>/dev/null || true)
     if [[ -n "$bin" ]]; then

@@ -8,6 +8,8 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Use the same actual user resolution pattern if available, or default to current
 if [[ -n "${ACTUAL_USER:-}" ]]; then
     TARGET_USER="$ACTUAL_USER"
