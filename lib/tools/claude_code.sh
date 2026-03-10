@@ -12,6 +12,7 @@ TOOL_APPARMOR_RULES[claude_code]=$(cat <<'RULES'
   @{HOME}/.claude/                     rw,
   @{HOME}/.claude/**                   rw,
   @{HOME}/.local/bin/claude            ix,
+  /usr/bin/claude                      ix,
   /usr/local/bin/claude                ix,
   # ~/.openclaw/bin/ — agent exec wrappers (cc, etc.)
   # Scripts need rix (read+inherit+exec) — interpreter must read the script file
