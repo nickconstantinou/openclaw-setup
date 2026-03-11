@@ -50,5 +50,7 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[MODULAR_SANDBOX_ENV]` -> **Pattern**: Hardcoding sandbox env vars in common config scripts is brittle. | **Fix**: Use a per-tool `TOOL_SANDBOX_ENV` registry to declare requirements at the source.
 - `[AGENT_PROFILE_LOCK]` -> **Pattern**: Trusting agents with `full` profiles on public channels (WhatsApp) is risky. | **Fix**: Permanently lock public agents to specialized profiles (e.g., `messaging`) in `apply-config.py`.
 - `[SANDBOX_BIND_ROOT]` -> **Pattern**: OpenClaw sandbox security unconditionally rejects bind mounts originating outside allowed roots. | **Fix**: Use the explicit schema property `agents.defaults.sandbox.docker.dangerouslyAllowExternalBindSources: true` when mounting local project directories.
+- `[EXEC_APPROVAL_SHADOW]` -> **Pattern**: `exec-approvals.json` changes on disk are ignored if `openclaw.json` forces `security: allowlist`, or if live scripts in `~/.openclaw-scripts` hardcode restrictive templates. | **Fix**: Audit `~/.openclaw-scripts/lib/08-config.sh` and `~/.openclaw-scripts/config/apply-config.py` for hardcoded overrides.
 '' Openclaw Docs
 - Read all docs in `docs/` directory.
+- Read the latest scrip logs in `self-heal.log`
