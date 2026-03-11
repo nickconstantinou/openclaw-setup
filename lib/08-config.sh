@@ -96,7 +96,7 @@ setup_exec_approvals() {
   "version": 1,
   "defaults": {
     "security": "full",
-    "ask": "on-miss",
+    "ask": "off",
     "askFallback": "deny"
   },
   "agents": {

@@ -139,6 +139,15 @@ TOOL_SANDBOX_ENV[mytool]="MYTOOL_API_KEY MYTOOL_OTHER_VAR"
 ```
 The setup script automatically collects these and passes them to the container's `docker.env`.
 
+### 🛡️ Exec Approvals (Host Security)
+
+OpenClaw includes an execution approval system in `~/.openclaw/exec-approvals.json`. This acts as a final gate for commands running on your host.
+
+- **`security: "full"` + `ask: "off"` (Current Default)**: Recommended for single-user trusted environments. This allows all commands to run without manual approval, providing a seamless "unconstrained" experience.
+- **`security: "allowlist"` + `ask: "on-miss"`**: Recommended for higher security. Only commands in the allowlist run automatically; everything else requires manual approval via the Control UI or a linked channel.
+
+To change this, edit `~/.openclaw/exec-approvals.json` or use `openclaw approvals set-default --ask on-miss`.
+
 ### Configuration Examples
 
 #### Example 1: Personal Use (Most Secure)
