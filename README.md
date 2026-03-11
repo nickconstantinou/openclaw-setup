@@ -141,8 +141,16 @@ The setup script automatically collects these and passes them to the container's
 
 ### 🛡️ Exec Approvals (Host Security)
 
-OpenClaw includes an execution approval system in `~/.openclaw/exec-approvals.json`. This acts as a final gate for commands running on your host.
+OpenClaw includes an execution approval system in `~/.openclaw/exec-approvals.json`. This acts as a final gate for commands running on your host machine.
 
+#### How it applies to Agents
+The system uses a **Defaults + Overrides** hierarchy:
+
+- **Inheritance**: Any setting in the `defaults` block (like `ask: "off"`) applies to **every agent** unless specifically overridden.
+- **Per-Agent Overrides**: You can define custom security levels or allowlists for specific agents by adding their ID (e.g., `main`, `coding`) to the `agents` block.
+- **Allowlists**: These are always per-agent. For example, if you allow `git` for the `coding` agent, the `marketing` agent will still trigger a prompt (unless its security is also set to `full`).
+
+#### Common Postures
 - **`security: "full"` + `ask: "off"` (Current Default)**: Recommended for single-user trusted environments. This allows all commands to run without manual approval, providing a seamless "unconstrained" experience.
 - **`security: "allowlist"` + `ask: "on-miss"`**: Recommended for higher security. Only commands in the allowlist run automatically; everything else requires manual approval via the Control UI or a linked channel.
 
