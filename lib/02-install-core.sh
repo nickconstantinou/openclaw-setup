@@ -143,6 +143,14 @@ setup_agent_dirs() {
             fi
         done
 
+        # Create symlinks to media/inbound for all agents (Telegram, WhatsApp images)
+        mkdir -p "$ACTUAL_HOME/.openclaw/media/inbound"
+        uas ln -sfn "$ACTUAL_HOME/.openclaw/media/inbound" "$agent_workspace_dir/inbound" 2>/dev/null || true
+        
+        # Also add symlink to main media folder for broader access
+        mkdir -p "$ACTUAL_HOME/.openclaw/media"
+        uas ln -sfn "$ACTUAL_HOME/.openclaw/media" "$agent_workspace_dir/media" 2>/dev/null || true
+
         # Harden permissions
         chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$agent_root"
         chmod 700 "$agent_state_dir"
