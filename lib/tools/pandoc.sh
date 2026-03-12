@@ -154,7 +154,7 @@ install_pandoc() {
     log "Installing Python packages for agent use..."
     local pip_packages=(
         pytest pytest-asyncio requests python-dotenv rich yt-dlp
-        python-docx openpyxl python-pptx markitdown
+        python-docx openpyxl python-pptx markitdown beautifulsoup4
         faster-whisper av markdown pyyaml
     )
     local pkg

@@ -63,6 +63,9 @@ install_gws() {
 
     if HOME=/root npm install -g @googleworkspace/cli --quiet 2>&1; then
         log "gws installed: $(command -v gws 2>/dev/null || echo 'not found in PATH')"
+        # Fix binary permissions (robust - no errors if files missing)
+        chmod +x /usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws 2>/dev/null || true
+        chmod +x /usr/lib/node_modules/@googleworkspace/cli/run-gws.js 2>/dev/null || true
     else
         log "WARNING: gws install failed."
         return
