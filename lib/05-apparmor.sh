@@ -26,9 +26,11 @@ setup_apparmor() {
     # Collect rules from loaded tool modules
     local tool_rules=""
     local name
+    log "DEBUG: TOOL_NAMES has ${#TOOL_NAMES[@]} items: ${TOOL_NAMES[*]:-}"
     for name in "${TOOL_NAMES[@]:-}"; do
         [[ -n "${TOOL_APPARMOR_RULES[$name]:-}" ]] && tool_rules+="${TOOL_APPARMOR_RULES[$name]}"$'\n'
     done
+    log "DEBUG: Collected tool_rules length: ${#tool_rules}"
 
     # Inject tool rules between markers using python3
     sudo python3 - "$template_path" "$profile_path" "$tool_rules" <<'PYEOF'
