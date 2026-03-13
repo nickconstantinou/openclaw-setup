@@ -77,6 +77,7 @@ def main():
         'tavily':           ['coding', 'marketing'],
         'claude-code':      ['coding'],
         'gws':              ['coding'],
+        'message':          ['coding', 'marketing'],
         # 'my-new-tool':   ['coding'],
     }
 
