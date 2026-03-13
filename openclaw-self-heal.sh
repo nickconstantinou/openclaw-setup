@@ -67,6 +67,7 @@ main() {
     install_acpx_plugin
     setup_agent_dirs
     install_post_bridge
+    install_telegram_tools
 
     # 3. Assets & Security
     deploy_skills
