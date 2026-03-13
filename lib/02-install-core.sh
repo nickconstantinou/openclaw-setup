@@ -183,7 +183,8 @@ install_telegram_tools() {
 # Usage: tg-send-photo.sh <image_path> [caption]
 #
 
-BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-${TELEGRAM_BOT_TOKEN_CODING}}"
+# Priority: CODING > MARKETING > default
+BOT_TOKEN="${TELEGRAM_BOT_TOKEN_CODING:-${TELEGRAM_BOT_TOKEN_MARKETING:-${TELEGRAM_BOT_TOKEN}}}"
 CHAT_ID="${TELEGRAM_CHAT_ID:-8439679078}"
 
 IMAGE_PATH="$1"
