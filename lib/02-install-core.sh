@@ -135,9 +135,9 @@ setup_agent_dirs() {
         # Create directories
         mkdir -p "$agent_state_dir" "$agent_workspace_dir"
 
-        # Sync base files (AGENTS.md, SOUL.md, MEMORY.md, TOOLS.md)
+        # Sync base files (AGENTS.md, SOUL.md, MEMORY.md, TOOLS.md SKILLS.md)
         # Note: Subagents only load AGENT/TOOLS but we sync all for consistency
-        for f in AGENTS.md SOUL.md MEMORY.md TOOLS.md; do
+        for f in AGENTS.md SOUL.md MEMORY.md TOOLS.md SKILLS.md; do
             if [[ -f "$ACTUAL_HOME/.openclaw/workspace/$f" ]]; then
                 uas cp "$ACTUAL_HOME/.openclaw/workspace/$f" "$agent_workspace_dir/$f" 2>/dev/null || true
             fi
@@ -156,6 +156,68 @@ setup_agent_dirs() {
         chmod 700 "$agent_state_dir"
         chmod 755 "$agent_workspace_dir"
     done
+    
+    # Generate SKILLS.md for each agent based on their actual config
+    generate_agent_skills_md
+}
+
+# ── 7aa. GENERATE AGENT SKILLS MD ────────────────────────────────────────────
+generate_agent_skills_md() {
+    log "Generating SKILLS.md for each agent..."
+    
+    # Read agent config to get each agent's tools
+    local config_file="$ACTUAL_HOME/.openclaw/openclaw.json"
+    if [[ ! -f "$config_file" ]]; then
+        log "WARN: Config file not found, skipping SKILLS.md generation"
+        return 0
+    fi
+    
+    # Extract agents and their tools from config
+    local agents_json
+    agents_json=$(python3 -c "import json; c=json.load(open('$config_file')); print(json.dumps(c.get('agents',{}).get('list',[])))" 2>/dev/null)
+    
+    if [[ -z "$agents_json" ]]; then
+        log "WARN: No agents found in config"
+        return 0
+    fi
+    
+    # For each agent, generate SKILLS.md
+    echo "$agents_json" | python3 -c "
+import json, sys
+agents = json.load(sys.stdin)
+for agent in agents:
+    agent_id = agent.get('id', 'unknown')
+    tools = agent.get('tools', {})
+    allowlist = tools.get('allow', [])
+    profile = tools.get('profile', 'custom')
+    
+    skills_content = f'''# Skills Guide - {agent_id.upper()}
+
+Auto-generated from agent config.
+
+## Available Tools
+{', '.join(allowlist) if allowlist else '(using profile: ' + profile + ')'}
+
+## When to Use Skills
+- Building features → Use superpowers skill
+- Large projects → Use gsd skill  
+- Code review → Use code-review skill
+- Refactoring → Use refactoring skill
+
+## Workspace Files
+- MEMORY.md - Persistent memory
+- TOOLS.md - Available tools
+- SKILLS.md - This file
+'''
+    
+    # Write to agent workspace
+    workspace = f'/home/{os.environ.get(\"ACTUAL_USER\", \"openclaw\")}/.openclaw/agents/{agent_id}/workspace/SKILLS.md'
+    with open(workspace, 'w') as f:
+        f.write(skills_content)
+    print(f'Created SKILLS.md for {agent_id}')
+" 2>/dev/null || log "WARN: Failed to generate SKILLS.md via Python"
+    
+    log "SKILLS.md generation complete"
 }
 
 # ── 7i. INSTALL POST BRIDGE ───────────────────────────────────────────────────

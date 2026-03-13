@@ -66,6 +66,7 @@ main() {
     install_all_tools              # dispatches to install_<name>() for each registered tool
     install_acpx_plugin
     setup_agent_dirs
+    generate_agent_skills_md       # Each agent creates their own SKILLS.md
     install_post_bridge
 
     # 3. Assets & Security
