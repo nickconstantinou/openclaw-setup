@@ -204,6 +204,14 @@ Auto-generated from agent config.
 - Code review → Use code-review skill
 - Refactoring → Use refactoring skill
 
+## Project Conventions
+- Files: kebab-case (user-profile.tsx)
+- Components: PascalCase (UserProfile)
+- Keep files under 200 lines
+- Verify changes work after making them
+- Ask before installing new dependencies
+- Update status after each phase
+
 ## Workspace Files
 - MEMORY.md - Persistent memory
 - TOOLS.md - Available tools
