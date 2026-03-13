@@ -212,6 +212,11 @@ Auto-generated from agent config.
 - Ask before installing new dependencies
 - Update status after each phase
 
+## Agent Communication
+- @mention agent name → routes message to that agent
+- sessions_send → explicit message to another agent's session
+- All agents can message each other via these methods
+
 ## Workspace Files
 - MEMORY.md - Persistent memory
 - TOOLS.md - Available tools
