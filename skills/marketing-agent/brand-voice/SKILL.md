@@ -19,28 +19,19 @@ Choose one primary archetype for the project. If not defined, default to **The R
 *   **The Lucid Dreamer:** "What if reality is just a suggestion?" (High Creativity, High Abstract).
 
 ## 2. Tone Modifiers
-Apply these globally unless verified otherwise.
-*   **Sentence Length:** Variance is King. One word. Then a long, flowing sentence that takes you on a journey before snapping you back.
-*   **Vocabulary:** No "delve," "comprehensive," "unlock," "catalyst," or "tapestry." Use Anglo-Saxon roots (e.g., "build" not "construct", "talk" not "communicate").
-*   **Rhythm:** Write for the ear, not the eye. If you can't read it aloud without taking a breath, cut it.
+Apply these globally as defined in the root `marketing-logic.md`.
+*   **Vocabulary:** strictly enforce the **Banned Glossary** in `marketing-logic.md`.
+*   **Rhythm:** Write for the ear, not the eye. Follow the "Human Rhythm" markers (varied sentence length).
 
 ## 3. The "Vibe Check" Protocol
-Before finalizing ANY text asset, run this checklist:
+Before finalizing ANY text asset, run the checklist in `marketing-logic.md`.
 1.  **The "So What?" Test:** If you delete the first paragraph, does the meaning change? If no, delete it.
 2.  **The "2AM Bar" Test:** Would you say this to a friend at a bar at 2 AM?
     *   *Bad:* "We provide comprehensive solutions for leveraging synergies."
     *   *Good:* "We help you stop burning cash."
-3.  **The Specificity Rule:** Never say "many people." Say "342 founders in our beta group."
 
 ## 4. Banned Glossary
-*   Innovative
-*   Game-changing
-*   Revolutionary
-*   Cutting-edge
-*   Seamless
-*   Robust
-*   Synergy
-*   Holistic
+See the central list in **`marketing-logic.md`**.
 
 ## 5. Output Format
 When asked to define the voice for a project, output a **Voice Profile**:

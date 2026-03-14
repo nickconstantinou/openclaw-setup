@@ -10,9 +10,9 @@ tags: [writing, seo, vibe]
 **Goal:** Rank high without sounding like a robot. Google rewards "Information Gain," not keyword stuffing.
 
 ## 1. The Anti-AI Filter (Mandatory)
-Before writing a single word, run this mental `grep`. If these words appear, delete the sentence and start over:
-*   *Banned:* "Delve", "Landscape", "Tapestry", "Robust", "Leverage", "Synergy", "Transformative", "In conclusion".
-*   *Replacement:* Use Anglo-Saxon roots. "Use" instead of "Utilize". "Fix" instead of "Remediate".
+Before writing a single word, refer to the **Banned Glossary** in the root `marketing-logic.md`. 
+*   **Rules:** If any "Zombie" words or template phrasing (e.g., "In conclusion") appear, delete and start over.
+*   **Replacement:** Use Anglo-Saxon roots as defined in the logic file.
 
 ## 2. Structure: The "Hook & Hold"
 *   **H1 (The Promise):** Must contain the primary keyword + a benefit.

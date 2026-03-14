@@ -60,6 +60,53 @@ sessions_spawn({
 })
 ```
 
+## Cross-Agent Communication Patterns
+
+### Specialist Autonomy (Hybrid Model)
+
+Your specialists can collaborate **without your involvement** in certain cases:
+
+**Marketing → Coding (Autonomous):**
+The marketing agent can spawn coding directly for implementation:
+```javascript
+// Marketing agent does this autonomously
+sessions_spawn({
+    agentId: "coding",
+    task: "Build landing page with requirements: [...]",
+    label: "landing-page"
+})
+```
+
+**Coding → Marketing (Message-Based):**
+The coding agent sends messages for content requests:
+```javascript
+// Coding agent sends message (does NOT spawn)
+sessions_send({
+    sessionKey: "agent:marketing:main",
+    message: "Need docs for new API endpoints: [...]",
+    timeoutSeconds: 300
+})
+```
+
+### When to Orchestrate Directly
+
+You should coordinate when:
+- Task requires both specialists working in sequence with dependencies
+- User request needs decomposition into parallel work streams
+- Complex workflows need supervision
+- Explicit coordination requested
+
+### Monitoring Sub-Agents
+
+Check status of spawned sessions:
+```javascript
+sessions_list({
+    kinds: ["other"],  // Lists subagent sessions
+    activeMinutes: 60,
+    messageLimit: 5
+})
+```
+
 ## Parallelism
 
 You can spawn coding + marketing agents simultaneously if tasks are independent:

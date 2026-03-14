@@ -9,24 +9,18 @@ dependencies: [positioning-architect, marketing-logic]
 # Vibe Architect Skill
 
 ## 1. Objective
-To transform the `positioning_matrix.json` into a live, high-performance landing page. The goal is "Aggressive Simplicity": zero bloat, maximum resonance.
+To transform the strategy into a live, high-performance landing page. The goal is "Aggressive Simplicity": zero bloat, maximum resonance. Refer to the root `marketing-logic.md` for visual standards.
 
 ## 2. Technical Stack Protocols
 * **Framework:** Next.js (App Router).
-* **Styling:** Tailwind CSS (No custom CSS unless requested).
-* **Components:** Use **shadcn/ui** for high-fidelity, "prosumer" feel.
-* **Icons:** Lucide-react (keep it minimal).
+* **Styling:** Tailwind CSS.
+* **Components:** Use **shadcn/ui** for high-fidelity feel.
 
 ## 3. The "Vibe-First" Build Process
 1.  **Ingest Strategy:** Read `strategy/positioning_matrix.json` and `strategy/offer_stack.json`.
-2.  **Scaffold Layout:** Create `app/page.tsx`. Use the aesthetic defined in the brief.
-3.  **Inject Voice:** Pull copy snippets from the `core_hook` and `the_vibe`. 
-4.  **Inject Offer:** 
-    - **Pricing Section:** Must be clear. No "Contact Us" for prices < $500.
-    - **Guarantee Seal:** Place near the CTA.
-5.  **Apply Tones:** Use the color palette and typography from `creative_brief.json`.
-6.  **Visual Friction Check:** Ensure the "Antagonist" is visually distinct.
-7.  **CTA Optimization:** The button must reflect the "Fast-Track" angle (e.g., "Join the Resistance").
+2.  **Scaffold Layout:** Create `app/page.tsx`. Use the aesthetic defined in `creative_brief.json`.
+3.  **Inject Logic:** Ensure no "Zombie" words from `marketing-logic.md` are used in the code or placeholders.
+4.  **CTA Optimization:** The button must reflect the "Fast-Track" angle.
 
 ## 4. Automation Rules
 * **Responsive by Default:** Every build must be mobile-first.

@@ -16,37 +16,18 @@ It applies to any writing task: marketing copy, articles, reports, or creative c
 
 # Core Writing Standards
 
-All content must meet these elite benchmarks:
+All content must meet the **Universal Vibe Standards** defined in the root `marketing-logic.md`.
 
-| Dimension | Requirement |
-|-----------|-------------|
-| Specificity | Concrete examples, quantified claims, measurable ideas |
-| Insight Density | Original thinking, expert-level perspective |
-| Structural Quality | Logical flow, clear hierarchy, consistent progression |
-| Language Precision | Tight sentences, strong verbs, no filler or redundancy |
-| Persuasive Strength | Clear argument, authority, reader benefit |
-| Voice Authenticity | Human tone, natural cadence, persona-aligned |
-| Human Rhythm | Varied sentence lengths, readable pacing, natural emphasis |
-| Semantic Originality | Avoid templates, clichés, or recycled phrasing |
-| Narrative Coherence | Logical, consistent argument or story flow |
-| Persona Alignment | Writing matches intended audience or author voice |
-| Token Density | High information-to-word ratio, minimal fluff |
-| Burstiness & Variation | Sentence complexity and rhythm mimic human writing |
-
-Target goal: Writing should be ≥ 0.95 equivalent on an elite professional scale.
+### Mandatory Benchmarks:
+1. **Zero Zombies**: No words from the Banned Glossary in `marketing-logic.md`.
+2. **Human Rhythm**: Must demonstrate sentence length variance (staccato feel).
+3. **Information Gain**: Every paragraph must provide a specific insight or data point.
+4. **Target Score**: Final output must achieve ≥ 0.95.
 
 ---
 
-# AI Slop Prevention Guidelines
-
-During drafting, the agent must avoid the following patterns:
-
-- Template phrases and cliches ("In today's fast-paced world", "Additionally") 
-- Uniform or symmetrical paragraph/sentence structures 
-- Passive voice or hedging language 
-- Repetitive transitions and filler words 
-- Buzzwords and generic motivational phrases 
-- Generic summaries instead of actionable or specific content 
+# AI Slop Prevention
+Refer to `marketing-logic.md` for the full list of structural red flags and rejection criteria.
 
 ---
 

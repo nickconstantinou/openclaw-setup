@@ -124,10 +124,10 @@ def main():
             'tools': {
                 'allow': _agent_tools('marketing', [
                     'read', 'write', 'exec', 'process', 'bash',
-                    'sessions_list', 'sessions_history', 'sessions_send', 'session_status'
+                    'sessions_list', 'sessions_history', 'sessions_send', 'sessions_spawn', 'session_status'
                 ])
             },
-            'subagents': {'allowAgents': []},
+            'subagents': {'allowAgents': ['coding']},
             'identity': {'name': 'Marketing', 'emoji': '📣'},
         },
         {
@@ -158,7 +158,11 @@ def main():
                     entry['subagents'] = agent['subagents']
                     entry['identity']  = agent.get('identity', entry.get('identity', {}))
 
-    ds(c, 'tools.sessions.visibility', 'tree')
+    # Enable cross-agent communication (hybrid collaboration model)
+    ds(c, 'tools.sessions.visibility', 'agent')  # Each agent can see own sessions
+    ds(c, 'tools.agentToAgent.enabled', True)
+    ds(c, 'tools.agentToAgent.allow', ['main', 'coding', 'marketing'])
+
     ds(c, 'tools.profile', 'full')
     # Append group:automation to subagent tool deny list if not already present
     _subagent_deny = c.get('tools', {}).get('subagents', {}).get('tools', {}).get('deny', [])
