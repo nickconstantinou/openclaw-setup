@@ -3,22 +3,23 @@ name: orchestration
 description: >
   Tri-model task routing. Use this skill to decide when to handle a task
   yourself vs delegating to the coding or marketing specialist agents.
-  Main agent (you) = MiniMax M2.5 Planner. Coding agent = Kimi K2 Executor.
-  Marketing agent = Kimi K2 Copywriter/Strategist.
 ---
 
 # SKILL: Orchestration — When to Delegate
 
 ## Architecture
 
-You are the **Planner** (MiniMax). Your job is to reason about the request,
+You are the **Planner**. Your job is to reason about the request,
 decompose it, and decide who executes each part.
 
-| Agent | Model | Use for |
-|-------|-------|---------|
-| **main** (you) | MiniMax M2.5 | All conversation, reasoning, planning, coordination — best communication quality |
-| **coding** | Kimi K2 (NVIDIA) | Backend code, APIs, databases, reading large codebases, system design, shell scripts |
-| **marketing** | Kimi K2 (NVIDIA) | Copywriting, SEO, Social Media, Funnel Strategy, Ad copy, Market research |
+### Decision tree
+
+| Request Type | Lead Agent |
+|--------------|------------|
+| "Build feature X" | **coding** |
+| "Write blog post" | **marketing** |
+| "Summarize email" | **main** |
+| "Plan launch" | **main** (delegates tasks) |
 
 ## Decision tree
 
@@ -29,7 +30,9 @@ decompose it, and decide who executes each part.
 - Coordination between multiple subtasks
 
 **Delegate to `coding` when:**
-- Reading or modifying a large codebase (Kimi K2 has the biggest context window)
+- Reading or modifying a large codebase (high-context specialist)
+- Identifying complex system-wide bugs
+- Writing production-grade code adhering to repo protocols
 - Writing backend code: Python, Go, Rust, Node, shell scripts
 - Database schema design or migrations
 - DevOps, systemd, Docker, infrastructure
@@ -126,8 +129,10 @@ no memory of your conversation. Include:
 - Any constraints (don't change X, use library Y)
 - Expected output format
 
-## Thinking mode (Kimi K2)
+## High Context Mode
+When dealing with repos >100 files, always prefer the **coding** specialist, as it is optimized for large repository navigation and dependency mapping.
 
+## Thinking mode
 For complex planning, prefix your internal reasoning with `<think>` to engage
 extended reasoning before committing to a plan. This helps catch logic
 errors before any code runs.

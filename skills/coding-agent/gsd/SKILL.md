@@ -34,7 +34,16 @@ Tell GSD about your project idea. It will:
 After project creation: `/gsd:plan-phase <phase-number>`
 
 ### Execute Phase
-Run a specific phase with verification
+Run a specific phase with verification:
+1. **TDD Loop**: Trigger `@superpowers` to write tests before implementation.
+2. **Implementation**: Execute code changes as per the Roadmap.
+3. **Quad Gate**: Run the verification metrics defined in `coding-logic.md`.
+
+### Health Check
+Run `@gsd:health` to verify project stability. This requires:
+- All tests passing.
+- Logic/Type check passing.
+- Zero lint warnings.
 
 ### Check Todos
 See pending tasks

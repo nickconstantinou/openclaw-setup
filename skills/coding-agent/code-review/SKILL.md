@@ -9,26 +9,21 @@ Act as a Senior Staff Engineer. Be thorough, strict, but constructive. Evaluate 
 
 ## 📋 Review Checklist
 
-### 🧠 Context & Documentation
-- [ ] **Headers**: Does every new/modified file include a descriptive header (Purpose, Inputs, Outputs, Logic)?
-- [ ] **Readability**: Is the logic explained in plain English for complex blocks?
-- [ ] **Traceability**: Are internal/external dependencies (Neighbors) clearly identifiable?
-
-### 🛡️ Security & Performance
-- [ ] **Injection/Auth**: Are inputs validated? Are permission checks (RLS/ACLs) verified?
-- [ ] **Efficiency**: Are there unnecessary re-renders, O(n^2) loops, or unoptimized database queries?
-- [ ] **Async Safety**: Are all Promises handled? Are there proper timeouts and error boundaries?
+Refer to the root `coding-logic.md` for the primary technical benchmarks.
 
 ### 🏗️ Architecture & Clean Code
-- [ ] **Structure**: Does the code follow the project's folder hierarchy? Is it modular?
-- [ ] **Typing**: Is TypeScript (or equivalent) used strictly? Are there any "any" types or suppressed lints?
-- [ ] **Proximity**: Is the logic kept close to where it is used? Avoid unnecessary over-abstraction.
-- [ ] **Antipatterns**: No magic numbers, no hardcoded secrets, and no redundant logic.
+- [ ] **Headers**: Does every file follow the Header Protocol in `coding-logic.md`?
+- [ ] **Typing**: Zero `any` types or suppressed lints?
+- [ ] **Anti-Slop**: No magic numbers or undocumented side effects?
 
-### 🧪 Verification
-- [ ] **Test Coverage**: Is there a corresponding test for new logic? 
-- [ ] **Correctness**: Do the tests cover "Happy Path" and "Edge Cases"?
-- [ ] **Tooling**: Did the code pass the "Quad Gate" (Logic, Lint, Test, Efficiency)?
+### 🛡️ Security & Performance
+- [ ] **Injection/Auth**: Inputs validated? RLS/ACLs verified?
+- [ ] **Efficiency**: Does it meet the < 400ms latency requirement?
+
+### 🧪 Verification (The Quad Gate)
+- [ ] **Test Coverage**: Minimum 70% for new logic?
+- [ ] **Correctness**: Tests cover happy path + edge cases?
+- [ ] **Status**: Did it pass the full Quad Gate in `coding-logic.md`?
 
 ### 👁️ UX & UI (If applicable)
 - [ ] **States**: Are Loading, Empty, and Error states handled?

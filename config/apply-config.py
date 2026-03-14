@@ -47,6 +47,16 @@ def main():
         ds(c, 'skills.entries.tavily.enabled', True)
         ds(c, 'skills.entries.tavily.apiKey', {"source": "env", "provider": "default", "id": "TAVILY_API_KEY"})
 
+    # ── Skills Discovery ──────────────────────────────────────────────────────────
+    # Add general-agent, coding-agent, and marketing-agent skills directories
+    # These are shared across all agents (precedence: workspace > ~/.openclaw/skills > extraDirs > bundled)
+    _skills_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # openclaw-scripts root
+    ds(c, 'skills.load.extraDirs', [
+        f'{_skills_base}/skills/general-agent',
+        f'{_skills_base}/skills/coding-agent',
+        f'{_skills_base}/skills/marketing-agent',
+    ])
+
     ds(c, 'agents.defaults.memorySearch.enabled',          True)
     ds(c, 'agents.defaults.memorySearch.provider',         'openai')
     ds(c, 'agents.defaults.memorySearch.model',            'nomic-embed-text')
@@ -70,13 +80,11 @@ def main():
     _marketing_fallback = ['minimax/MiniMax-M2.1']
 
     # ── TOOL REGISTRY ─────────────────────────────────────────────────────────
-    # ADD NEW TOOLS HERE — tool_name (openclaw tool string) → agent IDs that can use it
+    # ADD NEW TOOLS HERE — tool_name (native OpenClaw tool) → agent IDs that can use it
+    # NOTE: Skills (gws, tavily, etc.) are NOT tools. They're discovered via skills.load.extraDirs.
+    # Only list native OpenClaw tools here (browser, message, etc.).
     TOOL_REGISTRY = {
-        'google-workspace': ['coding', 'marketing'],
         'browser':          ['coding', 'marketing'],
-        'tavily':           ['coding', 'marketing'],
-        'claude-code':      ['coding'],
-        'gws':              ['coding'],
         'message':          ['coding', 'marketing'],
         # 'my-new-tool':   ['coding'],
     }

@@ -10,6 +10,6 @@ description: Use this skill when a task is high-level or ambiguous. It forces a 
    - **Security**: What are the RLS implications? Are there sensitive fields or multi-tenant boundaries?
    - **Verification**: How will we test this? (Unit tests, E2E browser verification, or manual QA?)
    - **Edge Cases**: What are the failure modes? (e.g., API timeouts, missing data, unauthorized access)
-   - **Infrastructure**: Does this impact Edge Function latency, shared utilities, or external dependencies?
-3. Present these as a numbered list of diagnostic questions to the user.
-4. Wait for response before generating the Implementation Plan.
+   - **Infrastructure**: Impact on Edge Function latency or dependencies?
+3. Present these as diagnostic questions to the user.
+4. **Transition to GSD**: Once questions are answered, trigger `@gsd:new-project` using the gathered intel to initialize the Roadmap.

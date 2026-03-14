@@ -25,12 +25,18 @@ metadata:
 
 ## 🎯 **What This Skill Does**
 
-Replaces generic single-model code reviews with **specialized multi-model expert analysis** using NVIDIA Foundation Models.
+Replaces generic single-model code reviews.
 
-**Key Transformations:**
-- ❌ **Single generic reviews** → ✅ **Security + Architecture specialists**  
-- ❌ **Broad feedback** → ✅ **File/line specific expert insights**  
-- ❌ **Claude dependency** → ✅ **Qwen3 + Kimi k2 mixture approach**  
+# SKILL: MOE Expert Review (Multi-Tier Audit)
+
+Elite code review using specialized foundation models to provide senior-level analysis.
+
+## The MOE Architecture
+
+Instead of a single generalist pass, this skill triggers a multi-tier audit:
+
+1.  **Tier 1: Security & Performance Auditor** — High-reasoning model optimized for vulnerability detection and latency bottlenecks.
+2.  **Tier 2: Architecture & Design Auditor** — High-context model focused on system design and adherence to the monorepo protocols.
 
 ---
 
@@ -39,10 +45,10 @@ Replaces generic single-model code reviews with **specialized multi-model expert
 Generates **three-tier expert analysis** for any pull request:
 
 ### **Expert Specializations:**
-| Model | Primary Role | Strength Focus |
-|-------|--------------|----------------|
-| **Qwen3 (32B)** | Security/Performance | Vulnerabilities, N+1 queries, algorithm efficiency |
-| **Kimi k2** | Architecture/Design | Patterns, maintainability, extensibility |
+| Role | Focus | Identifies |
+|------|-------|------------|
+| **Security & Performance** | Logic / Safety | Vulnerabilities, N+1 queries, algorithm efficiency |
+| **Architecture & Design** | Patterns / Style | System design, adherence to monorepo protocols |
 | **Combined** | Final synthesis | Weighted expert consensus |
 
 ---
@@ -124,9 +130,9 @@ EOF
 ```typescript
 // Before: Generic "looks good" feedback
 // After: Expert multi-model recommendations
-// • Security (Qwen3): "SQL injection risk on line 47"
+// • Security: "SQL injection risk on line 47"
 // • Performance: "N+1 query pattern in user.js:23-31"  
-// • Architecture (Kimi): "Extract auth middleware for reuse"
+// • Architecture: "Extract auth middleware for reuse"
 ```
 
 ---
@@ -155,4 +161,4 @@ moe-expert-review --repository your-project --pr 42
 
 ---
 
-**Ready for any repository** - Provides expert-tier security and architecture reviews through specialized Qwen3 + Kimi k2 mixture approach.
+**Ready for any repository** - Provides expert-tier security and architecture reviews through specialized foundation model mixture approach.
