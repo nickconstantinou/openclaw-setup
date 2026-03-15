@@ -337,15 +337,34 @@ def main():
         if num.strip() and num.strip() != 'REPLACE_ME'
     ]
 
+    # WhatsApp group configuration
+    _wa_group_id = os.environ.get('WHATSAPP_GROUP_ID', '').strip()
+    _wa_group_allow_from_raw = os.environ.get('WHATSAPP_GROUP_ALLOW_FROM', '')
+    _wa_group_allow_from = [
+        num.strip() for num in _wa_group_allow_from_raw.split(',')
+        if num.strip() and num.strip() != 'REPLACE_ME'
+    ]
+
     _wa_dm_policy = 'allowlist' if _wa_allowed_users else 'pairing'
     _wa_allow_from = _wa_allowed_users if _wa_allowed_users else []
 
     _wa_accounts = c.setdefault('channels', {}).setdefault('whatsapp', {}).setdefault('accounts', {})
     _wa_family = _wa_accounts.get('family', {})
+    
+    # Configure group policy - enable if WHATSAPP_GROUP_ID is set
+    if _wa_group_id:
+        _wa_group_policy = 'allowlist'
+        _wa_groups = {_wa_group_id: {'requireMention': True}}
+    else:
+        _wa_group_policy = 'disabled'
+        _wa_groups = {}
+    
     _wa_family.update({
         'dmPolicy': _wa_dm_policy,
-        'groupPolicy': 'disabled',  # Groups disabled by default (use allowlist if needed)
-        'allowFrom': _wa_allow_from
+        'groupPolicy': _wa_group_policy,
+        'allowFrom': _wa_allow_from,
+        'groupAllowFrom': _wa_group_allow_from,
+        'groups': _wa_groups
     })
     _wa_accounts['family'] = _wa_family
     ds(c, 'channels.whatsapp.defaultAccount', 'family')
