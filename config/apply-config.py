@@ -74,6 +74,14 @@ def main():
     ds(c, 'agents.defaults.subagents.maxChildrenPerAgent', 5)
     ds(c, 'agents.defaults.subagents.runTimeoutSeconds', 900)
 
+    # ── Supabase Configuration ───────────────────────────────────────────────────
+    _supabase_url = os.environ.get('SUPABASE_URL', '').strip()
+    _supabase_key = os.environ.get('SUPABASE_ANON_KEY', '').strip()
+    if _supabase_url and _supabase_url != 'REPLACE_ME':
+        ds(c, 'env.SUPABASE_URL', _supabase_url)
+    if _supabase_key and _supabase_key != 'REPLACE_ME':
+        ds(c, 'env.SUPABASE_ANON_KEY', _supabase_key)
+
     _coding_primary     = 'minimax/MiniMax-M2.5'
     _coding_fallback    = ['minimax/MiniMax-M2.1']
     _marketing_primary  = 'minimax/MiniMax-M2.5'
