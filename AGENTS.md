@@ -51,6 +51,7 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[AGENT_PROFILE_LOCK]` -> **Pattern**: Trusting agents with `full` profiles on public channels (WhatsApp) is risky. | **Fix**: Permanently lock public agents to specialized profiles (e.g., `messaging`) in `apply-config.py`.
 - `[SANDBOX_BIND_ROOT]` -> **Pattern**: OpenClaw sandbox security unconditionally rejects bind mounts originating outside allowed roots. | **Fix**: Use the explicit schema property `agents.defaults.sandbox.docker.dangerouslyAllowExternalBindSources: true` when mounting local project directories.
 - `[EXEC_APPROVAL_SHADOW]` -> **Pattern**: `exec-approvals.json` changes on disk are ignored if `openclaw.json` forces `security: allowlist`, or if live scripts in `~/.openclaw-scripts` hardcode restrictive templates. | **Fix**: Audit `~/.openclaw-scripts/lib/08-config.sh` and `~/.openclaw-scripts/config/apply-config.py` for hardcoded overrides.
+- `[SANDBOX_ENV_WRONG_SECTION]` -> **Pattern**: Setting `c['env']['KEY']` (top-level) in `apply-config.py` does NOT pass env vars to sandboxed agents — they only receive vars from `agents.defaults.sandbox.docker.env`. | **Fix**: Inject into `_sandbox_env` dict inside the `if _sandbox_mode != 'off':` block, before `ds(c, 'agents.defaults.sandbox.docker.env', _sandbox_env)`.
 '' Openclaw Docs
 - Read all docs in `docs/` directory.
 - Read the latest scrip logs in `self-heal.log`
