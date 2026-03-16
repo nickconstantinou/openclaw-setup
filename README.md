@@ -34,6 +34,8 @@ curl -fsSL --proto '=https' --tlsv1.2 \
 - ✅ Python packages (yt-dlp, pandoc, etc.)
 - ✅ Google Workspace CLI (optional)
 - ✅ Claude Code integration (optional)
+- ✅ UFW firewall (default-deny, Tailscale-aware)
+- ✅ fail2ban intrusion prevention (SSH brute-force protection)
 - ✅ AppArmor security profiles
 - ✅ Systemd service units
 
@@ -256,6 +258,25 @@ openclaw security audit
    ```bash
    # Test gateway endpoint (replace TOKEN with your OPENCLAW_GATEWAY_TOKEN)
    curl -H "Authorization: Bearer TOKEN" http://localhost:3002/api/agents
+   ```
+
+### Configure Google Workspace CLI (gws)
+
+If you plan to let agents manage your Calendar, Gmail, Drive, Docs, or Sheets, you must authenticate `gws`:
+
+1. Obtain OAuth 2.0 credentials from Google Cloud Console (APIs & Services → Credentials → Create OAuth client ID).
+2. Add your keys to `~/.openclaw/.env`:
+   ```bash
+   GOOGLE_WORKSPACE_CLI_CLIENT_ID=<your-client-id>
+   GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=<your-client-secret>
+   ```
+3. Run the automated deployment script to apply the changes (it will auto-add the file-based keyring backend variable for sandbox compatibility):
+   ```bash
+   sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
+   ```
+4. Authenticate `gws` to generate `credentials.enc` and your `.encryption_key`:
+   ```bash
+   gws auth login
    ```
 
 ### Access Agent Workspaces
@@ -521,7 +542,23 @@ openclaw sessions view SESSION_ID
    - Review OpenClaw logs: `tail -f /var/log/openclaw-deploy.log`
    - Run security audits regularly: `openclaw security audit`
 
-5. **🔑 Protect Your .env File**
+5. **🔥 Firewall & Intrusion Prevention (UFW + fail2ban)**
+
+   The setup script configures UFW and fail2ban automatically:
+
+   - **UFW**: default deny inbound, Tailscale tunnel allowed, port 22 not exposed
+   - **fail2ban**: sshd jail active — bans IPs after 3 failed SSH attempts for 24 hours
+
+   Verify after deployment:
+   ```bash
+   sudo ufw status verbose          # Should show: Status: active, tailscale0 ALLOW IN
+   sudo fail2ban-client status sshd # Should show active jail with 0 currently banned
+   ```
+
+   > [!IMPORTANT]
+   > SSH access is exclusively via Tailscale (`tailscale up --ssh`). Direct port 22 connections are blocked by design. Ensure Tailscale is authenticated before enabling the firewall.
+
+6. **🔑 Protect Your .env File**
    ```bash
    # Verify permissions
    ls -la ~/.openclaw/.env

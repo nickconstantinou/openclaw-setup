@@ -20,10 +20,11 @@ RULES
 )
 
 TOOL_ENV_PLACEHOLDERS[gws]="GOOGLE_WORKSPACE_CLI_CLIENT_ID=REPLACE_ME
-GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=REPLACE_ME"
+GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=REPLACE_ME
+GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file"
 
-TOOL_SYSTEMD_EXPORTS[gws]="GOOGLE_WORKSPACE_CLI_CLIENT_ID GOOGLE_WORKSPACE_CLI_CLIENT_SECRET"
-TOOL_SANDBOX_ENV[gws]="GOOGLE_WORKSPACE_CLI_CLIENT_ID GOOGLE_WORKSPACE_CLI_CLIENT_SECRET"
+TOOL_SYSTEMD_EXPORTS[gws]="GOOGLE_WORKSPACE_CLI_CLIENT_ID GOOGLE_WORKSPACE_CLI_CLIENT_SECRET GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND"
+TOOL_SANDBOX_ENV[gws]="GOOGLE_WORKSPACE_CLI_CLIENT_ID GOOGLE_WORKSPACE_CLI_CLIENT_SECRET GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND"
 
 # ── 7d. INSTALL GCLOUD CLI ────────────────────────────────────────────────────
 _install_gcloud() {
@@ -81,6 +82,7 @@ install_gws() {
 2. Add to ~/.openclaw/.env:
    GOOGLE_WORKSPACE_CLI_CLIENT_ID=<your-client-id>
    GOOGLE_WORKSPACE_CLI_CLIENT_SECRET=<your-client-secret>
+   GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file   # headless-safe; uses local .encryption_key
 3. Run: gws auth setup   (one-time: configures the OAuth client)
 4. Run: gws auth login   (browser OAuth flow; creds stored in ~/.config/gws/)
 EOF
@@ -100,6 +102,7 @@ EOF
                 HOME="$ACTUAL_HOME" \
                 GOOGLE_WORKSPACE_CLI_CLIENT_ID="$client_id" \
                 GOOGLE_WORKSPACE_CLI_CLIENT_SECRET="$client_secret" \
+                GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file \
                 gws auth setup 2>&1; then
             log "gws auth setup completed."
         else

@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- **Google Workspace CLI Integration**: Switched `gws` to use a file-based keyring backend (`GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file`) to support reliable execution in headless (systemd) and sandboxed (Docker) environments without requiring an OS keyring.
+    - Added read-only bind mount for `~/.config/gws/` in `apply-config.py` so sandboxed agents can use credentials.
+    - Updated `gws.sh` tool module to export keyring configuration.
 - **Security Hardening & Sandboxing**: Implemented a modular sandbox environment registry and hardened agent profiles.
     - Added `TOOL_SANDBOX_ENV` registry to `lib/tools/` for modular API key pass-through to Docker containers.
     - Hardened `family` agent by locking it to the `messaging` tool profile in `apply-config.py`.

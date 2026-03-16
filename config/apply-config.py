@@ -232,10 +232,11 @@ def main():
 
         ds(c, 'agents.defaults.sandbox.docker.env', _sandbox_env)
 
-        # Bind mount projects directory
+        # Bind mount projects directory + gws credentials (read-only)
         _projects_dir = f'{_home}/.openclaw/agents/coding/workspace/projects'
         ds(c, 'agents.defaults.sandbox.docker.binds', [
             f'{_projects_dir}:/projects:rw',
+            f'{_home}/.config/gws:/home/sandbox/.config/gws:ro',
         ])
         ds(c, 'agents.defaults.sandbox.docker.dangerouslyAllowExternalBindSources', True)
 
