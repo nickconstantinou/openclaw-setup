@@ -371,7 +371,7 @@ def main():
     # Configure group policy - enable if WHATSAPP_GROUP_ID is set
     if _wa_group_id:
         _wa_group_policy = 'allowlist'
-        _wa_groups = {_wa_group_id: {'requireMention': True}}
+        _wa_groups = {_wa_group_id: {'requireMention': False}}
     else:
         _wa_group_policy = 'disabled'
         _wa_groups = {}

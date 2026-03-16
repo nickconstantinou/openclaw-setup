@@ -15,6 +15,11 @@ TOOL_APPARMOR_RULES[claude_code]=$(cat <<'RULES'
   @{HOME}/.local/bin/claude            ix,
   /usr/bin/claude                      ix,
   /usr/local/bin/claude                ix,
+  # Claude Code self-manages its binary under ~/.local/share/claude/versions/<ver>
+  # AppArmor resolves ~/.local/bin/claude → the real ELF path, so we need ix there.
+  @{HOME}/.local/share/claude/           r,
+  @{HOME}/.local/share/claude/**         r,
+  @{HOME}/.local/share/claude/versions/* ix,
   # ~/.openclaw/bin/ — agent exec wrappers (cc, etc.)
   # Scripts need rix (read+inherit+exec) — interpreter must read the script file
   @{HOME}/.openclaw/bin/               rw,
