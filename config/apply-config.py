@@ -230,6 +230,12 @@ def main():
         if _tavily:
             _sandbox_env['TAVILY_API_KEY'] = _tavily
 
+        # Add Supabase to sandbox env
+        if _supabase_url and _supabase_url != 'REPLACE_ME':
+            _sandbox_env['SUPABASE_URL'] = _supabase_url
+        if _supabase_key and _supabase_key != 'REPLACE_ME':
+            _sandbox_env['SUPABASE_ANON_KEY'] = _supabase_key
+
         ds(c, 'agents.defaults.sandbox.docker.env', _sandbox_env)
 
         # Bind mount projects directory + gws credentials (read-only)
