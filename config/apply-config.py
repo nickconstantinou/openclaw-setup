@@ -55,6 +55,7 @@ def main():
         f'{_skills_base}/skills/general-agent',
         f'{_skills_base}/skills/coding-agent',
         f'{_skills_base}/skills/marketing-agent',
+        f'{_skills_base}/skills/family-agent',
     ])
 
     ds(c, 'agents.defaults.memorySearch.enabled',          True)
@@ -385,6 +386,10 @@ def main():
     })
     _wa_accounts['family'] = _wa_family
     ds(c, 'channels.whatsapp.defaultAccount', 'family')
+    # Disable top-level groupPolicy so the gateway Doctor doesn't create an
+    # accounts.default entry with groupPolicy="allowlist" + empty groupAllowFrom,
+    # which silently drops all group messages. Per-account policy lives in accounts.family.
+    ds(c, 'channels.whatsapp.groupPolicy', 'disabled')
 
     # ── Bindings: route each Telegram account to the matching agent ───────────────
     bindings = c.setdefault('bindings', [])
