@@ -66,8 +66,24 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
     && apt-get update && apt-get install -y --no-install-recommends google-cloud-cli \
     && rm -rf /var/lib/apt/lists/*
 
-# Install global NPM packages (gws, playwright, claude-code) as root
-RUN npm install -g @googleworkspace/cli playwright @anthropic-ai/claude-code
+# Install gws as a native Rust binary (bypasses npm JS shim + /usr/bin/env shebang issue)
+RUN GWS_ARCH=$(dpkg --print-architecture | sed 's/amd64/x86_64/;s/arm64/aarch64/') \
+ && GWS_VER=$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest \
+      | grep '"tag_name"' | cut -d'"' -f4) \
+ && curl -fsSL \
+      "https://github.com/googleworkspace/cli/releases/download/${GWS_VER}/gws-${GWS_ARCH}-unknown-linux-musl.tar.gz" \
+      | tar -xz -C /usr/local/bin --wildcards --strip-components=1 "*/gws" \
+ && chmod +x /usr/local/bin/gws
+
+# Install claude-code and playwright, then patch shebang to bypass /usr/bin/env restriction
+RUN npm install -g @anthropic-ai/claude-code playwright \
+ && NODE_BIN=$(command -v node || command -v nodejs) \
+ && find /usr/local/bin /usr/bin -maxdepth 1 -type f -name "claude" \
+      -exec sed -i "1s|#!/usr/bin/env node|#!${NODE_BIN}|" {} \; \
+ && find /usr/local/lib/node_modules /usr/lib/node_modules -maxdepth 8 \
+      \( -name "claude" -o -name "claude.js" \) \
+      \( -path "*/.bin/*" -o -path "*/.bin_real/*" \) \
+      -exec sed -i "1s|#!/usr/bin/env node|#!${NODE_BIN}|" {} \; 2>/dev/null || true
 
 # Set up a generic non-root user for the sandbox
 RUN useradd -m -s /bin/bash sandbox
