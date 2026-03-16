@@ -213,6 +213,8 @@ def main():
         ds(c, 'agents.defaults.sandbox.scope', 'session')
         ds(c, 'agents.defaults.sandbox.workspaceAccess', 'rw')
         ds(c, 'agents.defaults.sandbox.docker.network', 'bridge')
+        # Add DNS for external API access (Supabase, etc.)
+        ds(c, 'agents.defaults.sandbox.docker.dns', ['1.1.1.1', '8.8.8.8'])
 
         # Collect sandbox env from tool modules (passed as JSON by 08-config.sh)
         import json as _json
