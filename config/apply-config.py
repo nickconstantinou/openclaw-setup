@@ -51,11 +51,13 @@ def main():
     # Add general-agent, coding-agent, and marketing-agent skills directories
     # These are shared across all agents (precedence: workspace > ~/.openclaw/skills > extraDirs > bundled)
     _skills_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # openclaw-scripts root
+    _gws_skills = f'{_home}/.openclaw/agents/coding/workspace/projects/cli/skills'
     ds(c, 'skills.load.extraDirs', [
         f'{_skills_base}/skills/general-agent',
         f'{_skills_base}/skills/coding-agent',
         f'{_skills_base}/skills/marketing-agent',
         f'{_skills_base}/skills/family-agent',
+        _gws_skills,
     ])
 
     ds(c, 'agents.defaults.memorySearch.enabled',          True)
