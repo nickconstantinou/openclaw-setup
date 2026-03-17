@@ -241,12 +241,14 @@ def main():
 
         ds(c, 'agents.defaults.sandbox.docker.env', _sandbox_env)
 
-        # Bind mount projects directory + gws credentials
+        # Bind mount projects directory + gws credentials + claude-code credentials
         # gws needs rw access to write its token/discovery cache inside ~/.config/gws/
+        # claude-code uses OAuth (.credentials.json) rather than a raw API key
         _projects_dir = f'{_home}/.openclaw/agents/coding/workspace/projects'
         ds(c, 'agents.defaults.sandbox.docker.binds', [
             f'{_projects_dir}:/projects:rw',
             f'{_home}/.config/gws:/home/sandbox/.config/gws:rw',
+            f'{_home}/.claude/.credentials.json:/home/sandbox/.claude/.credentials.json:ro',
         ])
         ds(c, 'agents.defaults.sandbox.docker.dangerouslyAllowExternalBindSources', True)
 
