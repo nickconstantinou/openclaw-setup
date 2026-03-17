@@ -239,11 +239,12 @@ def main():
 
         ds(c, 'agents.defaults.sandbox.docker.env', _sandbox_env)
 
-        # Bind mount projects directory + gws credentials (read-only)
+        # Bind mount projects directory + gws credentials
+        # gws needs rw access to write its token/discovery cache inside ~/.config/gws/
         _projects_dir = f'{_home}/.openclaw/agents/coding/workspace/projects'
         ds(c, 'agents.defaults.sandbox.docker.binds', [
             f'{_projects_dir}:/projects:rw',
-            f'{_home}/.config/gws:/home/sandbox/.config/gws:ro',
+            f'{_home}/.config/gws:/home/sandbox/.config/gws:rw',
         ])
         ds(c, 'agents.defaults.sandbox.docker.dangerouslyAllowExternalBindSources', True)
 

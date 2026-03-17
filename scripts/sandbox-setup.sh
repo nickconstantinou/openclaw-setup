@@ -18,6 +18,9 @@ else
     TARGET_USER="${SUDO_USER:-$(whoami)}"
 fi
 
+TARGET_UID=$(id -u "$TARGET_USER")
+TARGET_GID=$(id -g "$TARGET_USER")
+
 echo "Building OpenClaw Sandbox image: openclaw-sandbox:bookworm-slim..."
 
 # Install seccomp profile
@@ -85,8 +88,10 @@ RUN npm install -g @anthropic-ai/claude-code playwright \
       \( -path "*/.bin/*" -o -path "*/.bin_real/*" \) \
       -exec sed -i "1s|#!/usr/bin/env node|#!${NODE_BIN}|" {} \; 2>/dev/null || true
 
-# Set up a generic non-root user for the sandbox
-RUN useradd -m -s /bin/bash sandbox
+# Set up sandbox user with host UID/GID so bind-mounted files are accessible
+ARG USER_UID=1000
+ARG USER_GID=1000
+RUN groupadd -g ${USER_GID} sandbox && useradd -u ${USER_UID} -g ${USER_GID} -m -s /bin/bash sandbox
 USER sandbox
 WORKDIR /home/sandbox
 ENV PATH="/home/sandbox/.local/bin:${PATH}"
@@ -103,7 +108,10 @@ CMD ["/bin/bash"]
 EOF
 
 echo "Building Docker image..."
-docker build -t openclaw-sandbox:bookworm-slim "$TEMP_DIR"
+docker build \
+    --build-arg USER_UID="$TARGET_UID" \
+    --build-arg USER_GID="$TARGET_GID" \
+    -t openclaw-sandbox:bookworm-slim "$TEMP_DIR"
 
 echo "✅ Successfully built openclaw-sandbox:bookworm-slim"
 exit 0
