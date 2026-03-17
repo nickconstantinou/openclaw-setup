@@ -130,6 +130,9 @@ Configure via `OPENCLAW_SANDBOX_MODE` in `~/.openclaw/.env`:
 #### Features
 - **Network Isolation**: Uses `bridge` networking to allow agents to reach APIs (Anthropic, Google, etc.) while isolating them from the host's private network services.
 - **Projects Mount**: The host directory `~/.openclaw/agents/coding/workspace/projects` is automatically bind-mounted to `/projects` inside the sandbox with Read/Write access. This allows coding/marketing agents to work on local repos safely.
+- **UID/GID Matching**: The sandbox image is built with the host user's UID/GID so bind-mounted files are readable and writable without permission errors. Rebuild the image after changing the host user.
+- **gws Credential Mount**: `~/.config/gws/` is mounted read/write so the coding agent can read OAuth tokens and write the API discovery cache.
+- **Claude Code Credential Mount**: `~/.claude/.credentials.json` is mounted read-only so the coding agent can use Claude Code with OAuth authentication.
 - **Modular Env Pass-through**: Tools specify which API keys they need in the sandbox via the `TOOL_SANDBOX_ENV` registry.
 
 #### Adding Tools to the Sandbox
@@ -359,6 +362,25 @@ If your agents fail with a "spawn docker EACCES" error, the sandbox is missing o
    sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
    ```
 3. If the user was just added to the `docker` group, you may need to **log out and log back in** for permissions to apply.
+
+#### gws "Permission Denied" or "discoveryError" in Sandbox
+
+gws writes an API discovery cache and reads OAuth tokens on startup. If it errors with permission denied inside the sandbox:
+
+1. **UID/GID mismatch**: The sandbox image must be built with your host UID/GID. Rebuild it:
+   ```bash
+   sudo bash ~/.openclaw-scripts/scripts/sandbox-setup.sh
+   ```
+2. **Stale image**: Older images used an npm JS shim that was blocked by Docker's seccomp profile. The current setup installs gws as a native binary. Rebuild to pick up this fix (same command above).
+3. **Mount permissions**: gws needs `~/.config/gws/` mounted read/write for token and discovery cache. This is configured automatically by `config/apply-config.py` — re-run the self-heal to regenerate config.
+
+#### Claude Code "Invalid API Key" in Sandbox
+
+If the coding agent reports an invalid API key when using Claude Code, the OAuth credentials file may not be mounted. Re-run the self-heal to apply the bind mount:
+```bash
+sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
+```
+Claude Code uses `~/.claude/.credentials.json` for OAuth (token format `sk-ant-oat01-…`), not a raw API key. This file is mounted read-only into the sandbox automatically.
 
 #### Permission Denied Errors
 
