@@ -29,6 +29,8 @@ def main():
     with open(cfg) as f:
         c = json.load(f)
 
+    _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
+
     # ── Model Architecture ────────────────────────────────────────────────────────
     _main_primary = 'minimax/MiniMax-M2.5'
     _fallbacks    = ['minimax/MiniMax-M2.1']
@@ -102,8 +104,6 @@ def main():
 
     def _agent_tools(agent_id, base_tools):
         return base_tools + [t for t, agents in TOOL_REGISTRY.items() if agent_id in agents]
-
-    _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
     _named_agents = [
         {
