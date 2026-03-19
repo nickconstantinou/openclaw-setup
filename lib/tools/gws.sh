@@ -52,6 +52,16 @@ install_gws() {
     _install_gcloud
 
     log "Installing @googleworkspace/cli (gws)..."
+
+    # Always ensure /usr/local/bin/gws points directly to the native binary,
+    # bypassing the npm JS shim (which chains through /usr/bin/env and is blocked
+    # by AppArmor when run inside the gateway process).
+    local _gws_native="/usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws"
+    if [[ -f "$_gws_native" ]]; then
+        ln -sf "$_gws_native" /usr/local/bin/gws
+        log "gws: linked native binary to /usr/local/bin/gws (bypasses npm shim)"
+    fi
+
     if command -v gws >/dev/null 2>&1; then
         local current_ver; current_ver=$(gws --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
         local latest_ver; latest_ver=$(uas npm view @googleworkspace/cli version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
@@ -67,6 +77,8 @@ install_gws() {
         # Fix binary permissions (robust - no errors if files missing)
         chmod +x /usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws 2>/dev/null || true
         chmod +x /usr/lib/node_modules/@googleworkspace/cli/run-gws.js 2>/dev/null || true
+        # Point /usr/local/bin/gws at the native binary (AppArmor already has rix for this path)
+        [[ -f "$_gws_native" ]] && ln -sf "$_gws_native" /usr/local/bin/gws || true
     else
         log "WARNING: gws install failed."
         return
