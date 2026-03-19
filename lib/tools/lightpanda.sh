@@ -6,7 +6,11 @@
 
 TOOL_APPARMOR_RULES[lightpanda]=$(cat <<'RULES'
   # ── LightPanda Browser ───────────────────────────────────────────────────────
+  # npm package install dir
   @{HOME}/.openclaw/tools/lightpanda/**          mrwix,
+  # binary download location (npm postinstall writes here)
+  @{HOME}/.cache/lightpanda-node/                rw,
+  @{HOME}/.cache/lightpanda-node/**              mrwix,
   /usr/bin/node                                   ix,
   /usr/local/bin/node                             ix,
   network inet stream,
@@ -21,8 +25,10 @@ TOOL_SANDBOX_ENV[lightpanda]="LIGHTPANDA_HOST LIGHTPANDA_PORT"
 # ── INSTALL LIGHTPANDA ────────────────────────────────────────────────────────
 install_lightpanda() {
     local install_dir="$ACTUAL_HOME/.openclaw/tools/lightpanda"
+    local binary="$ACTUAL_HOME/.cache/lightpanda-node/lightpanda"
 
-    if [ -d "$install_dir/node_modules/@lightpanda/browser" ]; then
+    # Idempotency: check for the actual downloaded binary
+    if [ -x "$binary" ]; then
         log "LightPanda already installed — skipping."
         return 0
     fi

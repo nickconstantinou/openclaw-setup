@@ -20,14 +20,32 @@ except ImportError:
 _DEFAULT_HOST = os.environ.get("LIGHTPANDA_HOST", "127.0.0.1")
 _DEFAULT_PORT = int(os.environ.get("LIGHTPANDA_PORT", "9222"))
 _INSTALL_DIR = Path.home() / ".openclaw" / "tools" / "lightpanda"
-_BIN_DIR = _INSTALL_DIR / "node_modules" / "@lightpanda" / "browser" / "bin"
 
 
 def _find_lightpanda_bin() -> Optional[Path]:
-    """Locate the lightpanda binary."""
-    for candidate in _BIN_DIR.glob("lightpanda*"):
+    """Locate the lightpanda binary.
+
+    Search order:
+    1. LIGHTPANDA_EXECUTABLE_PATH env var (explicit override)
+    2. ~/.cache/lightpanda-node/lightpanda  (npm postinstall download location)
+    3. ~/.openclaw/tools/lightpanda node_modules bin dir (our custom install)
+    """
+    env_path = os.environ.get("LIGHTPANDA_EXECUTABLE_PATH")
+    if env_path:
+        p = Path(env_path)
+        if p.is_file():
+            return p
+
+    cache_bin = Path.home() / ".cache" / "lightpanda-node" / "lightpanda"
+    if cache_bin.is_file():
+        return cache_bin
+
+    # Fallback: scan our npm prefix install dir
+    bin_dir = _INSTALL_DIR / "node_modules" / "@lightpanda" / "browser" / "bin"
+    for candidate in bin_dir.glob("lightpanda*"):
         if candidate.is_file():
             return candidate
+
     return None
 
 
@@ -57,7 +75,7 @@ class LightPandaBrowser:
         binary = _find_lightpanda_bin()
         if binary is None:
             raise RuntimeError(
-                f"LightPanda binary not found in {_BIN_DIR}. "
+                f"LightPanda binary not found. Checked: ~/.cache/lightpanda-node/, {_INSTALL_DIR}/node_modules/@lightpanda/browser/bin/, LIGHTPANDA_EXECUTABLE_PATH. "
                 "Re-run the OpenClaw install script to install it."
             )
 

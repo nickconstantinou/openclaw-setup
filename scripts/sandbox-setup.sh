@@ -99,6 +99,10 @@ ENV PATH="/home/sandbox/.local/bin:${PATH}"
 # Install browser binaries as the sandbox user
 RUN npx playwright install chromium
 
+# Install LightPanda — postinstall script downloads binary to ~/.cache/lightpanda-node/lightpanda
+RUN npm install --prefix /tmp/lp-install @lightpanda/browser \
+ && rm -rf /tmp/lp-install
+
 # Tavily requires no local binaries (it is an API skill)
 # Python deps for common skills (matches host env)
 RUN python3 -m pip install --user --break-system-packages \
