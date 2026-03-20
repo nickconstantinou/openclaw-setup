@@ -148,13 +148,18 @@ Full reference: `skills/google-workspace/SKILL.md`
 
 ## Web Search & Fetch
 
-**`web_search` is disabled** — the built-in tool auto-selects Gemini (blocked). Use the **`tavily` skill** instead:
+> **`web_search` and `web_fetch` are intentionally disabled. Do NOT re-enable them.**
+> `web_search` auto-selects Gemini (blocked on this server). `web_fetch` uses a plain HTTP fetcher that fails on most sites.
+
+**For search** — use the `tavily` skill, curl the API directly:
 ```bash
-# Load the tavily skill, then search
-exec('python3 skills/tavily/search.py "your query"')
+curl -s -X POST https://api.tavily.com/search \
+  -H "Authorization: Bearer $TAVILY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "your query here", "max_results": 5}'
 ```
 
-**`web_fetch` is disabled** — the plain HTTP fetcher is unreliable. Use **LightPanda** for fetching URLs:
+**For fetching a URL** — use LightPanda:
 ```bash
 python3 ~/.openclaw/workspace/skills/lightpanda/browser.py https://example.com
 ```
