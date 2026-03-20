@@ -11,16 +11,20 @@ TOOL_APPARMOR_RULES[lightpanda]=$(cat <<'RULES'
   # binary download location (npm postinstall writes here)
   @{HOME}/.cache/lightpanda-node/                rw,
   @{HOME}/.cache/lightpanda-node/**              mrwix,
-  /usr/bin/node                                   ix,
-  /usr/local/bin/node                             ix,
-  network inet stream,
-  network inet6 stream,
+  # /usr/bin/node and network rules already in base profile
 RULES
 )
 
-TOOL_ENV_PLACEHOLDERS[lightpanda]="LIGHTPANDA_HOST=127.0.0.1\nLIGHTPANDA_PORT=9222"
+# Use actual newlines so inject_tool_env_placeholders splits correctly into
+# separate KEY=value pairs (literal \n is NOT a newline in bash strings).
+TOOL_ENV_PLACEHOLDERS[lightpanda]="LIGHTPANDA_HOST=127.0.0.1
+LIGHTPANDA_PORT=9222"
+
+# Export host/port to the gateway process via systemd environment.d.
+# NOT in TOOL_SANDBOX_ENV: the sandbox Docker container cannot reach 127.0.0.1
+# on the host, so these values are meaningless (and an empty LIGHTPANDA_PORT
+# can break sandbox initialisation).
 TOOL_SYSTEMD_EXPORTS[lightpanda]="LIGHTPANDA_HOST LIGHTPANDA_PORT"
-TOOL_SANDBOX_ENV[lightpanda]="LIGHTPANDA_HOST LIGHTPANDA_PORT"
 
 # ── INSTALL LIGHTPANDA ────────────────────────────────────────────────────────
 install_lightpanda() {
