@@ -146,9 +146,24 @@ Full reference: `skills/google-workspace/SKILL.md`
 
 ---
 
+## Web Search & Fetch
+
+**`web_search` is disabled** — the built-in tool auto-selects Gemini (blocked). Use the **`tavily` skill** instead:
+```bash
+# Load the tavily skill, then search
+exec('python3 skills/tavily/search.py "your query"')
+```
+
+**`web_fetch` is disabled** — the plain HTTP fetcher is unreliable. Use **LightPanda** for fetching URLs:
+```bash
+python3 ~/.openclaw/workspace/skills/lightpanda/browser.py https://example.com
+```
+
+---
+
 ## LightPanda (Headless Browser)
 
-Fast CDP browser — 10x faster than Chrome, 10x less memory. Use for web scraping and simple automation.
+Fast CDP browser — 10x faster than Chrome, 10x less memory. Use for web scraping, fetching URLs, and simple automation.
 
 **Installed at:** `~/.openclaw/tools/lightpanda/`
 **Binary at:** `~/.cache/lightpanda-node/lightpanda`

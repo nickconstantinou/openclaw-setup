@@ -15,6 +15,9 @@ TOOL_APPARMOR_RULES[claude_code]=$(cat <<'RULES'
   @{HOME}/.local/bin/claude            ix,
   /usr/bin/claude                      ix,
   /usr/local/bin/claude                ix,
+  # AppArmor resolves symlinks at exec time — /usr/bin/claude points to the real
+  # script below, which only gets 'r' from the broad node_modules/** rule.
+  /usr/lib/node_modules/@anthropic-ai/claude-code/cli.js  ix,
   # Claude Code self-manages its binary under ~/.local/share/claude/versions/<ver>
   # AppArmor resolves ~/.local/bin/claude → the real ELF path, so we need ix there.
   @{HOME}/.local/share/claude/           r,

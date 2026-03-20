@@ -213,6 +213,12 @@ def main():
     ds(c, 'tools.exec.host', 'gateway')
     ds(c, 'tools.exec.security', 'full')
 
+    # ── Web Tool Configuration ───────────────────────────────────────────────────
+    # web_search: disabled — Gemini auto-detected but blocked; use Tavily skill instead
+    # web_fetch:  disabled — plain HTTP fetcher unreliable; use LightPanda skill instead
+    ds(c, 'tools.web.search.enabled', False)
+    ds(c, 'tools.web.fetch.enabled',  False)
+
     # ── Single Telegram account → main agent ─────────────────────────────────────
     _tg_main = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 
