@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # scripts/sandbox-setup.sh
-# 
-# @intent Build the minimal Docker image for OpenClaw sandbox execution.
+#
+# @intent Build the minimal Docker image for the family agent sandbox.
 # @complexity 1
+#
+# This image is used exclusively by the family agent (WhatsApp/messaging profile).
+# It does NOT include claude-code, gws, or document processing tools since the
+# family agent runs with a messaging profile (no exec/bash/code execution).
 #
 
 set -Eeuo pipefail
@@ -21,7 +25,7 @@ fi
 TARGET_UID=$(id -u "$TARGET_USER")
 TARGET_GID=$(id -g "$TARGET_USER")
 
-echo "Building OpenClaw Sandbox image: openclaw-sandbox:bookworm-slim..."
+echo "Building OpenClaw family sandbox image: openclaw-sandbox:bookworm-slim..."
 
 # Install seccomp profile
 SECCOMP_DEST="/etc/docker/seccomp/openclaw-sandbox.json"
@@ -54,39 +58,18 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 cat > "$TEMP_DIR/Dockerfile" << 'EOF'
 FROM debian:bookworm-slim
 
-# Install essential tools for agent execution + Playwright deps + Pandoc/FFmpeg
+# Install essential tools for family agent skills:
+# - Browser automation (playwright, lightpanda)
+# - Media processing (ffmpeg, yt-dlp)
+# - Python skill dependencies
+# NOTE: No gcloud/gws, claude-code, pandoc, or texlive — not needed for messaging profile
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git nodejs npm python3 python3-pip python3-venv bash curl jq \
     libgbm1 libnss3 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
     libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libasound2 \
-    pandoc texlive-xetex poppler-utils ffmpeg sqlite3 \
-    gnupg apt-transport-https ca-certificates \
+    ffmpeg sqlite3 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Google Cloud CLI
-RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list \
-    && apt-get update && apt-get install -y --no-install-recommends google-cloud-cli \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install gws as a native Rust binary (bypasses npm JS shim + /usr/bin/env shebang issue)
-RUN GWS_ARCH=$(dpkg --print-architecture | sed 's/amd64/x86_64/;s/arm64/aarch64/') \
- && GWS_VER=$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest \
-      | grep '"tag_name"' | cut -d'"' -f4) \
- && curl -fsSL \
-      "https://github.com/googleworkspace/cli/releases/download/${GWS_VER}/gws-${GWS_ARCH}-unknown-linux-musl.tar.gz" \
-      | tar -xz -C /usr/local/bin --wildcards --strip-components=1 "*/gws" \
- && chmod +x /usr/local/bin/gws
-
-# Install claude-code and playwright, then patch shebang to bypass /usr/bin/env restriction
-RUN npm install -g @anthropic-ai/claude-code playwright \
- && NODE_BIN=$(command -v node || command -v nodejs) \
- && find /usr/local/bin /usr/bin -maxdepth 1 -type f -name "claude" \
-      -exec sed -i "1s|#!/usr/bin/env node|#!${NODE_BIN}|" {} \; \
- && find /usr/local/lib/node_modules /usr/lib/node_modules -maxdepth 8 \
-      \( -name "claude" -o -name "claude.js" \) \
-      \( -path "*/.bin/*" -o -path "*/.bin_real/*" \) \
-      -exec sed -i "1s|#!/usr/bin/env node|#!${NODE_BIN}|" {} \; 2>/dev/null || true
 
 # Set up sandbox user with host UID/GID so bind-mounted files are accessible
 ARG USER_UID=1000
@@ -96,17 +79,19 @@ USER sandbox
 WORKDIR /home/sandbox
 ENV PATH="/home/sandbox/.local/bin:${PATH}"
 
-# Install browser binaries as the sandbox user
-RUN npx playwright install chromium
+# Install Playwright + Chromium browser binaries as the sandbox user
+RUN npm install --prefix /home/sandbox/.local/lib playwright \
+ && npx --prefix /home/sandbox/.local/lib playwright install chromium
 
-# Install LightPanda — postinstall script downloads binary to ~/.cache/lightpanda-node/lightpanda
+# Install LightPanda — fast headless CDP browser (10x faster than Chrome)
+# postinstall script downloads binary to ~/.cache/lightpanda-node/lightpanda
 RUN npm install --prefix /tmp/lp-install @lightpanda/browser \
  && rm -rf /tmp/lp-install
 
 # Tavily requires no local binaries (it is an API skill)
-# Python deps for common skills (matches host env)
+# Python deps for family agent skills
 RUN python3 -m pip install --user --break-system-packages \
-    pytest requests python-dotenv rich yt-dlp markitdown
+    requests python-dotenv rich yt-dlp markitdown
 
 CMD ["/bin/bash"]
 EOF

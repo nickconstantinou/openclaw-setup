@@ -5,11 +5,11 @@
 # 
 
 deploy_skills() {
-    log "Deploying categorized agent skills (Tri-Agent Architecture)..."
+    log "Deploying agent skills (main + family)..."
     local local_skills_dir="$SCRIPT_DIR/skills"
 
     # Categories to map to agents
-    local categories=("general-agent" "coding-agent" "marketing-agent" "family-agent")
+    local categories=("general-agent" "family-agent")
 
     for category in "${categories[@]}"; do
         local category_dir="$local_skills_dir/$category"

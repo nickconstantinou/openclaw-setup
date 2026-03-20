@@ -126,8 +126,8 @@ install_acpx_plugin() {
 
 # ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
 setup_agent_dirs() {
-    log "Creating named agent directories (Tri-Agent Architecture)..."
-    for id in main coding marketing family; do
+    log "Creating named agent directories (main + family)..."
+    for id in main family; do
         local agent_root="$ACTUAL_HOME/.openclaw/agents/$id"
         local agent_state_dir="$agent_root/agent"
         local agent_workspace_dir="$agent_root/workspace"
