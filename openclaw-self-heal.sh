@@ -75,14 +75,9 @@ main() {
     configure_ollama
     setup_apparmor
     setup_network
-    # Sandbox setup - only if enabled (all or non-main)
-    if [[ "${OPENCLAW_SANDBOX_MODE:-}" != "off" ]]; then
-        setup_docker_permissions
-        setup_sandbox
-    else
-        log "INFO: OPENCLAW_SANDBOX_MODE='off' — skipping Docker sandbox setup."
-        log "      (Sandbox policy still applies at the config level for agents)."
-    fi
+    # Sandbox setup - Docker is always configured for the family agent
+    setup_docker_permissions
+    setup_sandbox
 
     # 4. Configuration
     setup_github_cli

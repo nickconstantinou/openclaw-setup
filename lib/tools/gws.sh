@@ -9,6 +9,10 @@ TOOL_APPARMOR_RULES[gws]=$(cat <<'RULES'
   # gws is an npm global package
   /usr/local/bin/gws                   rix,
   /usr/bin/gws                         rix,
+  # AppArmor resolves symlinks at exec time — the symlink at /usr/local/bin/gws
+  # points to the real ELF binary below. That path only gets 'r' from the broad
+  # node_modules/** rule, so we need an explicit 'ix' here.
+  /usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws  ix,
   # env is needed for #!/usr/bin/env node shebang
   /usr/bin/env                         ix,
   # node runtime for gws

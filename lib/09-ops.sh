@@ -156,13 +156,10 @@ setup_sandbox() {
     log "Checking OpenClaw Docker sandbox requirement..."
     local config_file="$ACTUAL_HOME/.openclaw/openclaw.json"
     
-    # Simple check for sandbox mode string in config or env
+    # Check if sandbox mode is enabled in config (family agent uses mode: "all")
     local sandbox_enabled=false
-    
+
     if [[ -f "$config_file" ]] && grep -q '"mode"[[:space:]]*:[[:space:]]*"all"' "$config_file"; then
-        sandbox_enabled=true
-    elif grep -q 'OPENCLAW_SANDBOX_MODE="all"' "$ACTUAL_HOME/.openclaw/.env" 2>/dev/null || \
-         grep -q 'OPENCLAW_SANDBOX_MODE=all' "$ACTUAL_HOME/.openclaw/.env" 2>/dev/null; then
         sandbox_enabled=true
     fi
     
