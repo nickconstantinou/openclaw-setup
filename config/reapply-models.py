@@ -21,7 +21,8 @@ def main():
         config = {}
 
     catalog = {
-        'minimax/MiniMax-M2.5': {'alias': 'minimax'},
+        'minimax/MiniMax-M2.7': {'alias': 'minimax'},
+        'minimax/MiniMax-M2.5': {'alias': 'minimax-m25'},
         'minimax/MiniMax-M2.1': {'alias': 'minimax-m21'},
         'minimax/MiniMax-M2':   {'alias': 'minimax-m2'},
     }

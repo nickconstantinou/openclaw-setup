@@ -32,8 +32,8 @@ def main():
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
     # ── Model Architecture ────────────────────────────────────────────────────────
-    _main_primary = 'minimax/MiniMax-M2.5'
-    _fallbacks    = ['minimax/MiniMax-M2.1']
+    _main_primary = 'minimax/MiniMax-M2.7'
+    _fallbacks    = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1']
     ds(c, 'agents.defaults.model.primary',   _main_primary)
     ds(c, 'agents.defaults.model.fallbacks', _fallbacks)
 
@@ -68,8 +68,8 @@ def main():
     ds(c, 'agents.defaults.compaction.mode', 'safeguard')
 
     ds(c, 'agents.defaults.subagents.model', {
-        'primary':   'minimax/MiniMax-M2.5',
-        'fallbacks': ['minimax/MiniMax-M2.1'],
+        'primary':   'minimax/MiniMax-M2.7',
+        'fallbacks': ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1'],
     })
     ds(c, 'agents.defaults.subagents.maxConcurrent', 4)
     ds(c, 'agents.defaults.subagents.maxSpawnDepth', 2)
@@ -141,7 +141,7 @@ def main():
             'workspace': f'{_home}/.openclaw/workspace',
             'agentDir':  f'{_home}/.openclaw/agents/main/agent',
             'model': {
-                'primary':   os.environ.get('MINIMAX_DEFAULT', 'minimax/MiniMax-M2.5'),
+                'primary':   os.environ.get('MINIMAX_DEFAULT', 'minimax/MiniMax-M2.7'),
                 'fallbacks': _fallbacks,
             },
             'subagents': {'allowAgents': []},  # uses anonymous subagent spawning
@@ -152,7 +152,7 @@ def main():
             'name':      'Family',
             'workspace':  f'{_home}/.openclaw/agents/family/workspace',
             'agentDir':   f'{_home}/.openclaw/agents/family/agent',
-            'model':     {'primary': 'minimax/MiniMax-M2.5', 'fallbacks': ['minimax/MiniMax-M2.1']},
+            'model':     {'primary': 'minimax/MiniMax-M2.7', 'fallbacks': ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1']},
             'subagents': {'allowAgents': []},
             'tools':     {'profile': 'messaging'},
             'identity':  {'name': 'Family', 'emoji': '🎪'},
@@ -276,7 +276,11 @@ def main():
         if num.strip() and num.strip() != 'REPLACE_ME'
     ]
 
-    _wa_group_id = os.environ.get('WHATSAPP_GROUP_ID', '').strip()
+    _wa_group_ids_raw = os.environ.get('WHATSAPP_GROUP_ID', '').strip()
+    _wa_group_ids = [
+        g.strip() for g in _wa_group_ids_raw.split(',')
+        if g.strip() and g.strip() != 'REPLACE_ME'
+    ]
     _wa_group_allow_from_raw = os.environ.get('WHATSAPP_GROUP_ALLOW_FROM', '')
     _wa_group_allow_from = [
         num.strip() for num in _wa_group_allow_from_raw.split(',')
@@ -289,9 +293,9 @@ def main():
     _wa_accounts = c.setdefault('channels', {}).setdefault('whatsapp', {}).setdefault('accounts', {})
     _wa_family = _wa_accounts.get('family', {})
 
-    if _wa_group_id:
+    if _wa_group_ids:
         _wa_group_policy = 'allowlist'
-        _wa_groups = {_wa_group_id: {'requireMention': False}}
+        _wa_groups = {gid: {'requireMention': False} for gid in _wa_group_ids}
     else:
         _wa_group_policy = 'disabled'
         _wa_groups = {}

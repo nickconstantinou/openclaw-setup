@@ -102,6 +102,15 @@ def main():
         'apiKey': {"source": "env", "provider": "default", "id": "MINIMAX_API_KEY"},
         'models': [
             {
+                'id': 'MiniMax-M2.7',
+                'name': 'MiniMax M2.7',
+                'reasoning': False,
+                'input': ['text'],
+                'cost': {'input': 30, 'output': 120, 'cacheRead': 6, 'cacheWrite': 38},
+                'contextWindow': 204800,
+                'maxTokens': 8192
+            },
+            {
                 'id': 'MiniMax-M2.5',
                 'name': 'MiniMax M2.5',
                 'reasoning': False,
@@ -132,14 +141,51 @@ def main():
     }
 
     desired_models_catalog = {
-        'minimax/MiniMax-M2.5': {'alias': 'minimax'},
+        'minimax/MiniMax-M2.7': {'alias': 'minimax'},
+        'minimax/MiniMax-M2.5': {'alias': 'minimax-m25'},
         'minimax/MiniMax-M2.1': {'alias': 'minimax-m21'},
         'minimax/MiniMax-M2':   {'alias': 'minimax-m2'},
+    }
+
+    desired_anthropic = {
+        'baseUrl': 'https://api.anthropic.com',
+        'api': 'anthropic-messages',
+        'apiKey': {'source': 'env', 'provider': 'default', 'id': 'ANTHROPIC_API_KEY'},
+        'models': [
+            {
+                'id': 'claude-opus-4-6',
+                'name': 'Claude Opus 4.6',
+                'reasoning': False,
+                'input': ['text', 'image'],
+                'cost': {'input': 15, 'output': 75, 'cacheRead': 1.5, 'cacheWrite': 18.75},
+                'contextWindow': 200000,
+                'maxTokens': 32000,
+            },
+            {
+                'id': 'claude-sonnet-4-6',
+                'name': 'Claude Sonnet 4.6',
+                'reasoning': False,
+                'input': ['text', 'image'],
+                'cost': {'input': 3, 'output': 15, 'cacheRead': 0.3, 'cacheWrite': 3.75},
+                'contextWindow': 200000,
+                'maxTokens': 16000,
+            },
+            {
+                'id': 'claude-haiku-4-5-20251001',
+                'name': 'Claude Haiku 4.5',
+                'reasoning': False,
+                'input': ['text', 'image'],
+                'cost': {'input': 0.8, 'output': 4, 'cacheRead': 0.08, 'cacheWrite': 1},
+                'contextWindow': 200000,
+                'maxTokens': 8192,
+            },
+        ]
     }
 
     config.setdefault('models', {})['mode'] = 'merge'
     providers = config['models'].setdefault('providers', {})
     providers['minimax'] = desired_minimax
+    providers['anthropic'] = desired_anthropic
     providers.pop('nvidia', None)
     providers.pop('ollama', None)
     providers.pop('google', None)
@@ -161,12 +207,19 @@ def main():
         'video': {'enabled': True, 'maxBytes': 52428800, 'maxChars': 500},
     })
 
+    desired_anthropic_catalog = {
+        'anthropic/claude-opus-4-6':         {'alias': 'claude-opus'},
+        'anthropic/claude-sonnet-4-6':       {'alias': 'claude-sonnet'},
+        'anthropic/claude-haiku-4-5-20251001': {'alias': 'claude-haiku'},
+    }
+
     existing_catalog = config.get('agents', {}).get('defaults', {}).get('models', {})
     # Remove any stale nvidia entries from the catalog
     for k in list(existing_catalog.keys()):
         if k.startswith('nvidia/'):
             del existing_catalog[k]
     existing_catalog.update(desired_models_catalog)
+    existing_catalog.update(desired_anthropic_catalog)
     config.setdefault('agents', {}).setdefault('defaults', {})['models'] = existing_catalog
 
     with open(cfg, 'w') as f:
