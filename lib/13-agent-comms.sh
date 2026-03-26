@@ -184,20 +184,59 @@ print(json.dumps(ids))
 " "$allowed_users" 2>/dev/null || echo '[]')
     fi
 
+    # Build groups JSON if TELEGRAM_AGENT_GROUP_ID is set
+    local group_id="${TELEGRAM_AGENT_GROUP_ID:-}"
+    local groups_json="{}"
+    if [[ -n "$group_id" ]] && [[ "$group_id" != "REPLACE_ME" ]]; then
+        groups_json=$(python3 -c "
+import sys, json
+gid = sys.argv[1]
+# Ensure all allowed users are also in group allowFrom
+allow_from = json.loads(sys.argv[2]) if sys.argv[2] != '[]' else []
+if gid not in allow_from:
+    allow_from.append(gid)
+print(json.dumps({gid: {'requireMention': False, 'allowFrom': allow_from}}, indent=2))
+" "$group_id" "$allow_json" 2>/dev/null || echo "{}")
+    fi
+
     local access_file="$channel_dir/access.json"
     if [[ ! -f "$access_file" ]]; then
         uas tee "$access_file" > /dev/null <<EOF
 {
   "dmPolicy": "pairing",
   "allowFrom": ${allow_json},
-  "groups": {},
+  "groups": ${groups_json},
   "pending": {}
 }
 EOF
         chown "$ACTUAL_USER:$ACTUAL_USER" "$access_file"
-        log "  access.json created with allowFrom: ${allow_json}"
+        log "  access.json created with allowFrom: ${allow_json}, groups: ${group_id:-none}"
     else
-        log "  access.json already exists — preserving existing access rules."
+        # Update group entry in existing access.json if group ID is set
+        if [[ -n "$group_id" ]] && [[ "$group_id" != "REPLACE_ME" ]]; then
+            python3 - <<PYEOF "$access_file" "$group_id" "$allow_json"
+import json, sys
+f, gid, allow_raw = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(f) as fp:
+    d = json.load(fp)
+groups = d.setdefault("groups", {})
+if gid not in groups:
+    import re
+    allow = json.loads(allow_raw) if allow_raw != '[]' else []
+    if gid not in allow:
+        allow.append(gid)
+    groups[gid] = {"requireMention": False, "allowFrom": allow}
+    with open(f, "w") as fp:
+        json.dump(d, fp, indent=2)
+    print(f"Added group {gid} to access.json")
+else:
+    print(f"Group {gid} already in access.json")
+PYEOF
+            chown "$ACTUAL_USER:$ACTUAL_USER" "$access_file"
+            log "  Group ${group_id} ensured in access.json."
+        else
+            log "  access.json already exists — preserving existing access rules."
+        fi
     fi
 
     # 4. Ensure approved/ and inbox/ dirs exist
@@ -238,6 +277,45 @@ PYEOF
     log "Claude Code Telegram plugin setup complete."
 }
 
+# ── 23.6 CHAS TELEGRAM GROUP ACCESS ──────────────────────────────────────────
+# Ensures openclaw.json's telegram.accounts.default allows the agent comms group.
+setup_chas_telegram_group() {
+    local group_id="${TELEGRAM_AGENT_GROUP_ID:-}"
+    local config="$ACTUAL_HOME/.openclaw/openclaw.json"
+
+    if [[ -z "$group_id" ]] || [[ "$group_id" == "REPLACE_ME" ]]; then
+        log "  TELEGRAM_AGENT_GROUP_ID not set — skipping Chas group config."
+        return
+    fi
+    if [[ ! -f "$config" ]]; then
+        log "  openclaw.json not found — skipping Chas group config."
+        return
+    fi
+
+    log "Configuring Chas Telegram group access for group ${group_id}..."
+    python3 - <<PYEOF "$config" "$group_id"
+import json, sys
+f, gid = sys.argv[1], sys.argv[2]
+with open(f) as fp:
+    d = json.load(fp)
+tg = d.get("channels", {}).get("telegram", {})
+acct = tg.get("accounts", {}).get("default", {})
+groups = acct.setdefault("groups", {})
+if gid not in groups:
+    acct["groupPolicy"] = "allowlist"
+    allow_from = acct.get("allowFrom", [])
+    if gid not in allow_from:
+        allow_from.append(gid)
+    groups[gid] = {"requireMention": False, "allowFrom": allow_from}
+    with open(f, "w") as fp:
+        json.dump(d, fp, indent=2)
+    print(f"Added group {gid} to Chas Telegram config")
+else:
+    print(f"Group {gid} already in Chas Telegram config")
+PYEOF
+    log "  Chas Telegram group config updated."
+}
+
 # ── 23. ORCHESTRATOR ──────────────────────────────────────────────────────────
 setup_agent_comms() {
     log "Setting up agent communication infrastructure..."
@@ -246,5 +324,6 @@ setup_agent_comms() {
     setup_memory_consolidation_timer
     ensure_agents_md_protocol
     setup_claude_code_telegram
+    setup_chas_telegram_group
     log "Agent comms setup complete."
 }
