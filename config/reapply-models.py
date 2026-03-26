@@ -21,10 +21,13 @@ def main():
         config = {}
 
     catalog = {
-        'minimax/MiniMax-M2.7': {'alias': 'minimax'},
-        'minimax/MiniMax-M2.5': {'alias': 'minimax-m25'},
-        'minimax/MiniMax-M2.1': {'alias': 'minimax-m21'},
-        'minimax/MiniMax-M2':   {'alias': 'minimax-m2'},
+        'minimax/MiniMax-M2.7':               {'alias': 'minimax'},
+        'minimax/MiniMax-M2.5':               {'alias': 'minimax-m25'},
+        'minimax/MiniMax-M2.1':               {'alias': 'minimax-m21'},
+        'minimax/MiniMax-M2':                 {'alias': 'minimax-m2'},
+        'anthropic/claude-opus-4-6':          {'alias': 'claude-opus'},
+        'anthropic/claude-sonnet-4-6':        {'alias': 'claude-sonnet'},
+        'anthropic/claude-haiku-4-5-20251001': {'alias': 'claude-haiku'},
     }
     config.setdefault('agents', {}).setdefault('defaults', {})['models'] = catalog
 
