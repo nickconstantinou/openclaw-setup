@@ -100,7 +100,7 @@ OpenClaw uses a **tri-agent architecture** with specialized AI agents working to
 
 ### Communication Channels
 
-- **Telegram**: Three separate bots (default, coding, marketing)
+- **Telegram**: Four separate bots (default, coding, marketing, Claude Code)
 - **WhatsApp**: One account (family agent)
 - **Gateway API**: HTTP API for programmatic access
 
@@ -247,17 +247,22 @@ openclaw security audit
 
 ### Connect to Your Bots
 
-1. **Telegram**:
+1. **Telegram (Chas agents)**:
    - Search for your bot(s) using the bot tokens you configured
    - Send `/start` or a test message
    - If you used the smart default (REPLACE_ME), you'll have instant access via TELEGRAM_CHAT_ID fallback
 
-2. **WhatsApp**:
+2. **Telegram (Claude Code)**:
+   - Set `TELEGRAM_BOT_TOKEN_CC` in `.env` to a separate bot token created via @BotFather
+   - Re-run the setup script — it installs the plugin, writes the token, and configures access automatically
+   - The Claude Code channel uses the same `TELEGRAM_ALLOWED_USERS` allowlist as the main bot
+
+3. **WhatsApp**:
    - Run: `openclaw channels whatsapp link family`
    - Scan the QR code with WhatsApp mobile app
    - Send a test message
 
-3. **Gateway API**:
+4. **Gateway API**:
    ```bash
    # Test gateway endpoint (replace TOKEN with your OPENCLAW_GATEWAY_TOKEN)
    curl -H "Authorization: Bearer TOKEN" http://localhost:3002/api/agents
@@ -502,11 +507,44 @@ openclaw sessions list
 openclaw sessions view SESSION_ID
 ```
 
+## Agent Communication Infrastructure
+
+The setup script provisions a shared communication layer between the Chas agents and the Claude Code CLI so they maintain consistent context across sessions.
+
+### Shared memory
+
+Both agents write to dated files in `~/.openclaw/workspace/memory/YYYY-MM-DD.md`. A systemd timer (`openclaw-memory-consolidation.timer`) runs at 3:30am daily to initialise the next day's file and report system state.
+
+### Agent inbox
+
+`~/.openclaw/workspace/agent-inbox.md` is a shared message queue:
+
+```
+[FROM: Claude Code] [TO: Chas] [2026-03-26 09:45] Your message here
+[FROM: Chas] [TO: Claude Code] [2026-03-26 09:52] Your reply here
+```
+
+Both agents check this file at session start and clear messages addressed to them after reading. Chas can also invoke Claude Code directly via the `cc` wrapper (`~/.openclaw/bin/cc`).
+
+### What gets set up automatically
+
+| Component | Location | Managed by |
+|-----------|----------|-----------|
+| Agent inbox | `~/.openclaw/workspace/agent-inbox.md` | `lib/13-agent-comms.sh` |
+| Memory consolidation script | `~/.openclaw/workspace/scripts/memory-consolidation.sh` | `lib/13-agent-comms.sh` |
+| Memory consolidation timer | `~/.config/systemd/user/openclaw-memory-consolidation.timer` | `lib/13-agent-comms.sh` |
+| AGENTS.md memory protocol | `~/.openclaw/workspace/AGENTS.md` | `lib/13-agent-comms.sh` |
+| Claude Code Telegram plugin | `~/.claude/channels/telegram/` | `lib/13-agent-comms.sh` |
+
+---
+
 ## Repository Structure
 
 - `openclaw-self-heal.sh`: Main deployment orchestrator.
 - `lib/`: Modular shell scripts for environment setup, installations, and configuration.
   - `lib/tools/`: **Tool modules** — one file per 3rd-party tool. Each file is the single source of truth for that tool's install logic, AppArmor rules, env var placeholders, and systemd exports.
+  - `lib/13-agent-comms.sh`: Agent communication infrastructure — inbox, memory consolidation cron, Claude Code Telegram plugin.
+- `scripts/memory-consolidation.sh`: Daily memory consolidation script (deployed to workspace by setup).
 - `skills/`: Categorized tri-agent skills (`general`, `coding`, `marketing`) and specialized workspace scaffolds.
 - `templates/`: AppArmor profile templates and systemd units.
 - `config/`: Python-based JSON configuration patchers.
