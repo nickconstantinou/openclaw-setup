@@ -127,6 +127,43 @@ EOF
     else
         log "gws auth setup SKIPPED — credentials not set (add to ~/.openclaw/.env and re-run)."
     fi
+
+    # Restore pre-existing credentials (headless auth bypass).
+    # If GWS_CREDENTIALS_B64 and GWS_ENCRYPTION_KEY_B64 are set in .env, write the
+    # encrypted credentials and key directly — no browser / gws auth login required.
+    #
+    # To export from a working machine:
+    #   GWS_CREDENTIALS_B64=$(base64 -w0 ~/.config/gws/credentials.enc)
+    #   GWS_ENCRYPTION_KEY_B64=$(base64 -w0 ~/.config/gws/.encryption_key)
+    # Then add both values to ~/.openclaw/.env.
+    local creds_b64="${GWS_CREDENTIALS_B64:-}"
+    local key_b64="${GWS_ENCRYPTION_KEY_B64:-}"
+
+    if [[ -n "$creds_b64" && "$creds_b64" != "REPLACE_ME" \
+       && -n "$key_b64"   && "$key_b64"   != "REPLACE_ME" ]]; then
+        log "Restoring gws credentials from env (headless mode)..."
+        local gws_dir="$ACTUAL_HOME/.config/gws"
+        uas mkdir -p "$gws_dir"
+        echo "$creds_b64" | base64 -d > "$gws_dir/credentials.enc"
+        echo "$key_b64"   | base64 -d > "$gws_dir/.encryption_key"
+        chmod 600 "$gws_dir/credentials.enc" "$gws_dir/.encryption_key"
+        chown "$ACTUAL_USER:$ACTUAL_USER" "$gws_dir/credentials.enc" "$gws_dir/.encryption_key"
+
+        # Verify the restored credentials work
+        if sudo -u "$ACTUAL_USER" env \
+                HOME="$ACTUAL_HOME" \
+                GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file \
+                gws auth status 2>/dev/null | grep -q '"token_valid": true'; then
+            log "  gws credentials restored and valid — gws auth login not required."
+        else
+            log "  WARNING: Restored credentials did not validate. Run gws auth login manually via SSH tunnel."
+        fi
+    else
+        log "  GWS_CREDENTIALS_B64 not set — gws auth login required after install."
+        log "  To skip this on future installs, add to .env:"
+        log "    GWS_CREDENTIALS_B64=\$(base64 -w0 ~/.config/gws/credentials.enc)"
+        log "    GWS_ENCRYPTION_KEY_B64=\$(base64 -w0 ~/.config/gws/.encryption_key)"
+    fi
 }
 
 register_tool gws
