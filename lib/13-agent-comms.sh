@@ -133,6 +133,111 @@ EOF
     fi
 }
 
+# ── 23.5 CLAUDE CODE TELEGRAM PLUGIN ─────────────────────────────────────────
+setup_claude_code_telegram() {
+    local claude_bin="$ACTUAL_HOME/.local/bin/claude"
+    local bot_token="${TELEGRAM_BOT_TOKEN_CC:-}"
+    local allowed_users="${TELEGRAM_ALLOWED_USERS:-}"
+
+    # Skip if Claude Code is not installed or token is placeholder/unset
+    if [[ ! -x "$claude_bin" ]]; then
+        log "  Claude Code not installed — skipping Telegram plugin setup."
+        return
+    fi
+    if [[ -z "$bot_token" ]] || [[ "$bot_token" == tg-REPLACE_ME* ]]; then
+        log "  TELEGRAM_BOT_TOKEN_CC not set — skipping Claude Code Telegram plugin."
+        return
+    fi
+
+    log "Setting up Claude Code Telegram plugin..."
+
+    # 1. Install the plugin if not already installed
+    local plugin_dir="$ACTUAL_HOME/.claude/plugins"
+    if ! uas HOME="$ACTUAL_HOME" "$claude_bin" plugin list 2>/dev/null | grep -q "telegram"; then
+        log "  Installing telegram plugin..."
+        uas HOME="$ACTUAL_HOME" "$claude_bin" plugin install telegram@claude-plugins-official --yes 2>&1 \
+            | while IFS= read -r line; do log "  plugin: $line"; done \
+            || log "  WARNING: Plugin install failed — may already be installed."
+    else
+        log "  Telegram plugin already installed."
+    fi
+
+    # 2. Write bot token
+    local channel_dir="$ACTUAL_HOME/.claude/channels/telegram"
+    uas mkdir -p "$channel_dir"
+    uas tee "$channel_dir/.env" > /dev/null <<EOF
+TELEGRAM_BOT_TOKEN=${bot_token}
+EOF
+    chmod 600 "$channel_dir/.env"
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$channel_dir/.env"
+    log "  Bot token written."
+
+    # 3. Write access.json — allowlist from TELEGRAM_ALLOWED_USERS (comma or space separated)
+    local allow_json="[]"
+    if [[ -n "$allowed_users" ]] && [[ "$allowed_users" != "REPLACE_ME" ]]; then
+        # Convert comma/space separated user IDs to JSON array of strings
+        allow_json=$(python3 -c "
+import sys, json, re
+raw = sys.argv[1]
+ids = [x.strip() for x in re.split(r'[,\s]+', raw) if x.strip()]
+print(json.dumps(ids))
+" "$allowed_users" 2>/dev/null || echo '[]')
+    fi
+
+    local access_file="$channel_dir/access.json"
+    if [[ ! -f "$access_file" ]]; then
+        uas tee "$access_file" > /dev/null <<EOF
+{
+  "dmPolicy": "pairing",
+  "allowFrom": ${allow_json},
+  "groups": {},
+  "pending": {}
+}
+EOF
+        chown "$ACTUAL_USER:$ACTUAL_USER" "$access_file"
+        log "  access.json created with allowFrom: ${allow_json}"
+    else
+        log "  access.json already exists — preserving existing access rules."
+    fi
+
+    # 4. Ensure approved/ and inbox/ dirs exist
+    uas mkdir -p "$channel_dir/approved" "$channel_dir/inbox"
+    chown -R "$ACTUAL_USER:$ACTUAL_USER" "$channel_dir"
+
+    # 5. Add MCP permission to settings.local.json
+    local settings_local="$ACTUAL_HOME/.claude/settings.local.json"
+    if [[ ! -f "$settings_local" ]]; then
+        uas tee "$settings_local" > /dev/null <<'EOF'
+{"permissions":{"allow":["mcp__plugin_telegram_telegram__reply"]}}
+EOF
+        chown "$ACTUAL_USER:$ACTUAL_USER" "$settings_local"
+        log "  Created settings.local.json with Telegram MCP permission."
+    elif ! grep -q "mcp__plugin_telegram_telegram__reply" "$settings_local" 2>/dev/null; then
+        python3 - <<PYEOF "$settings_local"
+import json, sys
+f = sys.argv[1]
+with open(f) as fp:
+    d = json.load(fp)
+perms = d.setdefault("permissions", {})
+allow = perms.setdefault("allow", [])
+perm = "mcp__plugin_telegram_telegram__reply"
+if perm not in allow:
+    allow.append(perm)
+    with open(f, "w") as fp:
+        json.dump(d, fp, indent=4)
+    print(f"Added {perm} to {f}")
+else:
+    print(f"{perm} already present")
+PYEOF
+        chown "$ACTUAL_USER:$ACTUAL_USER" "$settings_local"
+        log "  Telegram MCP permission added to settings.local.json."
+    else
+        log "  Telegram MCP permission already present."
+    fi
+
+    log "Claude Code Telegram plugin setup complete."
+}
+
 # ── 23. ORCHESTRATOR ──────────────────────────────────────────────────────────
 setup_agent_comms() {
     log "Setting up agent communication infrastructure..."
@@ -140,5 +245,6 @@ setup_agent_comms() {
     deploy_memory_consolidation_script
     setup_memory_consolidation_timer
     ensure_agents_md_protocol
+    setup_claude_code_telegram
     log "Agent comms setup complete."
 }
