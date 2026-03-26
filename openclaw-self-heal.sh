@@ -45,6 +45,8 @@ source "$SCRIPT_DIR/lib/10-gateway.sh"
 source "$SCRIPT_DIR/lib/11-health.sh"
 # shellcheck source=lib/12-notify.sh
 source "$SCRIPT_DIR/lib/12-notify.sh"
+# shellcheck source=lib/13-agent-comms.sh
+source "$SCRIPT_DIR/lib/13-agent-comms.sh"
 
 trap 'die "Unexpected failure at line $LINENO. See $LOG_FILE"' ERR
 
@@ -99,6 +101,7 @@ main() {
     install_gateway_service
     
     # 6. Post-Launch Health
+    setup_agent_comms
     init_memory_index
     run_doctor
     rotate_device_scopes
