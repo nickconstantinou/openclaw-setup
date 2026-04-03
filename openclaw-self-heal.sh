@@ -98,6 +98,7 @@ main() {
     optimize_sqlite
     onboard_gateway
     reapply_models
+    configure_model_hierarchy
     install_gateway_service
     
     # 6. Post-Launch Health

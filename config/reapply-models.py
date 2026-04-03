@@ -21,6 +21,7 @@ def main():
         config = {}
 
     catalog = {
+        'openai-codex/gpt-5.4':               {'alias': 'gpt-5'},
         'minimax/MiniMax-M2.7':               {'alias': 'minimax'},
         'minimax/MiniMax-M2.5':               {'alias': 'minimax-m25'},
         'minimax/MiniMax-M2.1':               {'alias': 'minimax-m21'},

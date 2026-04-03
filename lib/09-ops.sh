@@ -205,3 +205,55 @@ reapply_models() {
     local config_file="$ACTUAL_HOME/.openclaw/openclaw.json"
     uas python3 "$SCRIPT_DIR/config/reapply-models.py" --config "$config_file"
 }
+
+# ── 17c. CONFIGURE MODEL HIERARCHY ───────────────────────────────────────────
+# Sets primary=openai-codex/gpt-5.4, fallbacks=[claude-sonnet-4-6, MiniMax-M2.5]
+#
+# TTY LIMITATION — openai-codex OAuth requires an interactive terminal.
+# Running via SSH without a PTY, or from cron, will block or fail silently.
+# The auth step is skipped automatically when no TTY is detected.
+#
+# To complete OAuth manually from a local or remote-desktop session:
+#   openclaw models auth login --provider openai-codex
+configure_model_hierarchy() {
+    local auth_profiles="$ACTUAL_HOME/.openclaw/agents/main/agent/auth-profiles.json"
+
+    # ── Step 1: openai-codex OAuth ─────────────────────────────────────────────
+    local has_codex_auth
+    has_codex_auth=$(python3 -c "
+import json, sys
+try:
+    ap = json.load(open('$auth_profiles'))
+    print('yes' if any(k.startswith('openai-codex') for k in ap.get('profiles', {})) else 'no')
+except Exception:
+    print('no')
+" 2>/dev/null || echo "no")
+
+    if [[ "$has_codex_auth" == "yes" ]]; then
+        log "openai-codex auth already configured — skipping OAuth step."
+    elif [[ ! -t 0 ]]; then
+        log "WARNING: No interactive TTY — openai-codex OAuth must be completed manually."
+        log "  Run from a local terminal or remote desktop (not SSH without -t):"
+        log "    openclaw models auth login --provider openai-codex"
+    else
+        log "Running openai-codex OAuth login (TTY detected)..."
+        uas openclaw models auth login --provider openai-codex \
+            || log "WARNING: openai-codex auth login failed — model will fall back to anthropic."
+    fi
+
+    # ── Step 2: Apply model hierarchy via CLI ──────────────────────────────────
+    log "Setting model hierarchy: primary=openai-codex/gpt-5.4, fallbacks=[claude-sonnet-4-6, MiniMax-M2.5]"
+    uas openclaw config set agents.defaults.model.primary "openai-codex/gpt-5.4" 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+    uas openclaw config set agents.defaults.model.fallbacks \
+        '["anthropic/claude-sonnet-4-6","minimax/MiniMax-M2.5"]' --strict-json 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+
+    # ── Step 3: Verify ────────────────────────────────────────────────────────
+    log "--- openclaw models status --plain ---"
+    uas openclaw models status --plain 2>&1 \
+        | while IFS= read -r line; do log "  $line"; done
+    log "--- openclaw models list ---"
+    uas openclaw models list 2>&1 \
+        | while IFS= read -r line; do log "  $line"; done
+}
