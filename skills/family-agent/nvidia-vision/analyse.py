@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NVIDIA NIM Image Understanding — google/gemma-3-27b-it (vision)
+NVIDIA NIM Image Understanding — google/gemma-4-31b-it (vision)
 API: https://integrate.api.nvidia.com/v1/chat/completions
 Usage:
   python3 analyse.py --image /path/to/image.jpg --prompt "What is in this image?"
@@ -12,7 +12,7 @@ import requests
 
 NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '')
 API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions'
-MODEL = 'google/gemma-3-27b-it'
+MODEL = 'google/gemma-4-31b-it'
 MAX_SHORT_SIDE = 768   # resize if larger, keeps payload under ~100KB
 DEFAULT_PROMPT = 'Describe this image in detail. What is shown, what is happening, and any text visible.'
 

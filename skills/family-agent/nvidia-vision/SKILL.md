@@ -2,7 +2,7 @@
 name: nvidia-vision
 description: >
   Understand, describe, and answer questions about images using NVIDIA NIM-hosted
-  google/gemma-3-27b-it (vision). Use this skill whenever the user sends a photo
+  google/gemma-4-31b-it (vision). Use this skill whenever the user sends a photo
   or asks about the contents of an image — what's in it, what it says, what's
   happening, who/what is shown, or any visual question.
 metadata: {"openclaw": {"requires": {"env": ["NVIDIA_API_KEY"], "bins": ["python3"]}, "primaryEnv": "NVIDIA_API_KEY", "os": ["linux", "darwin"]}}
@@ -66,7 +66,7 @@ python3 ~/.openclaw/workspace/skills/nvidia-vision/analyse.py \
 
 ## Model
 
-- **Model**: `google/gemma-3-27b-it` via NVIDIA NIM
+- **Model**: `google/gemma-4-31b-it` via NVIDIA NIM
 - **Auth**: `NVIDIA_API_KEY` from environment
 - Images are automatically resized to ≤768px on the longest side before sending
 - Supports: JPEG, PNG, GIF, WebP
