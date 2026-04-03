@@ -93,6 +93,8 @@ install_openclaw() {
     fi
 
     log "Installing OpenClaw (checksum enforced)..."
+    # Ensure npm is healthy before attempting install (catches corrupted system npm)
+    upgrade_npm
     local installer_dir; installer_dir=$(mktemp -d)
     chmod 700 "$installer_dir"
     local installer_path="$installer_dir/openclaw-install.sh"
@@ -114,7 +116,12 @@ install_openclaw() {
     fi
 
     log "Checksum verified. Running installer..."
+    # Fix any root-owned npm cache files before running installer (stale from prior runs).
+    # Also redirect npm_config_cache to /root/.npm so the installer's npm calls never
+    # pollute $ACTUAL_HOME/.npm with root-owned files (the EACCES cause on re-runs).
+    chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
     sudo HOME="$ACTUAL_HOME" \
+        npm_config_cache=/root/.npm \
         XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
         XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
         bash "$installer_path" --no-onboard
