@@ -43,8 +43,9 @@ deploy_skills() {
             mkdir -p "$target_skill_dir"
             cp -a "$skill_dir"* "$target_skill_dir/" 2>/dev/null || true
             
-            # Ensure generate.py executable
+            # Ensure Python entrypoints are executable
             [[ -f "$target_skill_dir/generate.py" ]] && chmod +x "$target_skill_dir/generate.py"
+            [[ -f "$target_skill_dir/analyse.py" ]]  && chmod +x "$target_skill_dir/analyse.py"
         done
 
         # For family-agent: also copy all general-agent skill modules
@@ -57,6 +58,7 @@ deploy_skills() {
                 mkdir -p "$target_skill_dir"
                 cp -a "$skill_dir"* "$target_skill_dir/" 2>/dev/null || true
                 [[ -f "$target_skill_dir/generate.py" ]] && chmod +x "$target_skill_dir/generate.py"
+                [[ -f "$target_skill_dir/analyse.py" ]]  && chmod +x "$target_skill_dir/analyse.py"
             done
         fi
 
