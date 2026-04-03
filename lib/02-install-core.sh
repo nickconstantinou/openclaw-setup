@@ -24,8 +24,31 @@ upgrade_npm() {
         # Run with HOME=/root so root's npm cache stays separate from the user's ~/.npm.
         # Without this, npm writes root-owned files into $ACTUAL_HOME/.npm, causing
         # subsequent 'uas npm install' calls to fail with EACCES.
-        HOME=/root npm install -g "npm@$latest_major" --quiet 2>&1 || log "WARNING: npm upgrade failed."
-        chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
+        local upgrade_err
+        if upgrade_err=$(HOME=/root npm install -g "npm@${latest_major}" --quiet 2>&1); then
+            chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
+            log "npm upgraded to $(npm --version 2>/dev/null)."
+        else
+            # MODULE_NOT_FOUND means the system npm install is corrupted (missing internal dep,
+            # e.g. promise-retry inside @npmcli/arborist). npm cannot self-heal in this state.
+            # Repair the base install via apt, then retry the version upgrade.
+            if echo "$upgrade_err" | grep -q "MODULE_NOT_FOUND"; then
+                log "npm is corrupted (MODULE_NOT_FOUND). Repairing via apt reinstall..."
+                if apt-get install --reinstall npm -y -q 2>/dev/null; then
+                    log "npm repaired to $(npm --version 2>/dev/null). Retrying upgrade to npm@${latest_major}..."
+                    if HOME=/root npm install -g "npm@${latest_major}" --quiet 2>&1; then
+                        chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
+                        log "npm upgraded to $(npm --version 2>/dev/null) after repair."
+                    else
+                        log "WARNING: npm upgrade failed after repair — continuing with $(npm --version 2>/dev/null || echo 'repaired base')."
+                    fi
+                else
+                    log "WARNING: apt repair of npm failed — continuing with existing install."
+                fi
+            else
+                log "WARNING: npm upgrade failed — continuing. (${upgrade_err%%$'\n'*})"
+            fi
+        fi
     fi
 }
 
