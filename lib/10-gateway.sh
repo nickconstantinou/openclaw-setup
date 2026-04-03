@@ -126,8 +126,11 @@ EOF
         uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user restart openclaw-gateway.service || die "Gateway restart failed even unconfined."
     fi
 
-    log "Waiting for gateway to bind port 18789 (confined, up to 30s)..."
-    if ! wait_for_gateway_port 30; then
+    # Allow up to 60s for cold start — Node.js gateway takes ~45s on first run
+    # before NODE_COMPILE_CACHE is warm. 30s was too short and caused false
+    # AppArmor failures followed by premature die().
+    log "Waiting for gateway to bind port 18789 (confined, up to 60s)..."
+    if ! wait_for_gateway_port 60; then
         log "WARNING: Gateway did not bind under AppArmor confinement. Checking logs..."
         local journal; journal=$(uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" journalctl --user -u openclaw-gateway.service -n 25 --no-pager 2>/dev/null || true)
         while IFS= read -r line; do log "  $line"; done <<< "$journal"
@@ -136,9 +139,9 @@ EOF
         rm -f "$dropin_file" 2>/dev/null || true
         uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user daemon-reload
         uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user restart openclaw-gateway.service || die "Gateway restart failed even unconfined."
-        
-        log "Waiting for gateway to bind port 18789 (unconfined, up to 30s)..."
-        if wait_for_gateway_port 30; then
+
+        log "Waiting for gateway to bind port 18789 (unconfined, up to 60s)..."
+        if wait_for_gateway_port 60; then
             log "Gateway bound port 18789 (UNCONFINED — run: sudo aa-logprof)"
         else
             die "Gateway timed out even unconfined. Check: openclaw logs --follow"

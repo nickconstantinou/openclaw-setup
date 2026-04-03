@@ -238,7 +238,7 @@ generate_agent_skills_md() {
     
     # For each agent, generate SKILLS.md
     echo "$agents_json" | python3 -c "
-import json, sys
+import json, os, sys
 agents = json.load(sys.stdin)
 for agent in agents:
     agent_id = agent.get('id', 'unknown')
