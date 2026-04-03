@@ -31,19 +31,44 @@ upgrade_npm() {
         else
             # MODULE_NOT_FOUND means the system npm install is corrupted (missing internal dep,
             # e.g. promise-retry inside @npmcli/arborist). npm cannot self-heal in this state.
-            # Repair the base install via apt, then retry the version upgrade.
+            # On NodeSource node systems, apt-get reinstall npm fails due to dep conflicts.
+            # Instead, fetch the target npm tarball and extract it directly over the existing
+            # installation — this bypasses npm's arborist entirely.
             if echo "$upgrade_err" | grep -q "MODULE_NOT_FOUND"; then
-                log "npm is corrupted (MODULE_NOT_FOUND). Repairing via apt reinstall..."
-                if apt-get install --reinstall npm -y -q 2>/dev/null; then
-                    log "npm repaired to $(npm --version 2>/dev/null). Retrying upgrade to npm@${latest_major}..."
+                log "npm is corrupted (MODULE_NOT_FOUND). Repairing via tarball extraction..."
+                local npm_pkg_dir repaired=0
+                npm_pkg_dir="$(npm root -g 2>/dev/null)/npm"
+                local tarball_ver
+                tarball_ver=$(curl -fsSL "https://registry.npmjs.org/npm/${latest_major}" 2>/dev/null \
+                    | python3 -c "import json,sys; print(json.load(sys.stdin)['version'])" 2>/dev/null || echo "")
+                if [[ -n "$tarball_ver" ]] && [[ -d "$npm_pkg_dir" ]]; then
+                    local tmp_npm; tmp_npm=$(mktemp -d)
+                    if curl -fsSL "https://registry.npmjs.org/npm/-/npm-${tarball_ver}.tgz" \
+                            | tar -xz -C "$tmp_npm" --strip-components=1 2>/dev/null; then
+                        cp -rf "$tmp_npm/." "$npm_pkg_dir/"
+                        repaired=1
+                        log "npm repaired to ${tarball_ver} via tarball ($(npm --version 2>/dev/null))."
+                    fi
+                    rm -rf "$tmp_npm"
+                fi
+                if [[ "$repaired" -eq 0 ]]; then
+                    # Tarball failed — fall back to apt (works on plain Debian/Ubuntu npm)
+                    if apt-get install --reinstall npm -y -q 2>/dev/null; then
+                        repaired=1
+                        log "npm repaired via apt ($(npm --version 2>/dev/null))."
+                    fi
+                fi
+                if [[ "$repaired" -eq 1 ]] \
+                        && [[ "$(npm --version 2>/dev/null | cut -d. -f1)" != "$latest_major" ]]; then
+                    log "Retrying upgrade to npm@${latest_major}..."
                     if HOME=/root npm install -g "npm@${latest_major}" --quiet 2>&1; then
                         chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
                         log "npm upgraded to $(npm --version 2>/dev/null) after repair."
                     else
                         log "WARNING: npm upgrade failed after repair — continuing with $(npm --version 2>/dev/null || echo 'repaired base')."
                     fi
-                else
-                    log "WARNING: apt repair of npm failed — continuing with existing install."
+                elif [[ "$repaired" -eq 0 ]]; then
+                    log "WARNING: npm repair failed — continuing with existing install."
                 fi
             else
                 log "WARNING: npm upgrade failed — continuing. (${upgrade_err%%$'\n'*})"
