@@ -32,13 +32,17 @@ def main():
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
     # ── Model Architecture ────────────────────────────────────────────────────────
-    # PRIMARY: openai-codex/gpt-5.4 (ChatGPT OAuth)
-    # BACKUP:  anthropic/claude-sonnet-4-6
-    # ALT:     minimax/MiniMax-M2.5
-    _main_primary = 'openai-codex/gpt-5.4'
-    _fallbacks    = ['anthropic/claude-sonnet-4-6', 'minimax/MiniMax-M2.5']
+    # main agent:   sonnet (capable, general purpose)
+    # family agent: haiku  (fast, low-cost for chat)
+    # subagents:    sonnet (inherits from main default)
+    # Fallback for all: MiniMax-M2.5
+    # openai-codex/gpt-5.4 remains in catalog for manual selection
+    _main_primary    = 'anthropic/claude-sonnet-4-6'
+    _main_fallbacks  = ['minimax/MiniMax-M2.5']
+    _family_primary  = 'anthropic/claude-haiku-4-5-20251001'
+    _family_fallbacks = ['minimax/MiniMax-M2.5']
     ds(c, 'agents.defaults.model.primary',   _main_primary)
-    ds(c, 'agents.defaults.model.fallbacks', _fallbacks)
+    ds(c, 'agents.defaults.model.fallbacks', _main_fallbacks)
 
     # ── API keys (skills only — provider keys come from environment.d via systemd) ──────────────
     pb_key = os.environ.get('POST_BRIDGE_API_KEY', '')
@@ -72,7 +76,7 @@ def main():
 
     ds(c, 'agents.defaults.subagents.model', {
         'primary':   _main_primary,
-        'fallbacks': _fallbacks,
+        'fallbacks': _main_fallbacks,
     })
     ds(c, 'agents.defaults.subagents.maxConcurrent', 4)
     ds(c, 'agents.defaults.subagents.maxSpawnDepth', 2)
@@ -145,7 +149,7 @@ def main():
             'agentDir':  f'{_home}/.openclaw/agents/main/agent',
             'model': {
                 'primary':   _main_primary,
-                'fallbacks': _fallbacks,
+                'fallbacks': _main_fallbacks,
             },
             'subagents': {'allowAgents': []},  # uses anonymous subagent spawning
             'tools': {'profile': 'full'},
@@ -155,7 +159,7 @@ def main():
             'name':      'Family',
             'workspace':  f'{_home}/.openclaw/agents/family/workspace',
             'agentDir':   f'{_home}/.openclaw/agents/family/agent',
-            'model':     {'primary': _main_primary, 'fallbacks': _fallbacks},
+            'model':     {'primary': _family_primary, 'fallbacks': _family_fallbacks},
             'subagents': {'allowAgents': []},
             'tools':     {'profile': 'messaging'},
             'identity':  {'name': 'Family', 'emoji': '🎪'},

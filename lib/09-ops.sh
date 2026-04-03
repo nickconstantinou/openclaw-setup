@@ -207,18 +207,17 @@ reapply_models() {
 }
 
 # ── 17c. CONFIGURE MODEL HIERARCHY ───────────────────────────────────────────
-# Sets primary=openai-codex/gpt-5.4, fallbacks=[claude-sonnet-4-6, MiniMax-M2.5]
+# main agent:   anthropic/claude-sonnet-4-6 (primary), minimax/MiniMax-M2.5 (fallback)
+# family agent: anthropic/claude-haiku-4-5-20251001 (primary), minimax/MiniMax-M2.5 (fallback)
+# openai-codex/gpt-5.4 remains in catalog for manual selection
 #
 # TTY LIMITATION — openai-codex OAuth requires an interactive terminal.
-# Running via SSH without a PTY, or from cron, will block or fail silently.
-# The auth step is skipped automatically when no TTY is detected.
-#
-# To complete OAuth manually from a local or remote-desktop session:
+# If auth is ever needed again, run manually from a local session:
 #   openclaw models auth login --provider openai-codex
 configure_model_hierarchy() {
     local auth_profiles="$ACTUAL_HOME/.openclaw/agents/main/agent/auth-profiles.json"
 
-    # ── Step 1: openai-codex OAuth ─────────────────────────────────────────────
+    # ── Step 1: openai-codex OAuth (skip if already configured or no TTY) ─────
     local has_codex_auth
     has_codex_auth=$(python3 -c "
 import json, sys
@@ -232,28 +231,37 @@ except Exception:
     if [[ "$has_codex_auth" == "yes" ]]; then
         log "openai-codex auth already configured — skipping OAuth step."
     elif [[ ! -t 0 ]]; then
-        log "WARNING: No interactive TTY — openai-codex OAuth must be completed manually."
-        log "  Run from a local terminal or remote desktop (not SSH without -t):"
-        log "    openclaw models auth login --provider openai-codex"
+        log "INFO: No interactive TTY — openai-codex OAuth must be completed manually if needed."
+        log "  Run: openclaw models auth login --provider openai-codex"
     else
         log "Running openai-codex OAuth login (TTY detected)..."
         uas openclaw models auth login --provider openai-codex \
-            || log "WARNING: openai-codex auth login failed — model will fall back to anthropic."
+            || log "WARNING: openai-codex auth login failed — continuing."
     fi
 
-    # ── Step 2: Apply model hierarchy via CLI ──────────────────────────────────
-    log "Setting model hierarchy: primary=openai-codex/gpt-5.4, fallbacks=[claude-sonnet-4-6, MiniMax-M2.5]"
-    uas openclaw config set agents.defaults.model.primary "openai-codex/gpt-5.4" 2>&1 \
+    # ── Step 2: Apply per-agent model hierarchy via CLI ────────────────────────
+    log "Setting model hierarchy: main=sonnet, family=haiku, fallback=MiniMax-M2.5"
+    uas openclaw config set agents.defaults.model.primary "anthropic/claude-sonnet-4-6" 2>&1 \
         | while IFS= read -r line; do log "  config: $line"; done
     uas openclaw config set agents.defaults.model.fallbacks \
-        '["anthropic/claude-sonnet-4-6","minimax/MiniMax-M2.5"]' --strict-json 2>&1 \
+        '["minimax/MiniMax-M2.5"]' --strict-json 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+    uas openclaw config set 'agents.list[0].model.primary' "anthropic/claude-sonnet-4-6" 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+    uas openclaw config set 'agents.list[0].model.fallbacks' \
+        '["minimax/MiniMax-M2.5"]' --strict-json 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+    uas openclaw config set 'agents.list[1].model.primary' "anthropic/claude-haiku-4-5-20251001" 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+    uas openclaw config set 'agents.list[1].model.fallbacks' \
+        '["minimax/MiniMax-M2.5"]' --strict-json 2>&1 \
         | while IFS= read -r line; do log "  config: $line"; done
 
     # ── Step 3: Verify ────────────────────────────────────────────────────────
     log "--- openclaw models status --plain ---"
     uas openclaw models status --plain 2>&1 \
         | while IFS= read -r line; do log "  $line"; done
-    log "--- openclaw models list ---"
-    uas openclaw models list 2>&1 \
+    log "--- openclaw models status --plain (family) ---"
+    uas openclaw models status --plain --agent family 2>&1 \
         | while IFS= read -r line; do log "  $line"; done
 }
