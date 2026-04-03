@@ -95,7 +95,8 @@ sessions_send({
 You have access to these skills (use `read` to load the SKILL.md when needed):
 - **google-workspace** / **gws-auth** - Google Workspace CLI (Gmail, Calendar, Drive, Sheets)
 - **tavily** - Web search via Tavily API (1000 free searches/month)
-- **claude-code** - Claude Code integration for advanced coding tasks
+- **codex** - OpenAI Codex CLI (`cx`) for non-interactive code generation — **preferred for coding tasks**
+- **claude-code** - Claude Code (`cc`) — fallback when Codex is unavailable or 1M context needed
 
 ## Permissions
 

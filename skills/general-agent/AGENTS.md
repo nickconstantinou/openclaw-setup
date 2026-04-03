@@ -58,6 +58,7 @@ Follow this phased protocol for any engineering request. Reference the specific 
 
 ## Phase 3: Execution
 - **Active Build**: `refactoring`, `frontend-design`, `mobile-app-dev`.
+- **Code Generation**: Use **Codex (`cx`)** in preference to Claude Code (`cc`) — see Tool Usage Instructions below.
 - **Sandbox Operations**: `git-in-sandbox`, `github-pages`.
 - **Specialized Data**: `outscraper`, `posthog`.
 
@@ -82,28 +83,62 @@ All implementation MUST adhere to `coding-logic.md`:
 
 # 🔧 Tool Usage Instructions
 
-## Claude Code (`cc`)
+## Codex CLI (`cx`) ← PREFERRED for coding tasks
+
+Codex CLI is installed at `~/.openclaw/bin/cx` — a wrapper that runs `codex exec --full-auto`.
+
+**Use Codex in preference to Claude Code for all coding tasks:**
+- Multi-file implementation tasks (features, refactors, bug fixes)
+- Code generation from a spec or description
+- Test writing and TDD loops
+- Any task where file edits and shell commands need to run autonomously
+
+**How to invoke:**
+```bash
+cx "Implement a binary search utility in src/utils/search.ts with full Jest test coverage."
+cx "Refactor the auth module in /projects/myapp/src/auth.ts to use JWT. Return a unified diff."
+cx "Find and fix all N+1 database query patterns in /projects/myapp/src/"
+```
+
+**Key flags (pass through cx):**
+```bash
+cx --model o4-mini "Quick fix: correct the off-by-one error in src/paginate.ts"
+cx --json "Generate a REST API for /projects/myapp"   # Machine-readable JSON Lines output
+```
+
+**Approval mode:** `--full-auto` is set by default in the wrapper — Codex will edit files and run shell commands without prompting. Ensure the working directory is a git repo (Codex warns otherwise).
+
+**Auth:** Uses `OPENAI_API_KEY` from the environment (already configured).
+
+**Fall back to Claude Code (`cc`) only when:**
+- Codex is unavailable or the `OPENAI_API_KEY` is not set
+- The task requires deep codebase analysis across 1M+ token context
+- You need Claude-specific capabilities (Anthropic models, Claude reasoning)
+
+---
+
+## Claude Code (`cc`) ← fallback
 
 Claude Code is installed at `~/.openclaw/bin/cc` — a wrapper that runs `claude --print`.
 
-**When to use:**
-- Intensive code generation (large files, complex refactors)
-- Large codebase analysis where inline reading is inefficient
-- Multi-file architectural changes
+**When to use (prefer Codex above for most coding tasks):**
+- Large codebase analysis where 1M context window is needed
+- Tasks that benefit specifically from Claude's reasoning or Anthropic models
+- When Codex is unavailable
 
 **How to invoke via exec:**
 ```bash
-cc "Refactor the auth module in /projects/myapp/src/auth.ts to use JWT. Return a unified diff."
+cc "Analyze /projects/myapp and identify all N+1 database query patterns."
 ```
 Or directly:
 ```bash
-claude --print "Analyze /projects/myapp and identify all N+1 database query patterns."
+claude --print "Refactor the auth module in /projects/myapp/src/auth.ts to use JWT."
 ```
 
 **Key notes:**
 - Use `--print` flag for headless non-interactive output
-- Claude Code operates in the current working directory — include absolute paths in your prompt for clarity
-- For long-running Claude Code tasks, spawn a background subagent rather than blocking
+- Include absolute paths in your prompt for clarity
+- For long-running tasks, spawn a background subagent rather than blocking
 
 ---
 
