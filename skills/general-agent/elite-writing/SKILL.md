@@ -1,94 +1,276 @@
-# SKILL: Elite General Writing Skill — AI Slop Prevention
+# SKILL.md — Elite Writer
 
 ## Purpose
-Enable an agent to produce high-quality, professional writing from the outset, without relying on post-hoc rewriting. 
-
-This skill ensures content is:
-
-- Clear, concise, and authoritative 
-- Human-like in voice, rhythm, and style 
-- Insightful and specific 
-- Free from generic AI patterns 
-
-It applies to any writing task: marketing copy, articles, reports, or creative content.
+Produce nonfiction writing that is structurally disciplined, information-dense, vivid, and genuinely enjoyable to read. The system uses an iterative loop to refine each section until it reaches a minimum score of 0.95, with zero AI slop, strong rhythm, and reader momentum.
 
 ---
 
-# Core Writing Standards
+## When to Use
+Use this skill for:
+- Long-form nonfiction
+- Essays, reports, explainers, profiles, and analytical writing
+- Any task where structure, clarity, and sustained reader interest matter
 
-All content must meet the **Universal Vibe Standards** defined in the root `marketing-logic.md`.
-
-### Mandatory Benchmarks:
-1. **Zero Zombies**: No words from the Banned Glossary in `marketing-logic.md`.
-2. **Human Rhythm**: Must demonstrate sentence length variance (staccato feel).
-3. **Information Gain**: Every paragraph must provide a specific insight or data point.
-4. **Target Score**: Final output must achieve ≥ 0.95.
-
----
-
-# AI Slop Prevention
-Refer to `marketing-logic.md` for the full list of structural red flags and rejection criteria.
+Do not use this skill for:
+- Brainstorming without drafting
+- Pure fiction
+- Casual chat writing
+- Content that should be loose, playful, or intentionally unstructured
 
 ---
 
-# Writing Workflow
+## Core Principles
 
-1. **Plan Content**
-   - Define goal, audience, tone, and key points 
-   - Identify specific examples or evidence 
+1. Structure first
+   No prose before the blueprint is clear.
 
-2. **Draft Content**
-   - Use varied sentence structure 
-   - Integrate examples and insights naturally 
-   - Maintain persona and human-like voice 
+2. Arrangement over generation
+   The work is to select, sequence, and sharpen.
 
-3. **Self-Evaluate**
-   - Check against all 12 elite dimensions 
-   - Detect AI slop patterns in real time 
-   - Score content internally (0–1 per dimension) 
-   - Confidence check: only finalize if ≥ 0.95 equivalent 
+3. One dominant job per section
+   Each section must do one main thing well.
 
-4. **Revise Inline**
-   - Adjust wording, structure, and voice immediately 
-   - Remove any detected filler, weak verbs, or mechanical phrasing 
+4. Clarity before style
+   Style cannot rescue confusion.
 
-5. **Finalize**
-   - Ensure clarity, conciseness, authority, and engagement 
-   - Confirm coherence, readability, and persona alignment 
+5. Compression is a virtue
+   Remove anything that does not earn its place.
 
----
+6. Concrete over abstract
+   Specific details, examples, and mechanisms beat generalities.
 
-# Agent Output Requirements
+7. Rhythm matters
+   Good writing changes pace, sentence length, and emphasis.
 
-When producing content:
+8. Reader momentum matters
+   Each section must create movement, tension, or forward pull.
 
-1. Draft Content
-2. Self-Audit Summary
-   - Dimension scores 0–10
-   - Detected AI slop patterns
-   - Confidence score 0–1
-3. Inline Adjustments Made
-4. Final Draft
+9. No AI slop
+   Generic, padded, vague, repetitive, or over-smooth writing is disallowed.
 
-**Mandatory:** The agent must never output content without a confidence ≥ 0.95. If it fails, the draft must be iteratively improved before release.
+10. Elite craft standard
+    The writing should feel shaped by experience: restrained, precise, alive, and deliberate.
 
 ---
 
-# Guardrails
+## Definitions
 
-- Never introduce factual errors or change intended meaning 
-- Preserve author persona and style unless explicitly directed 
-- Ensure original insights, examples, and perspective 
-- Avoid over-editing that makes content sound robotic or formulaic 
+### AI Slop
+Content that is:
+- Generic
+- Low in information density
+- Repetitive
+- Abstract without mechanism
+- Padded with filler
+- Polite but empty
+- Smooth without substance
+
+### Information Density
+A sentence is dense if it adds:
+- New information
+- Necessary nuance
+- Specific evidence
+- Structural progress
+- Meaningful compression
+
+### Engagement
+Writing is engaging if it:
+- Moves forward
+- Uses vivid but economical detail
+- Avoids friction
+- Varies rhythm
+- Creates contrast, escalation, or curiosity
+- Sounds authored rather than assembled
+
+### Reader Friction
+Anything that causes re-reading, confusion, or mental drag.
 
 ---
 
-# Success Criteria
+## Scoring Definition
 
-The skill succeeds if content:
+A section may score above 0.95 only if all of the following are true:
 
-- Reads as elite professional writing 
-- Is free of generic AI patterns 
-- Demonstrates clarity, authority, and originality 
-- Achieves internal ≥ 0.95 confidence 
-- Aligns with intended voice, tone, and audience 
+- No unresolved AI slop
+- No redundant ideas
+- No unclear or overloaded sentences
+- Strong structural fit
+- Clear information hierarchy
+- Sufficient rhythm and variation
+- Reader friction is minimal
+- The section feels necessary, not decorative
+
+### Hard Caps
+- Any unresolved AI slop: maximum score 0.90
+- Any unresolved reader friction: maximum score 0.93
+- Weak engagement: maximum score 0.94
+- Generic voice or flat rhythm: maximum score 0.94
+
+---
+
+## Workflow Loop (Mandatory)
+
+Repeat this loop for each section until the section reaches 0.95 or higher.
+
+### Step 0 — Structural Blueprint
+Define:
+- Title
+- Ordered sections
+- Purpose of each section, one sentence each
+- Structural pattern: linear, braided, modular, chronological, or argumentative
+
+Constraints:
+- No overlapping section purposes
+- No section without a clear function
+- No writing before the structure is stable
+
+---
+
+### Step 1 — Draft the Section
+Draft the section so that it:
+- Does its job directly
+- Uses only necessary material
+- Avoids filler
+- Avoids abstract padding
+- Is understandable on first read
+
+---
+
+### Step 2 — First Evaluation
+Score the section from 0.00 to 1.00 across:
+
+| Dimension | What It Measures |
+|---|---|
+| Structure Fit | Does it serve its intended role exactly? |
+| Clarity | Is it immediately understandable? |
+| Coherence | Does it flow logically? |
+| Precision | Are words specific and necessary? |
+| Redundancy | Is anything repeated or wasted? |
+| Engagement | Does it hold attention without strain? |
+
+Output the score and a short breakdown for each dimension.
+
+---
+
+### Step 3 — Adversarial Critique
+Act like a severe but fair editor.
+
+Identify:
+- Structural weaknesses
+- Weak transitions
+- Repetition
+- Generic phrasing
+- Abstract claims without support
+- Flat rhythm
+- Soft openings or endings
+- Any sentence that feels inflated, vague, or inert
+
+#### AI Slop Detection
+Explicitly flag:
+- Generic openers
+- Empty intensifiers
+- Tautological statements
+- Abstract claims without mechanism
+- Restated ideas
+- List padding
+- Safe but empty conclusions
+
+#### Elite Craft Check
+Also ask:
+- Where is the strongest detail?
+- Where is the weakest sentence?
+- Where does the writing lose authority?
+- Where does the prose feel overexplained?
+- Where could a better writer say more with less?
+
+---
+
+### Step 4 — Compression Pass
+Before rewriting:
+- Remove all weak or redundant material
+- Cut low-information sentences
+- Reduce length by at least 10–20% unless the content is already compressed
+- Prefer removal over decoration
+
+Rules:
+- If a sentence does not improve the section, cut it.
+- If two sentences say the same thing, keep the stronger one.
+- If a paragraph does not move the piece, remove or merge it.
+
+---
+
+### Step 5 — Rewrite
+Rewrite the section to:
+- Improve structure
+- Increase information density
+- Sharpen phrasing
+- Add concrete detail where it matters
+- Improve cadence and variation
+- Strengthen openings, transitions, and endings
+
+---
+
+### Step 6 — Engagement Enforcement
+Apply these checks:
+
+#### Rhythm Rule
+No more than 3 consecutive sentences with similar length or structure.
+
+#### Concrete Anchor Rule
+Any abstract claim must include at least one of:
+- a concrete example
+- a mechanism
+- a specific detail
+- a named consequence
+
+#### Narrative Tension Rule
+Each section must contain at least one:
+- contrast
+- escalation
+- unresolved question
+- shift in perspective
+- useful complication
+
+#### Voice Sharpness Rule
+Replace generic phrasing with direct, specific alternatives without adding fluff.
+
+#### Friction Rule
+If any sentence requires re-reading, the section cannot pass.
+
+#### Elite Writer Rule
+The section must feel:
+- restrained rather than bloated
+- precise rather than ornamental
+- confident rather than overexplained
+- shaped rather than merely generated
+
+---
+
+### Step 7 — Re-score with Delta Check
+Re-score the section using the same rubric.
+
+Constraint:
+- Score must improve by at least 0.02 per meaningful iteration.
+- If it does not, the rewrite strategy is wrong and must change.
+
+---
+
+### Step 8 — Escalation Logic
+If progress stalls:
+- After 2 failed engagement checks → restructure the section
+- If slop persists after rewrite → structural rewrite
+- If the section is technically correct but dull → add rhythm, contrast, and concrete detail
+- If the section is bloated → cut harder
+
+---
+
+### Step 9 — Loop Enforcement
+Repeat Steps 3–8 until:
+
+```
+SECTION SCORE ≥ 0.95
+AND
+ZERO AI SLOP
+AND
+ENGAGEMENT RULES PASSED
+```

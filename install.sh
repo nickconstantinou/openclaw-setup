@@ -25,6 +25,24 @@ else
     git clone "$REPO_URL" "$INSTALL_DIR" || error "Failed to clone repository."
 fi
 
+# Set up OpenClaw state backup repo
+log "Setting up OpenClaw state backup..."
+BACKUP_DIR="$HOME/.openclaw/workspace/openclaw-state"
+BACKUP_REPO="https://github.com/nickconstantinou/openclaw-state.git"
+if [[ ! -d "$BACKUP_DIR/.git" ]]; then
+    mkdir -p "$(dirname "$BACKUP_DIR")"
+    git clone "$BACKUP_REPO" "$BACKUP_DIR" 2>/dev/null || log "Backup repo clone skipped (may already exist)"
+fi
+
+# Install backup cron job if gh CLI is available
+if command -v gh >/dev/null 2>&1; then
+    BACKUP_SCRIPT="$HOME/.openclaw/workspace/scripts/backup-openclaw-state.sh"
+    if [[ -f "$BACKUP_SCRIPT" ]] && ! crontab -l 2>/dev/null | grep -q "backup-openclaw-state"; then
+        (crontab -l 2>/dev/null; echo "0 3 * * * $BACKUP_SCRIPT >> $HOME/.openclaw/workspace/logs/backup.log 2>&1") | crontab - 2>/dev/null || true
+        log "Backup cron job installed (daily at 3 AM)"
+    fi
+fi
+
 # Execute main orchestrator
 log "Launching OpenClaw deployment..."
 cd "$INSTALL_DIR"
