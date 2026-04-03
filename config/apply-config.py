@@ -32,8 +32,11 @@ def main():
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
     # ── Model Architecture ────────────────────────────────────────────────────────
-    _main_primary = 'minimax/MiniMax-M2.7'
-    _fallbacks    = ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1']
+    # PRIMARY: openai-codex/gpt-5.4 (ChatGPT OAuth)
+    # BACKUP:  anthropic/claude-sonnet-4-6
+    # ALT:     minimax/MiniMax-M2.5
+    _main_primary = 'openai-codex/gpt-5.4'
+    _fallbacks    = ['anthropic/claude-sonnet-4-6', 'minimax/MiniMax-M2.5']
     ds(c, 'agents.defaults.model.primary',   _main_primary)
     ds(c, 'agents.defaults.model.fallbacks', _fallbacks)
 
@@ -68,8 +71,8 @@ def main():
     ds(c, 'agents.defaults.compaction.mode', 'safeguard')
 
     ds(c, 'agents.defaults.subagents.model', {
-        'primary':   'minimax/MiniMax-M2.7',
-        'fallbacks': ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1'],
+        'primary':   _main_primary,
+        'fallbacks': _fallbacks,
     })
     ds(c, 'agents.defaults.subagents.maxConcurrent', 4)
     ds(c, 'agents.defaults.subagents.maxSpawnDepth', 2)
@@ -141,7 +144,7 @@ def main():
             'workspace': f'{_home}/.openclaw/workspace',
             'agentDir':  f'{_home}/.openclaw/agents/main/agent',
             'model': {
-                'primary':   os.environ.get('MINIMAX_DEFAULT', 'minimax/MiniMax-M2.7'),
+                'primary':   _main_primary,
                 'fallbacks': _fallbacks,
             },
             'subagents': {'allowAgents': []},  # uses anonymous subagent spawning
@@ -152,7 +155,7 @@ def main():
             'name':      'Family',
             'workspace':  f'{_home}/.openclaw/agents/family/workspace',
             'agentDir':   f'{_home}/.openclaw/agents/family/agent',
-            'model':     {'primary': 'minimax/MiniMax-M2.7', 'fallbacks': ['minimax/MiniMax-M2.5', 'minimax/MiniMax-M2.1']},
+            'model':     {'primary': _main_primary, 'fallbacks': _fallbacks},
             'subagents': {'allowAgents': []},
             'tools':     {'profile': 'messaging'},
             'identity':  {'name': 'Family', 'emoji': '🎪'},
