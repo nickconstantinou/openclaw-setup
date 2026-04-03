@@ -27,7 +27,7 @@ install_playwright() {
         log "  Running playbook: playwright install-deps (as root)..."
         # Use a root-owned cache dir so root's writes don't pollute the user's cache.
         local root_npm_cache; root_npm_cache=$(mktemp -d)
-        if env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" HOME=/root npm_config_cache="$root_npm_cache" npx -y playwright install-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright-deps: $line"; done; then
+        if env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" HOME=/root npm_config_cache="$root_npm_cache" npx -y @playwright/test install-deps chromium 2>&1 | while IFS= read -r line; do log "  playwright-deps: $line"; done; then
             log "  System dependencies installed."
         else
             log "  WARNING: Failed to install Playwright OS dependencies."
@@ -38,7 +38,7 @@ install_playwright() {
         # Separate user-owned cache dir — never shared with the root call above.
         local user_npm_cache; user_npm_cache=$(mktemp -d)
         chown "$ACTUAL_USER:$ACTUAL_USER" "$user_npm_cache"
-        if uas env npm_config_cache="$user_npm_cache" npx -y playwright install chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
+        if uas env npm_config_cache="$user_npm_cache" npx -y @playwright/test install chromium 2>&1 | while IFS= read -r line; do log "  playwright: $line"; done; then
             log "Chromium browser binaries installed for agent."
         else
             log "WARNING: Playwright install failed. Browser tools may be unavailable."

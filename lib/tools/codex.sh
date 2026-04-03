@@ -20,8 +20,6 @@ TOOL_APPARMOR_RULES[codex]=$(cat <<'RULES'
   /usr/lib/node_modules/@openai/**     mrwix,
   @{HOME}/.local/lib/node_modules/@openai/   r,
   @{HOME}/.local/lib/node_modules/@openai/** mrwix,
-  # Wrapper script
-  @{HOME}/.openclaw/bin/cx             rix,
 RULES
 )
 
@@ -65,24 +63,6 @@ install_codex() {
             || log "WARNING: Codex CLI install failed. Coding tasks will fall back to Claude Code."
     fi
 
-    # Create cx wrapper at ~/.openclaw/bin/cx
-    # Usage: cx "implement a binary search function in src/utils.ts"
-    # Runs codex non-interactively with full-auto approval (file edits + shell without prompts)
-    local codex_path; codex_path=$(command -v codex 2>/dev/null || true)
-    if [[ -n "$codex_path" ]]; then
-        local wrapper="$ACTUAL_HOME/.openclaw/bin/cx"
-        mkdir -p "$(dirname "$wrapper")"
-        cat > "$wrapper" << WRAPEOF
-#!/usr/bin/env bash
-# cx — non-interactive Codex CLI wrapper
-# Usage: cx "<task description>"
-# Runs codex exec with full-auto approval (no interactive prompts)
-exec "$codex_path" exec --full-auto "\$@"
-WRAPEOF
-        chmod 755 "$wrapper"
-        chown "$ACTUAL_USER:$ACTUAL_USER" "$wrapper"
-        log "Codex wrapper installed: $wrapper"
-    fi
 }
 
 register_tool codex

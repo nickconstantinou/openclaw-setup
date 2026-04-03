@@ -3,10 +3,11 @@
 @intent Patch OpenClaw configuration to remove stale keys and ensure core provider blocks.
 @complexity 3
 """
-import json
 import sys
 import os
 import argparse
+
+from json5_io import dump_config, load_config
 
 def ds(obj, dotted_path, value):
     """Deep-set a dotted key path, creating intermediate dicts as needed."""
@@ -28,35 +29,14 @@ def main():
         print(f"Error: {cfg} not found.")
         sys.exit(1)
 
-    with open(cfg, 'r') as f:
-        config = json.load(f)
+    config = load_config(cfg)
 
     # Remove stale keys that fail schema validation
     config.get('commands', {}).pop('ownerDisplay', None)
-    config.get('channels', {}).get('telegram', {}).pop('streaming', None)
-
-    # Remove stale top-level telegram channel keys (old single-account format).
-    # apply-config.py writes channels.telegram.accounts.* — top-level groupPolicy/dmPolicy etc. are stale.
-    _tg = config.get('channels', {}).get('telegram', {})
-    for _stale_tg_key in ('groupPolicy', 'dmPolicy', 'allowFrom', 'groupAllowFrom', 'botToken'):
-        _tg.pop(_stale_tg_key, None)
-
-    # Remove old top-level whatsapp single-account keys — the doctor migration reads these and
-    # creates channels.whatsapp.accounts.default, triggering groupPolicy warnings every deploy.
-    # apply-config.py writes channels.whatsapp.accounts.family; these top-level keys are stale.
-    _wa = config.get('channels', {}).get('whatsapp', {})
-    for _stale_wa_key in ('dmPolicy', 'groupPolicy', 'selfChatMode', 'groupAllowFrom', 'allowFrom',
-                          'debounceMs', 'mediaMaxMb'):
-        _wa.pop(_stale_wa_key, None)
-    # Also remove accounts.default if doctor already migrated it before this cleanup ran.
-    _wa.get('accounts', {}).pop('default', None)
 
     # Remove keys that were set by older deploy versions but don't exist in
     # this OpenClaw schema (2026.2.21-2). Gateway refuses to start if present.
-    config.pop('acp', None)                                          # acp.* namespace
-    config.get('tools', {}).pop('exec', None)                        # tools.exec.policy
     config.get('tools', {}).pop('files', None)                       # tools.files.*
-    config.get('agents', {}).get('defaults', {}).pop('sandbox', None)  # agents.defaults.sandbox.mode
 
     _bad_models = {
         'minimax/MiniMax-M2.5-highspeed',
@@ -81,16 +61,7 @@ def main():
             _am['fallbacks'] = strip_bad_models(_am['fallbacks'], _bad_models)
         # Strip per-agent keys that aren't in the schema
         agent.get('subagents', {}).pop('maxConcurrent', None)
-        # sandbox.mode is only valid at agents.defaults level, not per-agent
-        agent.pop('sandbox', None)
-
-    # Strip agents.defaults.sandbox.mode if it was written with an invalid value
-    _defaults = config.get('agents', {}).get('defaults', {})
-    _defaults.get('sandbox', {}).pop('mode', None)
-    if _defaults.get('sandbox') == {}:
-        _defaults.pop('sandbox', None)
     config.get('plugins', {}).pop('load', None)                      # plugins.load.paths
-    config.get('plugins', {}).get('entries', {}).pop('acpx', None)   # plugins.entries.acpx (stale from failed deploy)
     # Clean up empty dicts left behind
     if config.get('tools') == {}: config.pop('tools', None)
     if config.get('plugins', {}) == {}: config.pop('plugins', None)
@@ -222,8 +193,7 @@ def main():
     existing_catalog.update(desired_anthropic_catalog)
     config.setdefault('agents', {}).setdefault('defaults', {})['models'] = existing_catalog
 
-    with open(cfg, 'w') as f:
-        json.dump(config, f, indent=2)
+    dump_config(cfg, config)
     print('Config patched OK.')
 
 if __name__ == '__main__':

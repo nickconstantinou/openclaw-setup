@@ -34,10 +34,13 @@ ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 TAVILY_API_KEY=${TAVILY_API_KEY:-}
 GITHUB_TOKEN=${GITHUB_PAT:-}
 POST_BRIDGE_API_KEY=${POST_BRIDGE_API_KEY:-}
+OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-}
+TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
 TELEGRAM_BOT_TOKEN_CODING=${TELEGRAM_BOT_TOKEN_CODING:-}
 TELEGRAM_BOT_TOKEN_MARKETING=${TELEGRAM_BOT_TOKEN_MARKETING:-}
 SUPABASE_URL=${SUPABASE_URL:-}
 SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+OLLAMA_API_KEY=ollama-local
 EOF
 
     # Append tool-specific env vars from loaded tool modules
@@ -53,6 +56,27 @@ EOF
     done
 
     chmod 600 "$envd_file"
+
+    # Make the current user manager pick up the fresh environment immediately
+    # so services can rely on environment.d instead of embedding secrets.
+    local import_vars=(
+        MINIMAX_API_KEY
+        GEMINI_API_KEY
+        GOOGLE_API_KEY
+        ANTHROPIC_API_KEY
+        TAVILY_API_KEY
+        GITHUB_TOKEN
+        POST_BRIDGE_API_KEY
+        OPENCLAW_GATEWAY_TOKEN
+        TELEGRAM_BOT_TOKEN
+        TELEGRAM_BOT_TOKEN_CODING
+        TELEGRAM_BOT_TOKEN_MARKETING
+        SUPABASE_URL
+        SUPABASE_ANON_KEY
+        OLLAMA_API_KEY
+    )
+    uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" OLLAMA_API_KEY="ollama-local" \
+        systemctl --user import-environment "${import_vars[@]}" 2>/dev/null || true
 }
 
 # ── 12b. SYSTEMD LINGER ───────────────────────────────────────────────────────
@@ -67,7 +91,9 @@ enable_linger() {
 harden_permissions() {
     log "Securing OpenClaw directories..."
     mkdir -p "$ACTUAL_HOME/.openclaw"
+    mkdir -p "$ACTUAL_HOME/.npm"
     sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw"
+    sudo chown -R "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
     chmod 700 "$ACTUAL_HOME/.openclaw"
     chmod 600 "$ENV_FILE"
 }

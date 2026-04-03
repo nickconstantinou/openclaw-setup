@@ -4,9 +4,10 @@
 @complexity 2
 """
 import json
-import os
 import sys
 import argparse
+
+from json5_io import dump_config, load_config
 
 def run_migration(config):
     """
@@ -70,8 +71,7 @@ def main():
 
     cfg_path = args.config
     try:
-        with open(cfg_path, 'r') as f:
-            config = json.load(f)
+        config = load_config(cfg_path)
     except Exception as e:
         print(f"Error reading config: {e}")
         sys.exit(1)
@@ -79,8 +79,7 @@ def main():
     result = run_migration(config)
     
     # Write updated config back
-    with open(cfg_path, 'w') as f:
-        json.dump(result["updated_config"], f, indent=2)
+    dump_config(cfg_path, result["updated_config"])
     
     # Write plan
     with open(args.plan_out, 'w') as f:

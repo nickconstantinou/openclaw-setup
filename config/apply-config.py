@@ -3,11 +3,12 @@
 @intent Apply core JSON configuration to openclaw.json including API keys, models, agents, and security policies.
 @complexity 5
 """
-import json
 import os
 import sys
 import argparse
 import shutil
+
+from json5_io import dump_config, load_config
 
 def ds(obj, dotted_path, value):
     """Deep-set a dotted key path, creating intermediate dicts as needed."""
@@ -15,6 +16,18 @@ def ds(obj, dotted_path, value):
     for k in keys[:-1]:
         obj = obj.setdefault(k, {})
     obj[keys[-1]] = value
+
+
+def unique_list(values):
+    """Return values in order, skipping blanks and duplicates."""
+    seen = set()
+    result = []
+    for value in values:
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
 
 def main():
     parser = argparse.ArgumentParser(description='Apply OpenClaw configuration.')
@@ -26,8 +39,7 @@ def main():
         print(f"Error: {cfg} not found.")
         sys.exit(1)
 
-    with open(cfg) as f:
-        c = json.load(f)
+    c = load_config(cfg)
 
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
@@ -70,7 +82,11 @@ def main():
     ds(c, 'agents.defaults.memorySearch.provider',         'openai')
     ds(c, 'agents.defaults.memorySearch.model',            'nomic-embed-text')
     ds(c, 'agents.defaults.memorySearch.remote.baseUrl',   'http://127.0.0.1:11434/v1')
-    ds(c, 'agents.defaults.memorySearch.remote.apiKey',    'ollama-local')  # dummy placeholder; Ollama ignores API keys for local access
+    ds(c, 'agents.defaults.memorySearch.remote.apiKey', {
+        'source': 'env',
+        'provider': 'default',
+        'id': 'OLLAMA_API_KEY',
+    })  # dummy env-backed placeholder; Ollama ignores API keys for local access
 
     ds(c, 'agents.defaults.compaction.mode', 'safeguard')
 
@@ -82,6 +98,50 @@ def main():
     ds(c, 'agents.defaults.subagents.maxSpawnDepth', 2)
     ds(c, 'agents.defaults.subagents.maxChildrenPerAgent', 5)
     ds(c, 'agents.defaults.subagents.runTimeoutSeconds', 900)
+
+    # ── ACP / ACPX Configuration ─────────────────────────────────────────────────
+    _acp_enabled = os.environ.get('OPENCLAW_ACP_ENABLED', 'true').strip().lower()
+    _acp_enabled = _acp_enabled not in {'0', 'false', 'no', 'off'}
+
+    _acp_default_agent = os.environ.get('OPENCLAW_ACP_DEFAULT_AGENT', 'codex').strip() or 'codex'
+    _acp_allowed_agents_raw = os.environ.get('OPENCLAW_ACP_ALLOWED_AGENTS', 'codex,claude')
+    _acp_allowed_agents = unique_list(
+        agent.strip() for agent in _acp_allowed_agents_raw.split(',')
+    ) or ['codex', 'claude']
+
+    _acpx_permission_mode = os.environ.get('OPENCLAW_ACPX_PERMISSION_MODE', 'approve-all').strip() or 'approve-all'
+    if _acpx_permission_mode not in {'approve-all', 'approve-reads', 'deny-all'}:
+        print(
+            f"WARNING: Invalid OPENCLAW_ACPX_PERMISSION_MODE={_acpx_permission_mode!r}; using 'approve-all'.",
+            file=sys.stderr,
+        )
+        _acpx_permission_mode = 'approve-all'
+
+    _acpx_noninteractive = os.environ.get('OPENCLAW_ACPX_NONINTERACTIVE_PERMISSIONS', 'fail').strip() or 'fail'
+    if _acpx_noninteractive not in {'fail', 'deny'}:
+        print(
+            f"WARNING: Invalid OPENCLAW_ACPX_NONINTERACTIVE_PERMISSIONS={_acpx_noninteractive!r}; using 'fail'.",
+            file=sys.stderr,
+        )
+        _acpx_noninteractive = 'fail'
+
+    _acpx_plugin_tools_bridge = os.environ.get('OPENCLAW_ACPX_PLUGIN_TOOLS_MCP_BRIDGE', 'false').strip().lower()
+    _acpx_plugin_tools_bridge = _acpx_plugin_tools_bridge in {'1', 'true', 'yes', 'on'}
+
+    ds(c, 'acp.enabled', _acp_enabled)
+    ds(c, 'acp.dispatch.enabled', True)
+    ds(c, 'acp.backend', 'acpx')
+    ds(c, 'acp.defaultAgent', _acp_default_agent)
+    ds(c, 'acp.allowedAgents', _acp_allowed_agents)
+    ds(c, 'acp.maxConcurrentSessions', 8)
+    ds(c, 'acp.stream.coalesceIdleMs', 300)
+    ds(c, 'acp.stream.maxChunkChars', 1200)
+    ds(c, 'acp.runtime.ttlMinutes', 120)
+
+    ds(c, 'plugins.entries.acpx.enabled', _acp_enabled)
+    ds(c, 'plugins.entries.acpx.config.permissionMode', _acpx_permission_mode)
+    ds(c, 'plugins.entries.acpx.config.nonInteractivePermissions', _acpx_noninteractive)
+    ds(c, 'plugins.entries.acpx.config.pluginToolsMcpBridge', _acpx_plugin_tools_bridge)
 
     # ── Supabase Configuration ───────────────────────────────────────────────────
     _supabase_url = os.environ.get('SUPABASE_URL', '').strip()
@@ -128,6 +188,25 @@ def main():
     _docker_available = shutil.which('docker') is not None
     if not _docker_available:
         print("WARNING: Docker not found. Family agent will run without sandbox.", file=sys.stderr)
+
+    _existing_defaults_sandbox = c.get('agents', {}).get('defaults', {}).get('sandbox', {})
+    if not isinstance(_existing_defaults_sandbox, dict):
+        _existing_defaults_sandbox = {}
+
+    _requested_sandbox_mode = os.environ.get('OPENCLAW_SANDBOX_MODE', '').strip()
+    _valid_sandbox_modes = {'off', 'non-main', 'all'}
+    if _requested_sandbox_mode and _requested_sandbox_mode not in _valid_sandbox_modes:
+        print(
+            f"WARNING: Invalid OPENCLAW_SANDBOX_MODE={_requested_sandbox_mode!r}; keeping existing/default sandbox mode.",
+            file=sys.stderr,
+        )
+        _requested_sandbox_mode = ''
+
+    _defaults_sandbox = dict(_existing_defaults_sandbox)
+    _defaults_sandbox['mode'] = _requested_sandbox_mode or _defaults_sandbox.get('mode', 'off')
+    if _defaults_sandbox.get('mode') != 'off' and not _docker_available:
+        print("WARNING: Docker not found. Default sandboxing disabled.", file=sys.stderr)
+        _defaults_sandbox['mode'] = 'off'
 
     _family_sandbox = {
         'mode': 'all' if _docker_available else 'off',
@@ -188,8 +267,10 @@ def main():
                     entry['identity']  = agent.get('identity', entry.get('identity', {}))
                     entry['sandbox']   = agent.get('sandbox', entry.get('sandbox', {}))
 
-    # No sandbox at the defaults level — only family agent is sandboxed (per-agent config above)
-    ds(c, 'agents.defaults.sandbox.mode', 'off')
+    # Family stays sandboxed by default, while OPENCLAW_SANDBOX_MODE can opt
+    # the wider install into off/non-main/all later without losing other
+    # sandbox settings already present in the config.
+    ds(c, 'agents.defaults.sandbox', _defaults_sandbox)
 
     # Cross-agent communication — main agent only
     ds(c, 'tools.sessions.visibility', 'agent')
@@ -208,7 +289,11 @@ def main():
     ds(c, 'gateway.mode',           'local')
     ds(c, 'gateway.bind',           'loopback')
     ds(c, 'gateway.auth.mode',      'token')
-    ds(c, 'gateway.auth.token',     os.environ.get('OPENCLAW_GATEWAY_TOKEN', ''))
+    ds(c, 'gateway.auth.token', {
+        'source': 'env',
+        'provider': 'default',
+        'id': 'OPENCLAW_GATEWAY_TOKEN',
+    })
 
     # Loopback-only gateway — no reverse proxies to trust
     ds(c, 'gateway.trustedProxies', [])
@@ -268,8 +353,12 @@ def main():
 
     _dm_policy = 'allowlist' if _tg_allowed else 'pairing'
     _tg_default_acc = tg_accounts.get('default', {})
+    _tg_bot_token = (
+        {'source': 'env', 'provider': 'default', 'id': 'TELEGRAM_BOT_TOKEN'}
+        if _tg_main else ''
+    )
     _tg_default_acc.update({
-        'botToken':    _tg_main,
+        'botToken':    _tg_bot_token,
         'dmPolicy':    _dm_policy,
         'groupPolicy': 'disabled',
         'allowFrom':   _tg_allowed,
@@ -347,8 +436,7 @@ def main():
             c['tools']['elevated'].pop('allowFrom', None)
         print("WARNING: [SEC-002] Elevated mode disabled — no channel allowlists configured.", file=sys.stderr)
 
-    with open(cfg, 'w') as f:
-        json.dump(c, f, indent=2)
+    dump_config(cfg, c)
 
     print('ok')
 

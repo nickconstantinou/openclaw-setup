@@ -113,7 +113,7 @@ Check `~/.openclaw/workspace/agent-inbox.md` at the start of each session for me
 [FROM: Chas] [TO: Claude Code] [YYYY-MM-DD HH:MM] Your message here
 ```
 
-Claude Code can invoke you indirectly by writing tasks here. You can invoke Claude Code directly via `cc "task"`.
+Claude Code can invoke you indirectly by writing tasks here.
 
 ---
 

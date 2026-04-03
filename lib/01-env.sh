@@ -38,7 +38,13 @@ resolve_user_context() {
         "SUPABASE_ANON_KEY=REPLACE_ME"
         "GWS_CREDENTIALS_B64=REPLACE_ME"
         "GWS_ENCRYPTION_KEY_B64=REPLACE_ME"
-        "OPENCLAW_SANDBOX_MODE=non-main"
+        "OPENCLAW_SANDBOX_MODE=off"
+        "OPENCLAW_ACP_ENABLED=true"
+        "OPENCLAW_ACP_DEFAULT_AGENT=codex"
+        "OPENCLAW_ACP_ALLOWED_AGENTS=codex,claude"
+        "OPENCLAW_ACPX_PERMISSION_MODE=approve-all"
+        "OPENCLAW_ACPX_NONINTERACTIVE_PERMISSIONS=fail"
+        "OPENCLAW_ACPX_PLUGIN_TOOLS_MCP_BRIDGE=false"
     )
 
     for p in "${placeholders[@]}"; do

@@ -58,7 +58,7 @@ Follow this phased protocol for any engineering request. Reference the specific 
 
 ## Phase 3: Execution
 - **Active Build**: `refactoring`, `frontend-design`, `mobile-app-dev`.
-- **Code Generation**: Use **Codex (`cx`)** in preference to Claude Code (`cc`) — see Tool Usage Instructions below.
+- **Code Generation**: Use Codex via ACP in preference to Claude via ACP — see Tool Usage Instructions below.
 - **Sandbox Operations**: `git-in-sandbox`, `github-pages`.
 - **Specialized Data**: `outscraper`, `posthog`.
 
@@ -83,54 +83,42 @@ All implementation MUST adhere to `coding-logic.md`:
 
 # 🔧 Tool Usage Instructions
 
-## Codex CLI (`cx`) ← PREFERRED for coding tasks
+## Codex via ACP ← PREFERRED for coding tasks
 
-Codex CLI is installed at `~/.openclaw/bin/cx` — a wrapper that runs `codex exec --full-auto`.
+OpenClaw can run Codex through the ACP runtime (`acpx`) instead of relying on a local wrapper script.
 
-**Use Codex in preference to Claude Code for all coding tasks:**
+**Use Codex in preference to Claude for all coding tasks:**
 - Multi-file implementation tasks (features, refactors, bug fixes)
 - Code generation from a spec or description
 - Test writing and TDD loops
 - Any task where file edits and shell commands need to run autonomously
 
-**How to invoke:**
-```bash
-cx "Implement a binary search utility in src/utils/search.ts with full Jest test coverage."
-cx "Refactor the auth module in /projects/myapp/src/auth.ts to use JWT. Return a unified diff."
-cx "Find and fix all N+1 database query patterns in /projects/myapp/src/"
-```
+**Preferred invocation path:** ask OpenClaw to route the task through ACP, or use `sessions_spawn` with `runtime: "acp"` and `agentId: "codex"`.
 
-**Key flags (pass through cx):**
+**Direct CLI fallback:**
 ```bash
-cx --model o4-mini "Quick fix: correct the off-by-one error in src/paginate.ts"
-cx --json "Generate a REST API for /projects/myapp"   # Machine-readable JSON Lines output
+codex exec --full-auto "Implement a binary search utility in src/utils/search.ts with full Jest test coverage."
 ```
-
-**Approval mode:** `--full-auto` is set by default in the wrapper — Codex will edit files and run shell commands without prompting. Ensure the working directory is a git repo (Codex warns otherwise).
 
 **Auth:** Uses `OPENAI_API_KEY` from the environment (already configured).
 
-**Fall back to Claude Code (`cc`) only when:**
+**Fall back to Claude via ACP only when:**
 - Codex is unavailable or the `OPENAI_API_KEY` is not set
 - The task requires deep codebase analysis across 1M+ token context
 - You need Claude-specific capabilities (Anthropic models, Claude reasoning)
 
 ---
 
-## Claude Code (`cc`) ← fallback
-
-Claude Code is installed at `~/.openclaw/bin/cc` — a wrapper that runs `claude --print`.
+## Claude via ACP ← fallback
 
 **When to use (prefer Codex above for most coding tasks):**
 - Large codebase analysis where 1M context window is needed
 - Tasks that benefit specifically from Claude's reasoning or Anthropic models
 - When Codex is unavailable
 
-**How to invoke via exec:**
-```bash
-cc "Analyze /projects/myapp and identify all N+1 database query patterns."
-```
-Or directly:
+**Preferred invocation path:** ask OpenClaw to route the task through ACP, or use `sessions_spawn` with `runtime: "acp"` and `agentId: "claude"`.
+
+**Direct CLI fallback:**
 ```bash
 claude --print "Refactor the auth module in /projects/myapp/src/auth.ts to use JWT."
 ```

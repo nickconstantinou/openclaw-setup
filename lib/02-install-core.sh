@@ -164,19 +164,15 @@ install_openclaw() {
 
 # ── 7g. INSTALL ACPX PLUGIN ───────────────────────────────────────────────────
 install_acpx_plugin() {
-    if [[ "${ANTHROPIC_API_KEY:-}" == "sk-ant-REPLACE_ME_WHEN_READY" ]]; then
-        log "acpx plugin SKIPPED — placeholder key."
-        return
-    fi
-
     log "Installing acpx plugin..."
     mkdir -p "$ACTUAL_HOME/.openclaw/plugins"
     chown "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw/plugins"
-    # Note: @openclaw/acpx may not be publicly available on npm; skip gracefully
     local acpx_err
-    acpx_err=$(oc plugins install @openclaw/acpx 2>&1) \
-        && log "acpx plugin installed." \
-        || log "INFO: acpx plugin not available — skipping. ($acpx_err)"
+    if acpx_err=$(oc plugins install acpx 2>&1); then
+        log "acpx plugin installed."
+    else
+        log "WARNING: acpx plugin install failed — ACP sessions may be unavailable until this is fixed. ($acpx_err)"
+    fi
 }
 
 # ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
@@ -211,9 +207,6 @@ setup_agent_dirs() {
         chmod 700 "$agent_state_dir"
         chmod 755 "$agent_workspace_dir"
     done
-    
-    # Generate SKILLS.md for each agent based on their actual config
-    generate_agent_skills_md
 }
 
 # ── 7aa. GENERATE AGENT SKILLS MD ────────────────────────────────────────────

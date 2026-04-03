@@ -123,9 +123,37 @@ OpenClaw enforces a **Docker-first security posture** to protect your host syste
 
 #### Sandbox Modes
 Configure via `OPENCLAW_SANDBOX_MODE` in `~/.openclaw/.env`:
-- `non-main` (Default): All agents run in Docker **except** the `main` agent. Safe experimentation for specialized agents while keeping the host orchestrator unconstrained.
+- `off` (Default in this setup repo): Leave the main install on the host. This repo still keeps the `family` agent sandboxed separately when Docker is available.
+- `non-main`: Sandbox non-main sessions while leaving the main session on the host.
 - `all`: All agents, including `main`, run in Docker.
-- `off`: Sandboxing disabled (not recommended).
+
+This keeps the current dedicated-laptop workflow fast by default, while preserving a one-variable path back to broader sandboxing later.
+
+### ACP Sessions via ACPX
+
+This setup can also route Codex and Claude Code through OpenClaw's ACP runtime instead of only using native host-side CLI calls.
+
+- The deploy installs the official `acpx` plugin with `openclaw plugins install acpx`
+- ACP is enabled by default with backend `acpx`
+- Default harness allowlist is `codex,claude`
+- ACPX permissions default to `approve-all` so non-interactive write/exec turns do not fail with `AcpRuntimeError`
+
+Configure via `~/.openclaw/.env`:
+
+```bash
+OPENCLAW_ACP_ENABLED=true
+OPENCLAW_ACP_DEFAULT_AGENT=codex
+OPENCLAW_ACP_ALLOWED_AGENTS=codex,claude
+OPENCLAW_ACPX_PERMISSION_MODE=approve-all
+OPENCLAW_ACPX_NONINTERACTIVE_PERMISSIONS=fail
+OPENCLAW_ACPX_PLUGIN_TOOLS_MCP_BRIDGE=false
+```
+
+After deploy, verify ACP health with:
+
+```bash
+openclaw acp doctor
+```
 
 #### Features
 - **Network Isolation**: Uses `bridge` networking to allow agents to reach APIs (Anthropic, Google, etc.) while isolating them from the host's private network services.
@@ -360,7 +388,7 @@ If your agents fail with a "spawn docker EACCES" error, the sandbox is missing o
    ```bash
    OPENCLAW_SANDBOX_MODE="all" # Enable
    # or
-   OPENCLAW_SANDBOX_MODE="untrusted" # Disable
+   OPENCLAW_SANDBOX_MODE="off" # Disable default sandboxing
    ```
 2. Re-run deployment to automatically build the `openclaw-sandbox:bookworm-slim` image and add your user to the `docker` group:
    ```bash
@@ -524,7 +552,7 @@ Both agents write to dated files in `~/.openclaw/workspace/memory/YYYY-MM-DD.md`
 [FROM: Chas] [TO: Claude Code] [2026-03-26 09:52] Your reply here
 ```
 
-Both agents check this file at session start and clear messages addressed to them after reading. Chas can also invoke Claude Code directly via the `cc` wrapper (`~/.openclaw/bin/cc`).
+Both agents check this file at session start and clear messages addressed to them after reading.
 
 ### What gets set up automatically
 

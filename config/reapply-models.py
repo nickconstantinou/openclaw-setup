@@ -3,10 +3,10 @@
 @intent Re-apply model catalog and media config after onboard wipes them.
 @complexity 2
 """
-import json
-import os
 import sys
 import argparse
+
+from json5_io import dump_config, load_config
 
 def main():
     parser = argparse.ArgumentParser(description='Re-apply OpenClaw model catalog.')
@@ -14,11 +14,7 @@ def main():
     args = parser.parse_args()
 
     cfg = args.config
-    try:
-        with open(cfg) as f:
-            config = json.load(f)
-    except Exception:
-        config = {}
+    config = load_config(cfg)
 
     catalog = {
         'openai-codex/gpt-5.4':               {'alias': 'gpt-5'},
@@ -56,8 +52,7 @@ def main():
     config.setdefault('models', {}).setdefault('providers', {}).pop('google', None)
     config.setdefault('models', {}).setdefault('providers', {}).pop('ollama', None)
 
-    with open(cfg, 'w') as f:
-        json.dump(config, f, indent=2)
+    dump_config(cfg, config)
     print('Model catalog written: ' + ', '.join(catalog.keys()))
 
 if __name__ == '__main__':

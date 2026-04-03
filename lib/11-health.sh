@@ -143,13 +143,23 @@ check_apparmor_enforced() {
         return 0
     fi
 
-    # Check APPARMOR_UNCONFINED flag from gateway module
-    if [[ "${APPARMOR_UNCONFINED:-0}" == "1" ]]; then
-        log "[HEALTH] FAIL — [SEC-003] Gateway running UNCONFINED (fallback used)"
+    local profile="openclaw-gateway"
+    local pid; pid=$(uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" systemctl --user show openclaw-gateway.service --property=MainPID --value 2>/dev/null || echo "0")
+    if [[ "$pid" != "0" ]] && [[ -r "/proc/$pid/attr/current" ]]; then
+        local current_label
+        current_label=$(cat "/proc/$pid/attr/current" 2>/dev/null || echo "")
+        if [[ "$current_label" == *"$profile"* ]]; then
+            log "[HEALTH] PASS — Gateway process confined by AppArmor profile '$profile'"
+            return 0
+        fi
+        if [[ -n "$current_label" ]] && [[ "$current_label" != "unconfined" ]]; then
+            log "[HEALTH] WARN — Gateway process label is '$current_label' (expected '$profile')"
+        else
+            log "[HEALTH] FAIL — [SEC-003] Gateway process is UNCONFINED"
+        fi
         return 1
     fi
 
-    local profile="openclaw-gateway"
     # Check if aa-status is available to verify enforcement list
     if command -v aa-status >/dev/null 2>&1; then
         local status_json; status_json=$(sudo aa-status --json 2>/dev/null || echo "{}")
@@ -175,11 +185,11 @@ run_health_suite() {
     log "Running post-deployment health checks..."
     local errors=0
     
-    check_ollama || ((errors++))
-    check_gateway || ((errors++))
-    check_vault || ((errors++))
+    check_ollama || ((++errors))
+    check_gateway || ((++errors))
+    check_vault || ((++errors))
     check_integrations
-    check_apparmor_enforced || ((errors++))
+    check_apparmor_enforced || ((++errors))
     check_apparmor_denials
     check_tailscale
 

@@ -6,7 +6,7 @@
 
 TOOL_APPARMOR_RULES[claude_code]=$(cat <<'RULES'
   # ── Claude Code — exec delegation ───────────────────────────────────────────
-  # Agent invokes Claude Code via exec tool (claude --print / cc wrapper).
+  # Agent invokes Claude Code via its native CLI.
   # env is needed for #!/usr/bin/env node shebang
   /usr/bin/env                         ix,
   /usr/bin/node                        ix,
@@ -18,10 +18,6 @@ TOOL_APPARMOR_RULES[claude_code]=$(cat <<'RULES'
   @{HOME}/.local/share/claude/           r,
   @{HOME}/.local/share/claude/**         r,
   @{HOME}/.local/share/claude/versions/* ix,
-  # ~/.openclaw/bin/ — agent exec wrappers (cc, etc.)
-  # Scripts need rix (read+inherit+exec) — interpreter must read the script file
-  @{HOME}/.openclaw/bin/               rw,
-  @{HOME}/.openclaw/bin/*              rix,
   @{HOME}/.cache/claude/               rw,
   @{HOME}/.cache/claude/**             rw,
 RULES
@@ -79,17 +75,6 @@ install_claude_code() {
         log "Added ~/.local/bin to PATH in $profile_file"
     fi
 
-    local bin="$ACTUAL_HOME/.local/bin/claude"
-    if [[ -x "$bin" ]]; then
-        local wrapper="$ACTUAL_HOME/.openclaw/bin/cc"
-        mkdir -p "$(dirname "$wrapper")"
-        cat > "$wrapper" << WRAPEOF
-#!/usr/bin/env bash
-exec "$bin" --print "\$@"
-WRAPEOF
-        chmod 755 "$wrapper"
-        chown "$ACTUAL_USER":"$ACTUAL_USER" "$wrapper"
-    fi
 }
 
 register_tool claude_code

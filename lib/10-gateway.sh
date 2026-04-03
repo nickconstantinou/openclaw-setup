@@ -58,14 +58,24 @@ EOF
         log "Stub unit pre-seeded (workaround for openclaw is-enabled stdout/stderr bug)."
     fi
 
-    oc gateway install --force || die "Gateway install failed."
+    # Install the service without embedding the live gateway token into the unit.
+    sudo -u "$ACTUAL_USER" \
+        env PATH="/bin:/sbin:/usr/bin:/usr/local/bin:$PATH" \
+            HOME="$ACTUAL_HOME" \
+            XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
+            XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
+            XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" \
+            DEBIAN_FRONTEND=noninteractive \
+            OPENCLAW_GATEWAY_TOKEN= \
+        openclaw gateway install --force || die "Gateway install failed."
 
     local unit="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service"
     if [[ -f "$unit" ]] && command -v aa-exec >/dev/null 2>&1; then
         local exec_line; exec_line=$(grep "^ExecStart=" "$unit" | head -1)
         local exec_cmd="${exec_line#ExecStart=}"
         if [[ -n "$exec_cmd" ]]; then
-            if aa-exec -p openclaw-gateway -- true 2>/dev/null; then
+            if uas aa-exec -p openclaw-gateway -- true 2>/dev/null; then
                 local dropin_dir="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service.d"
                 mkdir -p "$dropin_dir"
                 # $exec_cmd is expanded by bash during heredoc — do NOT use printf '%q' here.
@@ -73,13 +83,14 @@ EOF
                 # a single argument instead of a binary + args, producing "No such file or directory".
                 cat > "$dropin_dir/apparmor.conf" <<EOF
 [Service]
-ExecStartPre=/bin/sh -c 'aa-exec -p openclaw-gateway -- true 2>/dev/null || (echo "AppArmor profile not loaded — starting unconfined" && exit 0)'
+ExecStartPre=/bin/sh -c 'aa-exec -p openclaw-gateway -- true 2>/dev/null || (echo "AppArmor profile not loaded for user service — starting unconfined" && exit 0)'
 ExecStart=
 ExecStart=/bin/sh -c 'if aa-exec -p openclaw-gateway -- true 2>/dev/null; then exec aa-exec -p openclaw-gateway -- $exec_cmd; else exec $exec_cmd; fi'
 EOF
                 chown -R "$ACTUAL_USER:$ACTUAL_USER" "$dropin_dir"
                 log "AppArmor confinement applied via systemd drop-in."
             else
+                log "WARNING: aa-exec probe failed for service user '$ACTUAL_USER' — gateway will start unconfined."
                 warn_apparmor_unconfined
             fi
         fi
