@@ -44,15 +44,15 @@ def main():
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
     # ── Model Architecture ────────────────────────────────────────────────────────
-    # main agent:   openai-codex/gpt-5.4-mini (Codex Pro — balanced speed/quality)
-    # family agent: openai-codex/gpt-5.4-nano (Codex Pro — fast chat)
+    # main agent:   openai-codex/gpt-5.4 (Codex Pro OAuth — only confirmed model)
+    # family agent: minimax/MiniMax-M2.5 (fast, cost-efficient for chat)
     # subagents:    inherit main model
     # Global default: minimax/MiniMax-M2.5 (fallback when Codex OAuth unavailable)
     # Fallback chain: primary → minimax/MiniMax-M2.5
-    _main_primary    = 'openai-codex/gpt-5.4-mini'
+    _main_primary    = 'openai-codex/gpt-5.4'
     _main_fallbacks  = ['minimax/MiniMax-M2.5']
-    _family_primary  = 'openai-codex/gpt-5.4-nano'
-    _family_fallbacks = ['minimax/MiniMax-M2.5']
+    _family_primary  = 'minimax/MiniMax-M2.5'
+    _family_fallbacks = ['anthropic/claude-haiku-4-5-20251001']
     ds(c, 'agents.defaults.model.primary',   'minimax/MiniMax-M2.5')
     ds(c, 'agents.defaults.model.fallbacks', ['anthropic/claude-haiku-4-5-20251001'])
 
