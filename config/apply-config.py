@@ -232,6 +232,7 @@ def main():
             },
             'subagents': {'allowAgents': []},  # uses anonymous subagent spawning
             'tools': {'profile': 'full'},
+            'sandbox': {'mode': 'off'},  # main agent explicitly unsandboxed
         },
         {
             'id':        'family',
