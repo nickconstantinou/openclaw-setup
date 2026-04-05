@@ -44,17 +44,17 @@ def main():
     _home = os.environ.get('ACTUAL_HOME', os.path.expanduser('~'))
 
     # ── Model Architecture ────────────────────────────────────────────────────────
-    # main agent:   sonnet (capable, general purpose)
-    # family agent: haiku  (fast, low-cost for chat)
-    # subagents:    sonnet (inherits from main default)
-    # Fallback for all: MiniMax-M2.5
-    # openai-codex/gpt-5.4 remains in catalog for manual selection
-    _main_primary    = 'anthropic/claude-sonnet-4-6'
+    # main agent:   openai-codex/gpt-5.4 (Codex Pro — flagship coding model)
+    # family agent: minimax/MiniMax-M2.5  (fast, cost-efficient for chat)
+    # subagents:    inherit main model
+    # Global default: minimax/MiniMax-M2.5 (fast fallback for all agents)
+    # Fallback chain: primary → minimax/MiniMax-M2.5
+    _main_primary    = 'openai-codex/gpt-5.4'
     _main_fallbacks  = ['minimax/MiniMax-M2.5']
-    _family_primary  = 'anthropic/claude-haiku-4-5-20251001'
-    _family_fallbacks = ['minimax/MiniMax-M2.5']
-    ds(c, 'agents.defaults.model.primary',   _main_primary)
-    ds(c, 'agents.defaults.model.fallbacks', _main_fallbacks)
+    _family_primary  = 'minimax/MiniMax-M2.5'
+    _family_fallbacks = ['anthropic/claude-haiku-4-5-20251001']
+    ds(c, 'agents.defaults.model.primary',   'minimax/MiniMax-M2.5')
+    ds(c, 'agents.defaults.model.fallbacks', ['anthropic/claude-haiku-4-5-20251001'])
 
     # ── API keys (skills only — provider keys come from environment.d via systemd) ──────────────
     pb_key = os.environ.get('POST_BRIDGE_API_KEY', '')
@@ -240,7 +240,7 @@ def main():
             'agentDir':   f'{_home}/.openclaw/agents/family/agent',
             'model':     {'primary': _family_primary, 'fallbacks': _family_fallbacks},
             'subagents': {'allowAgents': []},
-            'tools':     {'profile': 'messaging'},
+            'tools':     {'profile': 'messaging', 'sandbox': {'tools': {'alsoAllow': ['message']}}},
             'identity':  {'name': 'Family', 'emoji': '🎪'},
             'sandbox':   _family_sandbox,
         },
