@@ -72,6 +72,37 @@ resolve_user_context() {
         source "$envd_file"
     fi
     set +o allexport
+
+    # ── NVM / LINUXBREW PATH RESOLUTION ──────────────────────────────────────
+    # When running as root (sudo), nvm-managed node/npm and linuxbrew binaries
+    # are not on PATH.  Detect and export them so all functions can find them.
+    export NVM_NODE_DIR=""
+    export BREW_BIN_DIR=""
+
+    # Detect nvm node binary directory
+    local nvm_dir="${ACTUAL_HOME}/.nvm"
+    if [[ -d "$nvm_dir/versions/node" ]]; then
+        local latest_node_dir
+        latest_node_dir=$(find "$nvm_dir/versions/node" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
+        if [[ -n "$latest_node_dir" ]] && [[ -x "$latest_node_dir/bin/node" ]]; then
+            NVM_NODE_DIR="$latest_node_dir/bin"
+            log "  Detected nvm node at: $NVM_NODE_DIR ($(\"$NVM_NODE_DIR/node\" --version 2>/dev/null || echo unknown))"
+        fi
+    fi
+
+    # Detect linuxbrew
+    if [[ -d "/home/linuxbrew/.linuxbrew/bin" ]]; then
+        BREW_BIN_DIR="/home/linuxbrew/.linuxbrew/bin"
+    fi
+
+    # Prepend to PATH so root can find node/npm/openclaw
+    local extra_path=""
+    [[ -n "$NVM_NODE_DIR" ]] && extra_path="$NVM_NODE_DIR"
+    [[ -n "$BREW_BIN_DIR" ]] && extra_path="${extra_path:+$extra_path:}$BREW_BIN_DIR"
+    if [[ -n "$extra_path" ]]; then
+        export PATH="$extra_path:$PATH"
+        log "  Extended PATH with: $extra_path"
+    fi
 }
 
 # ── 2. ENVIRONMENT VALIDATION ─────────────────────────────────────────────────

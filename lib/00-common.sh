@@ -51,7 +51,7 @@ apt_install() {
 # oc: wrapper for openclaw CLI with proper path and user context
 oc() {
     sudo -u "$ACTUAL_USER" \
-        env PATH="/bin:/sbin:/usr/bin:/usr/local/bin:$PATH" \
+        env PATH="${NVM_NODE_DIR:+$NVM_NODE_DIR:}${BREW_BIN_DIR:+$BREW_BIN_DIR:}/bin:/sbin:/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" \
             HOME="$ACTUAL_HOME" \
             XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
             XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
@@ -65,7 +65,7 @@ oc() {
 uas() {
     sudo -u "$ACTUAL_USER" \
         env HOME="$ACTUAL_HOME" \
-            PATH="/bin:/sbin:/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" \
+            PATH="${NVM_NODE_DIR:+$NVM_NODE_DIR:}${BREW_BIN_DIR:+$BREW_BIN_DIR:}/bin:/sbin:/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" \
             XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
             XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
             XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" \

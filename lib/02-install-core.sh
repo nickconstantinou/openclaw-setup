@@ -15,11 +15,15 @@ done; unset _f
 
 # ── 5.5 UPGRADE NPM ──────────────────────────────────────────────────────────
 upgrade_npm() {
+    if ! command -v npm &>/dev/null; then
+        log "WARNING: npm not found on PATH — skipping upgrade_npm."
+        return 0
+    fi
     local current_major
-    current_major=$(npm --version 2>/dev/null | cut -d. -f1)
+    current_major=$(npm --version 2>/dev/null | cut -d. -f1 || echo "")
     local latest_major
-    latest_major=$(npm view npm version 2>/dev/null | cut -d. -f1 || echo "$current_major")
-    if [[ "$current_major" != "$latest_major" ]] && [[ -n "$latest_major" ]]; then
+    latest_major=$(npm view npm version 2>/dev/null | cut -d. -f1 || echo "${current_major:-}")
+    if [[ -n "$current_major" ]] && [[ "$current_major" != "$latest_major" ]] && [[ -n "$latest_major" ]]; then
         log "Upgrading npm: $(npm --version) → latest..."
         # Run with HOME=/root so root's npm cache stays separate from the user's ~/.npm.
         # Without this, npm writes root-owned files into $ACTUAL_HOME/.npm, causing
