@@ -101,6 +101,7 @@ main() {
     enable_dreaming
     disable_acpx_plugin
     install_gateway_service
+    verify_model_status
     
     # 6. Post-Launch Health
     setup_agent_comms

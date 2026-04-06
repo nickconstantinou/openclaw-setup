@@ -42,19 +42,18 @@ fi
 
 # 3. PYTHON SYNTAX CHECK
 log "Running python3 -m py_compile checks..."
-for f in config/*.py $(find skills/ -name '*.py' 2>/dev/null); do
-    [[ "$f" == *.py ]] || continue
+while IFS= read -r -d '' f; do
     if python3 -m py_compile "$f" >/dev/null 2>&1; then
         pass "  $f"
     else
         fail "  Syntax error in $f"
     fi
-done
+done < <(find config skills -type f -name '*.py' -print0 2>/dev/null)
 
 # 4. FUNCTION RESOLUTION AUDIT
 log "Auditing function call resolution..."
 ORCH_CALLS=$(grep -oP '^\s+\K[a-z_]+(?=\b)' openclaw-self-heal.sh | grep -vE '^(log|die|main|source|trap|set|export|source|if|then|else|fi|main|while|do|done|case|esac|return|exit|echo|cat|rm|mkdir|chown|chmod|sleep|ss|seq|head|grep|while|read)$' | sort -u)
-LIB_DEFS=$(grep -hP '^\w+\(\)' lib/*.sh | sed 's/().*//' | sort -u)
+LIB_DEFS=$(grep -hP '^\w+\(\)' lib/*.sh lib/tools/*.sh 2>/dev/null | sed 's/().*//' | sort -u)
 
 MISSING_DEFS=$(comm -23 <(echo "$ORCH_CALLS") <(echo "$LIB_DEFS"))
 
@@ -115,7 +114,7 @@ ASSETS=(
     "config/patch-stale-keys.py"
     "config/reapply-models.py"
     "skills/general-agent/transcription/SKILL.md"
-    "skills/marketing-agent/ffmpeg/SKILL.md"
+    "skills/general-agent/ffmpeg/SKILL.md"
     "skills/general-agent/nvidia-imagegen/SKILL.md"
     "skills/general-agent/nvidia-imagegen/generate.py"
 )

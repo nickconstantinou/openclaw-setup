@@ -259,6 +259,18 @@ except Exception:
         | while IFS= read -r line; do log "  config: $line"; done
 
     # ── Step 3: Verify ────────────────────────────────────────────────────────
+    if gateway_is_reachable; then
+        verify_model_status
+    else
+        log "Gateway is not reachable yet — deferring model status verification until after service install."
+    fi
+}
+
+gateway_is_reachable() {
+    oc health --json --timeout 5000 >/dev/null 2>&1
+}
+
+verify_model_status() {
     log "--- openclaw models status --plain ---"
     uas openclaw models status --plain 2>&1 \
         | while IFS= read -r line; do log "  $line"; done
