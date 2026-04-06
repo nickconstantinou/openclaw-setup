@@ -207,9 +207,9 @@ reapply_models() {
 }
 
 # ── 17c. CONFIGURE MODEL HIERARCHY ───────────────────────────────────────────
-# main agent:   anthropic/claude-sonnet-4-6 (primary), minimax/MiniMax-M2.5 (fallback)
-# family agent: anthropic/claude-haiku-4-5-20251001 (primary), minimax/MiniMax-M2.5 (fallback)
-# openai-codex/gpt-5.4 remains in catalog for manual selection
+# main agent:   openai-codex/gpt-5.4 (primary), minimax/MiniMax-M2.5 (fallback)
+# family agent: minimax/MiniMax-M2.5 (primary + fallback)
+# Anthropic removed — claude-cli path requires Extra Usage (notice 2026-04-04).
 #
 # TTY LIMITATION — openai-codex OAuth requires an interactive terminal.
 # If auth is ever needed again, run manually from a local session:
@@ -240,18 +240,19 @@ except Exception:
     fi
 
     # ── Step 2: Apply per-agent model hierarchy via CLI ────────────────────────
-    log "Setting model hierarchy: main=sonnet, family=haiku, fallback=MiniMax-M2.5"
-    uas openclaw config set agents.defaults.model.primary "anthropic/claude-sonnet-4-6" 2>&1 \
+    # Anthropic removed — claude-cli path requires Extra Usage (notice 2026-04-04).
+    log "Setting model hierarchy: main=gpt-5.4, family=MiniMax-M2.5, fallback=MiniMax-M2.5"
+    uas openclaw config set agents.defaults.model.primary "openai-codex/gpt-5.4" 2>&1 \
         | while IFS= read -r line; do log "  config: $line"; done
     uas openclaw config set agents.defaults.model.fallbacks \
         '["minimax/MiniMax-M2.5"]' --strict-json 2>&1 \
         | while IFS= read -r line; do log "  config: $line"; done
-    uas openclaw config set 'agents.list[0].model.primary' "anthropic/claude-sonnet-4-6" 2>&1 \
+    uas openclaw config set 'agents.list[0].model.primary' "openai-codex/gpt-5.4" 2>&1 \
         | while IFS= read -r line; do log "  config: $line"; done
     uas openclaw config set 'agents.list[0].model.fallbacks' \
         '["minimax/MiniMax-M2.5"]' --strict-json 2>&1 \
         | while IFS= read -r line; do log "  config: $line"; done
-    uas openclaw config set 'agents.list[1].model.primary' "anthropic/claude-haiku-4-5-20251001" 2>&1 \
+    uas openclaw config set 'agents.list[1].model.primary' "minimax/MiniMax-M2.5" 2>&1 \
         | while IFS= read -r line; do log "  config: $line"; done
     uas openclaw config set 'agents.list[1].model.fallbacks' \
         '["minimax/MiniMax-M2.5"]' --strict-json 2>&1 \
@@ -264,4 +265,19 @@ except Exception:
     log "--- openclaw models status --plain (family) ---"
     uas openclaw models status --plain --agent family 2>&1 \
         | while IFS= read -r line; do log "  $line"; done
+}
+
+# ── 17d. ENABLE DREAMING ──────────────────────────────────────────────────────
+enable_dreaming() {
+    log "Enabling dreaming (background memory consolidation)..."
+    uas openclaw config set plugins.entries.memory-core.config.dreaming.enabled true 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+    log "Dreaming enabled (daily sweep at 03:00 UTC)."
+}
+
+# ── 17e. DISABLE ACPX PLUGIN ─────────────────────────────────────────────────
+disable_acpx_plugin() {
+    log "Disabling acpx plugin in config..."
+    uas openclaw config set plugins.entries.acpx.enabled false 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
 }

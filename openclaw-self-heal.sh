@@ -66,7 +66,6 @@ main() {
     # 2. Installation
     install_openclaw
     install_all_tools              # dispatches to install_<name>() for each registered tool
-    install_acpx_plugin
     setup_agent_dirs
     generate_agent_skills_md       # Each agent creates their own SKILLS.md
     install_post_bridge
@@ -99,6 +98,8 @@ main() {
     onboard_gateway
     reapply_models
     configure_model_hierarchy
+    enable_dreaming
+    disable_acpx_plugin
     install_gateway_service
     
     # 6. Post-Launch Health

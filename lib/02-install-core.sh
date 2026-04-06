@@ -166,18 +166,9 @@ install_openclaw() {
     log "OpenClaw installed: $(command -v openclaw)"
 }
 
-# ── 7g. INSTALL ACPX PLUGIN ───────────────────────────────────────────────────
-install_acpx_plugin() {
-    log "Installing acpx plugin..."
-    mkdir -p "$ACTUAL_HOME/.openclaw/plugins"
-    chown "$ACTUAL_USER":"$ACTUAL_USER" "$ACTUAL_HOME/.openclaw/plugins"
-    local acpx_err
-    if acpx_err=$(oc plugins install acpx 2>&1); then
-        log "acpx plugin installed."
-    else
-        log "WARNING: acpx plugin install failed — ACP sessions may be unavailable until this is fixed. ($acpx_err)"
-    fi
-}
+# ── 7g. ACPX PLUGIN — REMOVED ────────────────────────────────────────────────
+# acpx has been removed from the setup. The plugin is disabled in config.
+# install_acpx_plugin() previously ran: oc plugins install acpx
 
 # ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
 setup_agent_dirs() {

@@ -32,6 +32,21 @@ setup_apparmor() {
     done
     log "DEBUG: Collected tool_rules length: ${#tool_rules}"
 
+    # Inject nvm read/exec rules if nvm is in use.
+    # NVM_NODE_DIR is e.g. /home/openclaw/.nvm/versions/node/v24.14.1/bin — set by lib/01-env.sh.
+    # The gateway binary lives under the sibling lib/node_modules/ directory, so AppArmor
+    # needs read access there and ix permission on the binaries.
+    if [[ -n "${NVM_NODE_DIR:-}" ]]; then
+        local nvm_base
+        nvm_base="$(dirname "$NVM_NODE_DIR")"   # .../versions/node/v24.14.1
+        local nvm_rules
+        nvm_rules="  # ── nvm node — gateway runtime path\n"
+        nvm_rules+="  ${nvm_base}/lib/node_modules/openclaw/**  r,\n"
+        nvm_rules+="  ${NVM_NODE_DIR}/**  rix,\n"
+        tool_rules="${nvm_rules}${tool_rules}"
+        log "DEBUG: Injected nvm AppArmor rules for: $nvm_base"
+    fi
+
     # Inject tool rules between markers using python3
     sudo python3 - "$template_path" "$profile_path" "$tool_rules" <<'PYEOF'
 import sys, re

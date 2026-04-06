@@ -3,7 +3,6 @@
 @intent Re-apply model catalog and media config after onboard wipes them.
 @complexity 2
 """
-import sys
 import argparse
 
 from json5_io import dump_config, load_config
@@ -26,10 +25,8 @@ def main():
         'minimax/MiniMax-M2.5':               {'alias': 'minimax-m25'},
         'minimax/MiniMax-M2.1':               {'alias': 'minimax-m21'},
         'minimax/MiniMax-M2':                 {'alias': 'minimax-m2'},
-        # Anthropic
-        'anthropic/claude-opus-4-6':          {'alias': 'claude-opus'},
-        'anthropic/claude-sonnet-4-6':        {'alias': 'claude-sonnet'},
-        'anthropic/claude-haiku-4-5-20251001': {'alias': 'claude-haiku'},
+        # Anthropic removed — claude-cli path requires Extra Usage (notice 2026-04-04).
+        # Use Anthropic API key path if Anthropic models are needed.
     }
     config.setdefault('agents', {}).setdefault('defaults', {})['models'] = catalog
 

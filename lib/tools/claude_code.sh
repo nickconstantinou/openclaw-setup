@@ -77,4 +77,8 @@ install_claude_code() {
 
 }
 
-register_tool claude_code
+# claude_code removed — Anthropic notified OpenClaw users (2026-04-04) that
+# the claude-cli path counts as third-party harness usage requiring Extra Usage.
+# The bundled backend is removed in OpenClaw source. Use Anthropic API keys
+# directly if Anthropic models are needed.
+# register_tool claude_code
