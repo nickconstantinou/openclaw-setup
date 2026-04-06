@@ -1,4 +1,0 @@
-interface:
-  display_name: "LightPanda Browser"
-  short_description: "Fast CDP headless browser — 10x faster than Chrome"
-  default_prompt: "Use $lightpanda to automate a browser task using the LightPanda headless browser."
