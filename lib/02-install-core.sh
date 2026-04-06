@@ -166,9 +166,9 @@ install_openclaw() {
     log "OpenClaw installed: $(command -v openclaw)"
 }
 
-# ── 7g. ACPX PLUGIN — REMOVED ────────────────────────────────────────────────
-# acpx has been removed from the setup. The plugin is disabled in config.
-# install_acpx_plugin() previously ran: oc plugins install acpx
+# ── 7g. ACPX PLUGIN — BUNDLED ────────────────────────────────────────────────
+# ACPX is part of the OpenClaw install used here, so the setup keeps the
+# bundled plugin enabled in config instead of installing or disabling it later.
 
 # ── 7j. AGENT DIRECTORIES ─────────────────────────────────────────────────────
 setup_agent_dirs() {

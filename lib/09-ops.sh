@@ -287,9 +287,13 @@ enable_dreaming() {
     log "Dreaming enabled (daily sweep at 03:00 UTC)."
 }
 
-# ── 17e. DISABLE ACPX PLUGIN ─────────────────────────────────────────────────
-disable_acpx_plugin() {
-    log "Disabling acpx plugin in config..."
-    uas openclaw config set plugins.entries.acpx.enabled false 2>&1 \
+# ── 17e. ENSURE ACPX PLUGIN ENABLED ──────────────────────────────────────────
+ensure_acpx_plugin_enabled() {
+    log "Ensuring acpx stays enabled for Codex ACP runtime..."
+    uas openclaw config set acp.enabled true --strict-json 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+    uas openclaw config set acp.backend "acpx" 2>&1 \
+        | while IFS= read -r line; do log "  config: $line"; done
+    uas openclaw config set plugins.entries.acpx.enabled true --strict-json 2>&1 \
         | while IFS= read -r line; do log "  config: $line"; done
 }

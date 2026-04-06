@@ -83,6 +83,13 @@ class TestConfigScripts(unittest.TestCase):
         self.assertEqual(cfg["channels"]["telegram"]["botToken"], "123:abc")
         self.assertIn("agents", cfg)
         self.assertIn("tools", cfg)
+        self.assertIn("minimax", cfg["models"]["providers"])
+        self.assertNotIn("anthropic", cfg["models"]["providers"])
+        self.assertNotIn("openai-codex/gpt-5.3-codex-spark", cfg["agents"]["defaults"]["models"])
+        self.assertEqual(
+            [model["id"] for model in cfg["models"]["providers"]["openai-codex"]["models"]],
+            ["gpt-5.4"],
+        )
 
     def test_patch_stale_keys_preserves_current_supported_fields(self):
         proc, cfg = self._run(
@@ -158,6 +165,8 @@ class TestConfigScripts(unittest.TestCase):
         self.assertEqual(cfg["channels"]["telegram"]["streaming"], "partial")
         self.assertEqual(cfg["channels"]["telegram"]["botToken"], "123:abc")
         self.assertEqual(cfg["channels"]["whatsapp"]["dmPolicy"], "allowlist")
+        self.assertNotIn("anthropic", cfg["models"]["providers"])
+        self.assertNotIn("anthropic/claude-haiku-4-5-20251001", cfg["agents"]["defaults"]["models"])
 
     def test_apply_config_sets_documented_acp_defaults(self):
         proc, cfg = self._run(
@@ -191,6 +200,7 @@ class TestConfigScripts(unittest.TestCase):
         self.assertEqual(cfg["plugins"]["entries"]["acpx"]["config"]["nonInteractivePermissions"], "fail")
         self.assertFalse(cfg["plugins"]["entries"]["acpx"]["config"]["pluginToolsMcpBridge"])
         self.assertEqual(cfg["plugins"]["entries"]["acpx"]["config"]["command"], "/custom/acpx")
+        self.assertEqual(cfg["agents"]["defaults"]["model"]["fallbacks"], ["minimax/MiniMax-M2.5"])
 
 
 if __name__ == "__main__":

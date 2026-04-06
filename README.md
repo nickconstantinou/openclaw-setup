@@ -133,7 +133,7 @@ This keeps the current dedicated-laptop workflow fast by default, while preservi
 
 This setup can also route Codex and Claude Code through OpenClaw's ACP runtime instead of only using native host-side CLI calls.
 
-- The deploy installs the official `acpx` plugin with `openclaw plugins install acpx`
+- The deploy keeps the bundled `acpx` backend enabled for ACP
 - ACP is enabled by default with backend `acpx`
 - Default harness allowlist is `codex,claude`
 - ACPX permissions default to `approve-all` so non-interactive write/exec turns do not fail with `AcpRuntimeError`

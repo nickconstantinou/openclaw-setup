@@ -17,9 +17,8 @@ def main():
 
     catalog = {
         # OpenAI Codex Pro (OAuth) — confirmed available models only
-        # gpt-5.4 is the only confirmed Codex Pro model; codex-spark is entitlement-dependent
+        # gpt-5.4 is the only confirmed Codex Pro model kept in this setup.
         'openai-codex/gpt-5.4':               {'alias': 'gpt-5'},
-        'openai-codex/gpt-5.3-codex-spark':   {'alias': 'codex-spark'},
         # MiniMax
         'minimax/MiniMax-M2.7':               {'alias': 'minimax'},
         'minimax/MiniMax-M2.5':               {'alias': 'minimax-m25'},
@@ -30,6 +29,18 @@ def main():
     }
     config.setdefault('agents', {}).setdefault('defaults', {})['models'] = catalog
 
+    minimax_provider = {
+        'baseUrl': 'https://api.minimax.io/anthropic',
+        'api': 'anthropic-messages',
+        'apiKey': {'source': 'env', 'provider': 'default', 'id': 'MINIMAX_API_KEY'},
+        'models': [
+            {'id': 'MiniMax-M2.7', 'name': 'MiniMax M2.7', 'reasoning': False, 'input': ['text'], 'contextWindow': 204800, 'maxTokens': 8192},
+            {'id': 'MiniMax-M2.5', 'name': 'MiniMax M2.5', 'reasoning': False, 'input': ['text'], 'contextWindow': 204800, 'maxTokens': 8192},
+            {'id': 'MiniMax-M2.1', 'name': 'MiniMax M2.1', 'reasoning': False, 'input': ['text'], 'contextWindow': 204800, 'maxTokens': 8192},
+            {'id': 'MiniMax-M2', 'name': 'MiniMax M2', 'reasoning': True, 'input': ['text'], 'contextWindow': 204800, 'maxTokens': 8192},
+        ],
+    }
+
     # Add openai-codex provider (OAuth — no API key needed, uses auth profile)
     # Only confirmed-available Codex Pro models listed here.
     openai_codex_provider = {
@@ -37,10 +48,11 @@ def main():
         'api': 'openai-codex-responses',
         'models': [
             {'id': 'gpt-5.4',             'name': 'GPT-5.4',      'reasoning': False, 'input': ['text', 'image'], 'contextWindow': 128000, 'maxTokens': 16384},
-            {'id': 'gpt-5.3-codex-spark', 'name': 'Codex Spark',  'reasoning': True,  'input': ['text'],          'contextWindow': 128000, 'maxTokens': 32768},
         ],
     }
-    config.setdefault('models', {}).setdefault('providers', {})['openai-codex'] = openai_codex_provider
+    providers = config.setdefault('models', {}).setdefault('providers', {})
+    providers['openai-codex'] = openai_codex_provider
+    providers['minimax'] = minimax_provider
 
     config.setdefault('agents', {}).setdefault('defaults', {})['memorySearch'] = {
         'enabled': True,
@@ -63,8 +75,9 @@ def main():
     }
     config.setdefault('tools', {}).setdefault('media', {}).update(media_cfg)
 
-    config.setdefault('models', {}).setdefault('providers', {}).pop('google', None)
-    config.setdefault('models', {}).setdefault('providers', {}).pop('ollama', None)
+    providers.pop('anthropic', None)
+    providers.pop('google', None)
+    providers.pop('ollama', None)
 
     dump_config(cfg, config)
     print('Model catalog written: ' + ', '.join(catalog.keys()))

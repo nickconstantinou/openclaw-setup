@@ -52,9 +52,9 @@ def main():
     _main_primary    = 'openai-codex/gpt-5.4'
     _main_fallbacks  = ['minimax/MiniMax-M2.5']
     _family_primary  = 'minimax/MiniMax-M2.5'
-    _family_fallbacks = ['anthropic/claude-haiku-4-5-20251001']
+    _family_fallbacks = ['minimax/MiniMax-M2.5']
     ds(c, 'agents.defaults.model.primary',   'minimax/MiniMax-M2.5')
-    ds(c, 'agents.defaults.model.fallbacks', ['anthropic/claude-haiku-4-5-20251001'])
+    ds(c, 'agents.defaults.model.fallbacks', ['minimax/MiniMax-M2.5'])
 
     # ── API keys (skills only — provider keys come from environment.d via systemd) ──────────────
     pb_key = os.environ.get('POST_BRIDGE_API_KEY', '')

@@ -99,7 +99,7 @@ main() {
     reapply_models
     configure_model_hierarchy
     enable_dreaming
-    disable_acpx_plugin
+    ensure_acpx_plugin_enabled
     install_gateway_service
     verify_model_status
     
