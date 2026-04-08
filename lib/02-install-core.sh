@@ -14,24 +14,98 @@ for _f in "$SCRIPT_DIR"/lib/tools/*.sh; do
 done; unset _f
 
 # ── 5.5 UPGRADE NPM ──────────────────────────────────────────────────────────
+version_ge() {
+    local left="$1"
+    local right="$2"
+    [[ -n "$left" ]] && [[ -n "$right" ]] || return 1
+    printf '%s\n%s\n' "$right" "$left" | sort -V -C
+}
+
+resolve_system_node_bin() {
+    local candidate
+    for candidate in /usr/bin/node /usr/local/bin/node /bin/node; do
+        [[ -x "$candidate" ]] && printf '%s\n' "$candidate" && return 0
+    done
+    return 1
+}
+
+resolve_system_npm_bin() {
+    local candidate
+    for candidate in /usr/bin/npm /usr/local/bin/npm /bin/npm; do
+        [[ -x "$candidate" ]] && printf '%s\n' "$candidate" && return 0
+    done
+    return 1
+}
+
+resolve_system_openclaw_bin() {
+    local candidate
+    for candidate in /usr/local/bin/openclaw /usr/bin/openclaw /bin/openclaw; do
+        [[ -x "$candidate" ]] && printf '%s\n' "$candidate" && return 0
+    done
+    return 1
+}
+
+system_node_is_supported() {
+    local node_bin node_ver node_major
+    node_bin=$(resolve_system_node_bin 2>/dev/null) || return 1
+    node_ver=$("$node_bin" --version 2>/dev/null | sed 's/^v//')
+    [[ -n "$node_ver" ]] || return 1
+    node_major="${node_ver%%.*}"
+
+    if [[ "$node_major" -ge 24 ]]; then
+        return 0
+    fi
+
+    [[ "$node_major" -eq 22 ]] && version_ge "$node_ver" "22.14.0"
+}
+
+ensure_system_node_runtime() {
+    if system_node_is_supported; then
+        local node_bin
+        node_bin=$(resolve_system_node_bin)
+        log "Supported system Node detected: $node_bin ($("$node_bin" --version 2>/dev/null || echo unknown))"
+        return 0
+    fi
+
+    log "Installing supported system Node.js 24.x runtime..."
+    apt_install ca-certificates curl gnupg
+    wait_for_apt
+    if command -v systemd-inhibit >/dev/null 2>&1; then
+        sudo systemd-inhibit --what=idle --who="openclaw-deploy" --why="Installing NodeSource runtime" \
+            bash -lc 'curl -fsSL https://deb.nodesource.com/setup_24.x | bash -'
+    else
+        sudo bash -lc 'curl -fsSL https://deb.nodesource.com/setup_24.x | bash -'
+    fi
+    apt_install nodejs
+
+    system_node_is_supported || die "Supported system Node.js 24.x installation failed."
+    local node_bin npm_bin
+    node_bin=$(resolve_system_node_bin)
+    npm_bin=$(resolve_system_npm_bin || true)
+    log "System Node ready: ${node_bin} ($("$node_bin" --version 2>/dev/null || echo unknown))"
+    [[ -n "$npm_bin" ]] && log "System npm ready: ${npm_bin} ($("$npm_bin" --version 2>/dev/null || echo unknown))"
+}
+
 upgrade_npm() {
-    if ! command -v npm &>/dev/null; then
+    local npm_bin
+    npm_bin=$(resolve_system_npm_bin 2>/dev/null || command -v npm 2>/dev/null || true)
+    if [[ -z "$npm_bin" ]]; then
         log "WARNING: npm not found on PATH — skipping upgrade_npm."
         return 0
     fi
     local current_major
-    current_major=$(npm --version 2>/dev/null | cut -d. -f1 || echo "")
+    current_major=$("$npm_bin" --version 2>/dev/null | cut -d. -f1 || echo "")
     local latest_major
-    latest_major=$(npm view npm version 2>/dev/null | cut -d. -f1 || echo "${current_major:-}")
+    latest_major=$("$npm_bin" view npm version 2>/dev/null | cut -d. -f1 || echo "${current_major:-}")
     if [[ -n "$current_major" ]] && [[ "$current_major" != "$latest_major" ]] && [[ -n "$latest_major" ]]; then
-        log "Upgrading npm: $(npm --version) → latest..."
+        log "Upgrading npm: $("$npm_bin" --version 2>/dev/null || echo unknown) → latest..."
         # Run with HOME=/root so root's npm cache stays separate from the user's ~/.npm.
         # Without this, npm writes root-owned files into $ACTUAL_HOME/.npm, causing
         # subsequent 'uas npm install' calls to fail with EACCES.
         local upgrade_err
-        if upgrade_err=$(HOME=/root npm install -g "npm@${latest_major}" --quiet 2>&1); then
+        if upgrade_err=$(HOME=/root "$npm_bin" install -g "npm@${latest_major}" --quiet 2>&1); then
             chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
-            log "npm upgraded to $(npm --version 2>/dev/null)."
+            log "npm upgraded to $("$npm_bin" --version 2>/dev/null || echo unknown)."
         else
             # MODULE_NOT_FOUND means the system npm install is corrupted (missing internal dep,
             # e.g. promise-retry inside @npmcli/arborist). npm cannot self-heal in this state.
@@ -51,7 +125,7 @@ upgrade_npm() {
                             | tar -xz -C "$tmp_npm" --strip-components=1 2>/dev/null; then
                         cp -rf "$tmp_npm/." "$npm_pkg_dir/"
                         repaired=1
-                        log "npm repaired to ${tarball_ver} via tarball ($(npm --version 2>/dev/null))."
+                        log "npm repaired to ${tarball_ver} via tarball ($("$npm_bin" --version 2>/dev/null || echo unknown))."
                     fi
                     rm -rf "$tmp_npm"
                 fi
@@ -59,17 +133,17 @@ upgrade_npm() {
                     # Tarball failed — fall back to apt (works on plain Debian/Ubuntu npm)
                     if apt-get install --reinstall npm -y -q 2>/dev/null; then
                         repaired=1
-                        log "npm repaired via apt ($(npm --version 2>/dev/null))."
+                        log "npm repaired via apt ($("$npm_bin" --version 2>/dev/null || echo unknown))."
                     fi
                 fi
                 if [[ "$repaired" -eq 1 ]] \
-                        && [[ "$(npm --version 2>/dev/null | cut -d. -f1)" != "$latest_major" ]]; then
+                        && [[ "$("$npm_bin" --version 2>/dev/null | cut -d. -f1)" != "$latest_major" ]]; then
                     log "Retrying upgrade to npm@${latest_major}..."
-                    if HOME=/root npm install -g "npm@${latest_major}" --quiet 2>&1; then
+                    if HOME=/root "$npm_bin" install -g "npm@${latest_major}" --quiet 2>&1; then
                         chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
-                        log "npm upgraded to $(npm --version 2>/dev/null) after repair."
+                        log "npm upgraded to $("$npm_bin" --version 2>/dev/null || echo unknown) after repair."
                     else
-                        log "WARNING: npm upgrade failed after repair — continuing with $(npm --version 2>/dev/null || echo 'repaired base')."
+                        log "WARNING: npm upgrade failed after repair — continuing with $("$npm_bin" --version 2>/dev/null || echo 'repaired base')."
                     fi
                 elif [[ "$repaired" -eq 0 ]]; then
                     log "WARNING: npm repair failed — continuing with existing install."
@@ -83,16 +157,22 @@ upgrade_npm() {
 
 # ── 6. INSTALL OPENCLAW ───────────────────────────────────────────────────────
 install_openclaw() {
+    ensure_system_node_runtime
+
     # Check for existing binary in common install locations (runs as root, so check explicit paths)
     local oc_bin
-    oc_bin=$(command -v openclaw 2>/dev/null || true)
+    oc_bin=$(resolve_system_openclaw_bin 2>/dev/null || true)
+    [[ -z "$oc_bin" ]] && oc_bin=$(command -v openclaw 2>/dev/null || true)
     [[ -z "$oc_bin" ]] && oc_bin=$(sudo -u "$ACTUAL_USER" env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" which openclaw 2>/dev/null || true)
+    local npm_bin
+    npm_bin=$(resolve_system_npm_bin 2>/dev/null || command -v npm 2>/dev/null || true)
+    [[ -n "$npm_bin" ]] || die "npm not found after installing system Node.js."
 
     if [[ -n "$oc_bin" ]]; then
         local oc_ver; oc_ver=$("$oc_bin" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
 
         # Check remote version before running slow npm install
-        local latest_ver; latest_ver=$(uas npm view openclaw version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        local latest_ver; latest_ver=$("$npm_bin" view openclaw version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
 
         if [[ "$oc_ver" == "$latest_ver" ]] && [[ "$oc_ver" != "unknown" ]]; then
             log "OpenClaw already installed ($oc_ver) and is up-to-date. Skipping upgrade."
@@ -103,7 +183,7 @@ install_openclaw() {
         upgrade_npm
         # /usr/lib/node_modules is root-owned, so upgrade must run as root.
         # Use HOME=/root so root's npm cache stays out of the user's ~/.npm.
-        if HOME=/root npm install -g openclaw@latest --quiet 2>&1; then
+        if HOME=/root "$npm_bin" install -g openclaw@latest --quiet 2>&1; then
             local new_ver; new_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
             log "OpenClaw upgraded: $oc_ver → $new_ver"
         else
@@ -162,8 +242,10 @@ install_openclaw() {
         rm -rf /root/.openclaw
     fi
 
-    command -v openclaw >/dev/null 2>&1 || die "'openclaw' binary not found after install."
-    log "OpenClaw installed: $(command -v openclaw)"
+    local installed_oc_bin
+    installed_oc_bin=$(resolve_system_openclaw_bin 2>/dev/null || command -v openclaw 2>/dev/null || true)
+    [[ -n "$installed_oc_bin" ]] || die "'openclaw' binary not found after install."
+    log "OpenClaw installed: $installed_oc_bin"
 }
 
 # ── 7g. ACPX PLUGIN — BUNDLED ────────────────────────────────────────────────
@@ -181,10 +263,10 @@ setup_agent_dirs() {
         # Create directories
         mkdir -p "$agent_state_dir" "$agent_workspace_dir"
 
-        # Sync base files (AGENTS.md, SOUL.md, MEMORY.md, TOOLS.md SKILLS.md)
-        # Note: Subagents only load AGENT/TOOLS but we sync all for consistency
+        # Seed base files only when missing so agent-local memory/instructions
+        # are not overwritten on reinstall or self-heal.
         for f in AGENTS.md SOUL.md MEMORY.md TOOLS.md SKILLS.md; do
-            if [[ -f "$ACTUAL_HOME/.openclaw/workspace/$f" ]]; then
+            if [[ -f "$ACTUAL_HOME/.openclaw/workspace/$f" ]] && [[ ! -e "$agent_workspace_dir/$f" ]]; then
                 uas cp "$ACTUAL_HOME/.openclaw/workspace/$f" "$agent_workspace_dir/$f" 2>/dev/null || true
             fi
         done
