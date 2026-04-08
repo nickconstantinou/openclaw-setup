@@ -10,9 +10,10 @@ TOOL_APPARMOR_RULES[gws]=$(cat <<'RULES'
   /usr/local/bin/gws                   rix,
   /usr/bin/gws                         rix,
   # AppArmor resolves symlinks at exec time — the symlink at /usr/local/bin/gws
-  # points to the real ELF binary below. That path only gets 'r' from the broad
-  # node_modules/** rule, so we need an explicit 'ix' here.
+  # points to the real ELF binary below. Package layouts vary by version, so
+  # allow both the older .bin_real path and the newer bin/gws path.
   /usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws  ix,
+  /usr/lib/node_modules/@googleworkspace/cli/bin/gws  ix,
   # env is needed for #!/usr/bin/env node shebang
   /usr/bin/env                         ix,
   # node runtime for gws
@@ -80,6 +81,7 @@ install_gws() {
         log "gws installed: $(command -v gws 2>/dev/null || echo 'not found in PATH')"
         # Fix binary permissions (robust - no errors if files missing)
         chmod +x /usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws 2>/dev/null || true
+        chmod +x /usr/lib/node_modules/@googleworkspace/cli/bin/gws 2>/dev/null || true
         chmod +x /usr/lib/node_modules/@googleworkspace/cli/run-gws.js 2>/dev/null || true
         # Point /usr/local/bin/gws at the native binary (AppArmor already has rix for this path)
         [[ -f "$_gws_native" ]] && ln -sf "$_gws_native" /usr/local/bin/gws || true
