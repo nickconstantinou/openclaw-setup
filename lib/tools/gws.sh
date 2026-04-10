@@ -31,6 +31,51 @@ GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file"
 TOOL_SYSTEMD_EXPORTS[gws]="GOOGLE_WORKSPACE_CLI_CLIENT_ID GOOGLE_WORKSPACE_CLI_CLIENT_SECRET GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND"
 TOOL_SANDBOX_ENV[gws]="GOOGLE_WORKSPACE_CLI_CLIENT_ID GOOGLE_WORKSPACE_CLI_CLIENT_SECRET GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND"
 
+GWS_PRIMARY_NATIVE_BIN="/usr/lib/node_modules/@googleworkspace/cli/bin/gws"
+GWS_LEGACY_NATIVE_BIN="/usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws"
+GWS_ENTRYPOINT_PATHS="/usr/bin/gws /usr/local/bin/gws"
+
+resolve_gws_native_bin() {
+    local candidate
+    for candidate in "$GWS_PRIMARY_NATIVE_BIN" "$GWS_LEGACY_NATIVE_BIN"; do
+        [[ -x "$candidate" ]] && printf '%s\n' "$candidate" && return 0
+    done
+    return 1
+}
+
+gws_entrypoint_is_native() {
+    local path="$1"
+    local native="${2:-}"
+    [[ -n "$native" ]] || native=$(resolve_gws_native_bin 2>/dev/null || true)
+    [[ -n "$native" ]] || return 1
+
+    local resolved
+    resolved=$(readlink -f "$path" 2>/dev/null || true)
+    [[ -n "$resolved" ]] || return 1
+    [[ "$resolved" == "$native" ]]
+}
+
+repair_gws_entrypoints() {
+    local native
+    native=$(resolve_gws_native_bin 2>/dev/null || true)
+    if [[ -z "$native" ]]; then
+        log "WARNING: gws native binary not found under @googleworkspace/cli; cannot normalize entrypoints yet."
+        return 1
+    fi
+
+    chmod +x "$native" 2>/dev/null || true
+
+    local path
+    for path in $GWS_ENTRYPOINT_PATHS; do
+        if gws_entrypoint_is_native "$path" "$native"; then
+            continue
+        fi
+        ln -sf "$native" "$path"
+        log "gws: normalized $path -> $native"
+    done
+    return 0
+}
+
 # ── 7d. INSTALL GCLOUD CLI ────────────────────────────────────────────────────
 _install_gcloud() {
     log "Installing Google Cloud CLI (gcloud)..."
@@ -57,21 +102,21 @@ install_gws() {
     _install_gcloud
 
     log "Installing @googleworkspace/cli (gws)..."
-
-    # Always ensure /usr/local/bin/gws points directly to the native binary,
-    # bypassing the npm JS shim (which chains through /usr/bin/env and is blocked
-    # by AppArmor when run inside the gateway process).
-    local _gws_native="/usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws"
-    if [[ -f "$_gws_native" ]]; then
-        ln -sf "$_gws_native" /usr/local/bin/gws
-        log "gws: linked native binary to /usr/local/bin/gws (bypasses npm shim)"
-    fi
+    repair_gws_entrypoints 2>/dev/null || true
 
     if command -v gws >/dev/null 2>&1; then
-        local current_ver; current_ver=$(gws --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        local current_ver
+        local gws_native
+        gws_native=$(resolve_gws_native_bin 2>/dev/null || true)
+        if [[ -n "$gws_native" ]]; then
+            current_ver=$("$gws_native" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        else
+            current_ver=$(gws --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+        fi
         local latest_ver; latest_ver=$(uas npm view @googleworkspace/cli version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
         if [[ "$current_ver" == "$latest_ver" ]] && [[ "$current_ver" != "unknown" ]]; then
-            log "gws already installed ($current_ver) and is up-to-date. Skipping upgrade."
+            repair_gws_entrypoints || true
+            log "gws already installed ($current_ver) and is up-to-date. Entry points normalized."
             return 0
         fi
         log "gws update available: $current_ver → $latest_ver. Attempting upgrade..."
@@ -80,11 +125,10 @@ install_gws() {
     if HOME=/root npm install -g @googleworkspace/cli --quiet 2>&1; then
         log "gws installed: $(command -v gws 2>/dev/null || echo 'not found in PATH')"
         # Fix binary permissions (robust - no errors if files missing)
-        chmod +x /usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws 2>/dev/null || true
-        chmod +x /usr/lib/node_modules/@googleworkspace/cli/bin/gws 2>/dev/null || true
+        chmod +x "$GWS_LEGACY_NATIVE_BIN" 2>/dev/null || true
+        chmod +x "$GWS_PRIMARY_NATIVE_BIN" 2>/dev/null || true
         chmod +x /usr/lib/node_modules/@googleworkspace/cli/run-gws.js 2>/dev/null || true
-        # Point /usr/local/bin/gws at the native binary (AppArmor already has rix for this path)
-        [[ -f "$_gws_native" ]] && ln -sf "$_gws_native" /usr/local/bin/gws || true
+        repair_gws_entrypoints || true
     else
         log "WARNING: gws install failed."
         return

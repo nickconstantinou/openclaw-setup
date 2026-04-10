@@ -271,6 +271,8 @@ profile openclaw-gateway {
   # ── Google Workspace CLI (gws) ───────────────────────────────────────────────
   /usr/local/bin/gws                  rix,
   /usr/bin/gws                        rix,
+  /usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws  ix,
+  /usr/lib/node_modules/@googleworkspace/cli/bin/gws  ix,
   @{HOME}/.config/gws/                rw,
   @{HOME}/.config/gws/**              rw,
 

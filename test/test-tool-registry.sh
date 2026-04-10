@@ -63,6 +63,7 @@ eval "$(bash -c "
     printf 'TOOL_SANDBOX_CODEX=%q\n'   \"\${TOOL_SANDBOX_ENV[codex]}\"
     printf 'TOOL_PLACEHOLDER_GWS_KEYS=%q\n' \"\$(echo \"\${TOOL_ENV_PLACEHOLDERS[gws]}\" | cut -d= -f1 | tr '\n' ' ')\"
     printf 'TOOL_PLACEHOLDER_CODEX_KEYS=%q\n' \"\$(echo \"\${TOOL_ENV_PLACEHOLDERS[codex]}\" | cut -d= -f1 | tr '\n' ' ')\"
+    printf 'GWS_RULES=%q\n'            \"\${TOOL_APPARMOR_RULES[gws]}\"
     printf 'CODEX_RULES=%q\n'          \"\${TOOL_APPARMOR_RULES[codex]}\"
     printf 'PLAYWRIGHT_RULE=%q\n'       \"\${TOOL_APPARMOR_RULES[playwright]:0:40}\"
 " 2>/dev/null)"
@@ -93,6 +94,8 @@ assert_not "codex sandbox does not export CODEX_API_KEY"  "CODEX_API_KEY"  "$TOO
 assert_has "gws placeholder CLIENT_ID"     "GOOGLE_WORKSPACE_CLI_CLIENT_ID"     "$TOOL_PLACEHOLDER_GWS_KEYS"
 assert_has "gws placeholder CLIENT_SECRET" "GOOGLE_WORKSPACE_CLI_CLIENT_SECRET" "$TOOL_PLACEHOLDER_GWS_KEYS"
 assert_not "codex placeholder removed"     "OPENAI_API_KEY"                     "$TOOL_PLACEHOLDER_CODEX_KEYS"
+assert_has "gws AppArmor rules include primary native binary" "/usr/lib/node_modules/@googleworkspace/cli/bin/gws" "$GWS_RULES"
+assert_has "gws AppArmor rules include legacy native binary" "/usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws" "$GWS_RULES"
 
 assert_has "codex AppArmor rules include npm cache" ".npm/" "$CODEX_RULES"
 assert_has "playwright AppArmor rule mentions Chromium" "Chromium" "$PLAYWRIGHT_RULE"
@@ -120,6 +123,54 @@ _dup_count=$(bash -c "
 " 2>/dev/null)
 
 assert_eq "playwright registered exactly once after double-source" "1" "$_dup_count"
+
+# ─────────────────────────────────────────────────────────────────────────────
+section "3b. gws entrypoint normalization prefers native binary"
+# ─────────────────────────────────────────────────────────────────────────────
+
+eval "$(bash -c "
+    set -euo pipefail
+    source '$SCRIPT_DIR/lib/tools/_base.sh'
+    log() { :; }; wait_for_apt() { :; }; apt_install() { :; }; uas() { \"\$@\" 2>/dev/null || true; }
+    ACTUAL_USER='$USER'; ACTUAL_HOME='$HOME'; SCRIPT_DIR='$SCRIPT_DIR'
+    source '$SCRIPT_DIR/lib/tools/gws.sh'
+
+    TMP_GWS=\$(mktemp -d)
+    trap 'rm -rf \"\$TMP_GWS\"' EXIT
+    mkdir -p \"\$TMP_GWS/usr/bin\" \
+             \"\$TMP_GWS/usr/local/bin\" \
+             \"\$TMP_GWS/usr/lib/node_modules/@googleworkspace/cli/bin\"
+    cat > \"\$TMP_GWS/usr/lib/node_modules/@googleworkspace/cli/bin/gws\" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+    chmod +x \"\$TMP_GWS/usr/lib/node_modules/@googleworkspace/cli/bin/gws\"
+    cat > \"\$TMP_GWS/usr/lib/node_modules/@googleworkspace/cli/run.js\" <<'EOF'
+#!/usr/bin/env node
+console.log('shim');
+EOF
+    ln -sf ../lib/node_modules/@googleworkspace/cli/run.js \"\$TMP_GWS/usr/bin/gws\"
+    ln -sf /missing/gws \"\$TMP_GWS/usr/local/bin/gws\"
+
+    GWS_PRIMARY_NATIVE_BIN=\"\$TMP_GWS/usr/lib/node_modules/@googleworkspace/cli/bin/gws\"
+    GWS_LEGACY_NATIVE_BIN=\"\$TMP_GWS/usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws\"
+    GWS_ENTRYPOINT_PATHS=\"\$TMP_GWS/usr/bin/gws \$TMP_GWS/usr/local/bin/gws\"
+
+    _native=\$(resolve_gws_native_bin)
+    repair_gws_entrypoints >/dev/null
+
+    printf 'GWS_NATIVE_TEST=%q\n' \"\$_native\"
+    printf 'GWS_USR_BIN_TARGET=%q\n' \"\$(readlink -f \"\$TMP_GWS/usr/bin/gws\")\"
+    printf 'GWS_USR_LOCAL_TARGET=%q\n' \"\$(readlink -f \"\$TMP_GWS/usr/local/bin/gws\")\"
+    printf 'GWS_USR_BIN_NATIVE=%q\n' \"\$(gws_entrypoint_is_native \"\$TMP_GWS/usr/bin/gws\" \"\$_native\" && echo yes || echo no)\"
+    printf 'GWS_USR_LOCAL_NATIVE=%q\n' \"\$(gws_entrypoint_is_native \"\$TMP_GWS/usr/local/bin/gws\" \"\$_native\" && echo yes || echo no)\"
+" 2>/dev/null)"
+
+assert_has "gws native resolver prefers bin/gws" "/usr/lib/node_modules/@googleworkspace/cli/bin/gws" "$GWS_NATIVE_TEST"
+assert_eq  "gws normalizes /usr/bin/gws" "$GWS_NATIVE_TEST" "$GWS_USR_BIN_TARGET"
+assert_eq  "gws normalizes /usr/local/bin/gws" "$GWS_NATIVE_TEST" "$GWS_USR_LOCAL_TARGET"
+assert_eq  "gws /usr/bin/gws is native after repair" "yes" "$GWS_USR_BIN_NATIVE"
+assert_eq  "gws /usr/local/bin/gws is native after repair" "yes" "$GWS_USR_LOCAL_NATIVE"
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "4. AppArmor marker injection"

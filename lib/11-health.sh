@@ -92,9 +92,19 @@ check_integrations() {
         || log "[HEALTH] WARN — pandoc not found"
 
     # Google Workspace CLI (gws)
-    command -v gws >/dev/null 2>&1 \
-        && log "[HEALTH] PASS — gws (Google Workspace CLI) available" \
-        || log "[HEALTH] WARN — gws not found"
+    if command -v gws >/dev/null 2>&1; then
+        local native_gws=""
+        native_gws=$(resolve_gws_native_bin 2>/dev/null || true)
+        if [[ -z "$native_gws" ]]; then
+            log "[HEALTH] WARN — gws found on PATH, but native binary under @googleworkspace/cli is missing"
+        elif gws_entrypoint_is_native /usr/bin/gws "$native_gws" && gws_entrypoint_is_native /usr/local/bin/gws "$native_gws"; then
+            log "[HEALTH] PASS — gws available and both entry points resolve to native binary"
+        else
+            log "[HEALTH] WARN — gws available, but /usr/bin/gws or /usr/local/bin/gws is not normalized to $native_gws"
+        fi
+    else
+        log "[HEALTH] WARN — gws not found"
+    fi
 }
 
 # ── 22e. APPARMOR HEALTH ──────────────────────────────────────────────────────

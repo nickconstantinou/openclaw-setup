@@ -296,6 +296,7 @@ If you plan to let agents manage your Calendar, Gmail, Drive, Docs, or Sheets, y
    ```bash
    sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
    ```
+   This also repairs both `/usr/bin/gws` and `/usr/local/bin/gws` so they point at the native `gws` binary instead of npm's `run.js` shim.
 4. Authenticate `gws` to generate `credentials.enc` and your `.encryption_key`:
    ```bash
    gws auth login
@@ -397,6 +398,7 @@ gws writes an API discovery cache and reads OAuth tokens on startup. If it error
    ```
 2. **Stale image**: Older images used an npm JS shim that was blocked by Docker's seccomp profile. The current setup installs gws as a native binary. Rebuild to pick up this fix (same command above).
 3. **Mount permissions**: gws needs `~/.config/gws/` mounted read/write for token and discovery cache. This is configured automatically by `config/apply-config.py` — re-run the self-heal to regenerate config.
+4. **Broken host entrypoint**: If you see `bad interpreter` from `/usr/bin/gws`, re-run the self-heal. It now repairs both `/usr/bin/gws` and `/usr/local/bin/gws` to the native binary and the health check will warn when either path still resolves to `run.js`.
 
 #### Codex ACP Auth Missing
 
