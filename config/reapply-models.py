@@ -24,8 +24,8 @@ def main():
         'minimax/MiniMax-M2.5':               {'alias': 'minimax-m25'},
         'minimax/MiniMax-M2.1':               {'alias': 'minimax-m21'},
         'minimax/MiniMax-M2':                 {'alias': 'minimax-m2'},
-        # Anthropic removed — claude-cli path requires Extra Usage (notice 2026-04-04).
-        # Use Anthropic API key path if Anthropic models are needed.
+        # Anthropic is intentionally removed from this setup repo.
+        # Re-enable it explicitly with direct provider credentials if needed.
     }
     config.setdefault('agents', {}).setdefault('defaults', {})['models'] = catalog
 

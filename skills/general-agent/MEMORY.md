@@ -7,5 +7,5 @@
 - OpenClaw Infrastructure Refactor (Mar 2026)
 
 ## Key Findings
-- Initializing multi-agent architecture...
-- Subagent boundaries established for `coding` and `marketing`.
+- Initializing main + family + Codex ACP architecture...
+- Main agent owns orchestration; Codex ACP is the dedicated coding worker.

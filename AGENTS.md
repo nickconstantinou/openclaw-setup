@@ -13,7 +13,7 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - **Modular Bash**: Large scripts MUST be decomposed into `lib/XX-name.sh` modules and sourced by a thin orchestrator.
 - **Skill Folders**: Skills MUST follow the folder-per-skill pattern with a `SKILL.md` (YAML frontmatter + Markdown).
 - **Hardening**: All shell scripts MUST pass ShellCheck analysis.
-- **Tri-Agent Architecture**: High-complexity tasks SHOULD be decomposed into `main` (planner), `coding` (executor), and `marketing` (strategist) agents with strictly scoped workspaces (`AGENTS.md`, `MEMORY.md`, `TOOLS.md`).
+- **Main + Family + Codex ACP**: High-complexity tasks SHOULD be coordinated by `main`, with coding execution delegated to Codex ACP when useful and `family` kept isolated to its messaging profile.
 - **SecretRef Migration**: Non-interactive secrets migration MUST use ephemeral JSON plans (`migrate_secrets.py`) and a `systemd environment.d` fallback for scrubbed `.env` resilience.
 - **Technology Layer**: Workflows assume a Supabase (Backend) + Expo (Frontend) stack unless otherwise specified.
 
@@ -52,6 +52,6 @@ It captures high-level context, architectural patterns, "gotchas," and lessons l
 - `[SANDBOX_BIND_ROOT]` -> **Pattern**: OpenClaw sandbox security unconditionally rejects bind mounts originating outside allowed roots. | **Fix**: Use the explicit schema property `agents.defaults.sandbox.docker.dangerouslyAllowExternalBindSources: true` when mounting local project directories.
 - `[EXEC_APPROVAL_SHADOW]` -> **Pattern**: `exec-approvals.json` changes on disk are ignored if `openclaw.json` forces `security: allowlist`, or if live scripts in `~/.openclaw-scripts` hardcode restrictive templates. | **Fix**: Audit `~/.openclaw-scripts/lib/08-config.sh` and `~/.openclaw-scripts/config/apply-config.py` for hardcoded overrides.
 - `[SANDBOX_ENV_WRONG_SECTION]` -> **Pattern**: Setting `c['env']['KEY']` (top-level) in `apply-config.py` does NOT pass env vars to sandboxed agents — they only receive vars from `agents.defaults.sandbox.docker.env`. | **Fix**: Inject into `_sandbox_env` dict inside the `if _sandbox_mode != 'off':` block, before `ds(c, 'agents.defaults.sandbox.docker.env', _sandbox_env)`.
-'' Openclaw Docs
+## OpenClaw Docs
 - Read all docs in `docs/` directory.
-- Read the latest scrip logs in `self-heal.log`
+- Read the latest script logs in `self-heal.log`.

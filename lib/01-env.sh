@@ -4,6 +4,24 @@
 # @complexity 3
 # 
 
+scrub_env_placeholders() {
+    local env_file="$1"
+    [[ -f "$env_file" ]] || return 0
+
+    local before after
+    before=$(wc -l < "$env_file")
+    sed -i -E \
+        -e '/^OPENAI_API_KEY=sk[-_]REPLACE_ME_WHEN_READY$/d' \
+        -e '/^TELEGRAM_BOT_TOKEN_(CODING|MARKETING)=.*$/d' \
+        -e '/^TELEGRAM_ALLOWED_USERS_(CODING|MARKETING)=.*$/d' \
+        "$env_file"
+    after=$(wc -l < "$env_file")
+
+    if (( after < before )); then
+        log "  Removed stale placeholder/deprecated entries from $env_file"
+    fi
+}
+
 # ── 1. RESOLVE USER + LOAD ~/.openclaw/.env ───────────────────────────────────
 resolve_user_context() {
     ACTUAL_USER="${SUDO_USER:-$USER}"
@@ -24,13 +42,8 @@ resolve_user_context() {
         "POST_BRIDGE_API_KEY=pb_REPLACE_ME_WHEN_READY"
         "TAVILY_API_KEY=tvly-REPLACE_ME_WHEN_READY"
         "GITHUB_PAT=ghp_REPLACE_ME_WHEN_READY"
-        "TELEGRAM_BOT_TOKEN_CODING=tg-REPLACE_ME_CODING"
-        "TELEGRAM_BOT_TOKEN_MARKETING=tg_REPLACE_ME_MARKETING"
-        "TELEGRAM_BOT_TOKEN_CC=tg-REPLACE_ME_CC"
         "TELEGRAM_AGENT_GROUP_ID=REPLACE_ME"
         "TELEGRAM_ALLOWED_USERS=REPLACE_ME"
-        "TELEGRAM_ALLOWED_USERS_CODING=INHERIT"
-        "TELEGRAM_ALLOWED_USERS_MARKETING=INHERIT"
         "WHATSAPP_ALLOWED_USERS=REPLACE_ME"
         "WHATSAPP_GROUP_ID=REPLACE_ME"
         "WHATSAPP_GROUP_ALLOW_FROM=REPLACE_ME"
@@ -41,7 +54,7 @@ resolve_user_context() {
         "OPENCLAW_SANDBOX_MODE=off"
         "OPENCLAW_ACP_ENABLED=true"
         "OPENCLAW_ACP_DEFAULT_AGENT=codex"
-        "OPENCLAW_ACP_ALLOWED_AGENTS=codex,claude"
+        "OPENCLAW_ACP_ALLOWED_AGENTS=codex"
         "OPENCLAW_ACPX_PERMISSION_MODE=approve-all"
         "OPENCLAW_ACPX_NONINTERACTIVE_PERMISSIONS=fail"
         "OPENCLAW_ACPX_PLUGIN_TOOLS_MCP_BRIDGE=false"
@@ -55,6 +68,8 @@ resolve_user_context() {
             log "  Added placeholder to .env: ${key}=${val}"
         fi
     done
+
+    scrub_env_placeholders "$ENV_FILE"
 
     if [[ "$(stat -c '%a' "$ENV_FILE")" != "600" ]]; then
         die "$ENV_FILE has unsafe permissions. Run: chmod 600 $ENV_FILE"

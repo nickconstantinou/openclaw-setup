@@ -2,6 +2,10 @@
 
 Deployment and self-healing scripts for **OpenClaw Enterprise** — an AI agent orchestration platform with specialized coding, marketing, and personal assistant capabilities.
 
+## Model migration guidance
+For GPT 5.4 prompt tuning and a practical GPT/Claude routing pattern, see:
+- `GPT54_MIGRATION.md`
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
@@ -33,7 +37,6 @@ curl -fsSL --proto '=https' --tlsv1.2 \
 - ✅ Playwright (browser automation)
 - ✅ Python packages (yt-dlp, pandoc, etc.)
 - ✅ Google Workspace CLI (optional)
-- ✅ Claude Code integration (optional)
 - ✅ UFW firewall (default-deny, Tailscale-aware)
 - ✅ fail2ban intrusion prevention (SSH brute-force protection)
 - ✅ AppArmor security profiles
@@ -66,7 +69,7 @@ curl -fsSL --proto '=https' --tlsv1.2 \
 
 ## Architecture Overview
 
-OpenClaw uses a **tri-agent architecture** with specialized AI agents working together:
+OpenClaw uses a compact **main + family + external harness** architecture:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -76,46 +79,46 @@ OpenClaw uses a **tri-agent architecture** with specialized AI agents working to
 │  • Spawns specialized subagents                         │
 └─────────────────────────────────────────────────────────┘
                          │
-        ┌────────────────┼────────────────┐
-        │                │                │
-        ▼                ▼                ▼
-   ┌─────────┐    ┌──────────┐    ┌───────────┐
-   │ CODING  │    │ MARKETING│    │  FAMILY   │
-   │  AGENT  │    │  AGENT   │    │  AGENT    │
-   │         │    │          │    │           │
-   │ bash    │    │ no exec  │    │ messaging │
-   │ exec    │    │ content  │    │ profile   │
-   │ write   │    │ creation │    │ (secured) │
-   └─────────┘    └──────────┘    └───────────┘
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+        ▼                       ▼
+   ┌───────────┐         ┌───────────┐
+   │  CODEX    │         │  FAMILY   │
+   │   ACP     │         │  AGENT    │
+   │  HARNESS  │         │           │
+   │ (external)│         │ messaging │
+   │           │         │ profile   │
+   └───────────┘         └───────────┘
 ```
 
 ### Agent Capabilities
 
 | Agent | Primary Model | Tools | Use Cases |
 |-------|--------------|-------|-----------|
-| **main** | MiniMax M2.5 | Full profile, can spawn subagents | Task planning, orchestration, general queries |
-| **coding** | MiniMax M2.5 | bash, exec, write, edit, git | Development, code generation, system tasks |
-| **marketing** | MiniMax M2.5 | Content tools (no exec) | Content creation, social media, documentation |
+| **main** | GPT-5.4 with MiniMax fallback | Full profile, can spawn Codex ACP | Task planning, orchestration, general queries |
+| **codex** | Codex ACP runtime | External ACP harness via `acpx` | Coding runs bound through OpenClaw ACP |
 | **family** | MiniMax M2.5 | Messaging profile (locked) | Personal assistant via WhatsApp (no exec/bash) |
 
 ### Communication Channels
 
-- **Telegram**: Four separate bots (default, coding, marketing, Claude Code)
+- **Telegram**: One OpenClaw bot
 - **WhatsApp**: One account (family agent)
 - **Gateway API**: HTTP API for programmatic access
 
 ## Security Configuration
 
-OpenClaw uses **per-channel access control** to protect your AI agents from unauthorized access. Each Telegram bot and WhatsApp account can have different allowed users.
+OpenClaw uses **per-channel access control** to protect your agents from unauthorized access.
 
 ### 🛡️ Access Control Model
 
-| Bot | Tools | Risk Level | Recommended Access |
-|-----|-------|------------|-------------------|
-| **default** | Full profile | Medium | Personal use only |
-| **coding** | bash, exec, write, edit, process | 🔴 **CRITICAL** | **You only** |
-| **marketing** | No exec/bash/process | Low | Marketing team |
-| **family** (WhatsApp) | Messaging profile | **SECURE** | Family members |
+| Channel | Routed Agent | Risk Level | Recommended Access |
+|---------|--------------|------------|-------------------|
+| **Telegram** (`default`) | **main** | Medium | Personal use only |
+| **WhatsApp** (`family`) | **family** | **SECURE** | Family members |
+
+Codex ACP is not exposed as a separate public bot. It is invoked by the main
+agent through the ACP runtime.
 
 ### 🛡️ Sandboxing & Isolation
 
@@ -131,19 +134,21 @@ This keeps the current dedicated-laptop workflow fast by default, while preservi
 
 ### ACP Sessions via ACPX
 
-This setup can also route Codex and Claude Code through OpenClaw's ACP runtime instead of only using native host-side CLI calls.
+This setup routes Codex through OpenClaw's ACP runtime instead of relying on a local wrapper script.
 
 - The deploy keeps the bundled `acpx` backend enabled for ACP
 - ACP is enabled by default with backend `acpx`
-- Default harness allowlist is `codex,claude`
+- Default harness allowlist is `codex`
 - ACPX permissions default to `approve-all` so non-interactive write/exec turns do not fail with `AcpRuntimeError`
+- Codex ACP is treated as **OAuth-only** in this repo. The setup installs the CLI, reuses `~/.codex/auth.json` when it contains Codex web login state, and strips API-key auth from the gateway/Codex harness path.
+- If Codex CLI OAuth is not configured yet, run `codex login` as the OpenClaw user before expecting ACP Codex runs to succeed.
 
 Configure via `~/.openclaw/.env`:
 
 ```bash
 OPENCLAW_ACP_ENABLED=true
 OPENCLAW_ACP_DEFAULT_AGENT=codex
-OPENCLAW_ACP_ALLOWED_AGENTS=codex,claude
+OPENCLAW_ACP_ALLOWED_AGENTS=codex
 OPENCLAW_ACPX_PERMISSION_MODE=approve-all
 OPENCLAW_ACPX_NONINTERACTIVE_PERMISSIONS=fail
 OPENCLAW_ACPX_PLUGIN_TOOLS_MCP_BRIDGE=false
@@ -157,10 +162,9 @@ openclaw acp doctor
 
 #### Features
 - **Network Isolation**: Uses `bridge` networking to allow agents to reach APIs (Anthropic, Google, etc.) while isolating them from the host's private network services.
-- **Projects Mount**: The host directory `~/.openclaw/agents/coding/workspace/projects` is automatically bind-mounted to `/projects` inside the sandbox with Read/Write access. This allows coding/marketing agents to work on local repos safely.
+- **Shared Workspace**: `~/.openclaw/workspace` is the shared project root used by the main agent and Codex ACP sessions.
 - **UID/GID Matching**: The sandbox image is built with the host user's UID/GID so bind-mounted files are readable and writable without permission errors. Rebuild the image after changing the host user.
-- **gws Credential Mount**: `~/.config/gws/` is mounted read/write so the coding agent can read OAuth tokens and write the API discovery cache.
-- **Claude Code Credential Mount**: `~/.claude/.credentials.json` is mounted read-only so the coding agent can use Claude Code with OAuth authentication.
+- **gws Credential Mount**: `~/.config/gws/` is mounted read/write so OpenClaw-managed sessions can read OAuth tokens and write the API discovery cache.
 - **Modular Env Pass-through**: Tools specify which API keys they need in the sandbox via the `TOOL_SANDBOX_ENV` registry.
 
 #### Adding Tools to the Sandbox
@@ -180,8 +184,8 @@ OpenClaw includes an execution approval system in `~/.openclaw/exec-approvals.js
 The system uses a **Defaults + Overrides** hierarchy:
 
 - **Inheritance**: Any setting in the `defaults` block (like `ask: "off"`) applies to **every agent** unless specifically overridden.
-- **Per-Agent Overrides**: You can define custom security levels or allowlists for specific agents by adding their ID (e.g., `main`, `coding`) to the `agents` block.
-- **Allowlists**: These are always per-agent. For example, if you allow `git` for the `coding` agent, the `marketing` agent will still trigger a prompt (unless its security is also set to `full`).
+- **Per-Agent Overrides**: You can define custom security levels or allowlists for specific agents by adding their ID (e.g., `main`) to the `agents` block.
+- **Allowlists**: These are always per-agent. For example, if you allow `git` for the `main` agent, the `family` agent will still use its own restricted profile.
 
 #### Common Postures
 - **`security: "full"` + `ask: "off"` (Current Default)**: Recommended for single-user trusted environments. This allows all commands to run without manual approval, providing a seamless "unconstrained" experience.
@@ -196,37 +200,24 @@ To change this, edit `~/.openclaw/exec-approvals.json` or use `openclaw approval
 ```bash
 # In ~/.openclaw/.env
 TELEGRAM_ALLOWED_USERS=123456789
-TELEGRAM_ALLOWED_USERS_CODING=INHERIT
-TELEGRAM_ALLOWED_USERS_MARKETING=INHERIT
 ```
 
-✅ All three bots restricted to your Telegram ID only
+✅ The OpenClaw Telegram bot is restricted to your Telegram ID only
 
 #### Example 2: Team Access with Role Separation
 
 ```bash
-# Base list: You + two team members
+# Default bot: You + two team members
 TELEGRAM_ALLOWED_USERS=123456789,987654321,555111222
-
-# Coding bot: Only you (has dangerous bash/exec tools!)
-TELEGRAM_ALLOWED_USERS_CODING=123456789
-
-# Marketing bot: Marketing team members only
-TELEGRAM_ALLOWED_USERS_MARKETING=987654321,555111222
 ```
 
-✅ Role-based access:
-- Default bot → All 3 users
-- Coding bot → Only you (user 123456789)
-- Marketing bot → Only users 987654321 and 555111222
+✅ Shared access on the OpenClaw Telegram bot
 
 #### Example 3: Smart Default (Auto-allowlist)
 
 ```bash
 # Leave as REPLACE_ME to auto-populate with TELEGRAM_CHAT_ID
 TELEGRAM_ALLOWED_USERS=REPLACE_ME
-TELEGRAM_ALLOWED_USERS_CODING=INHERIT
-TELEGRAM_ALLOWED_USERS_MARKETING=INHERIT
 ```
 
 ✅ Auto-populated with your `TELEGRAM_CHAT_ID` — you get instant access
@@ -275,17 +266,12 @@ openclaw security audit
 
 ### Connect to Your Bots
 
-1. **Telegram (Chas agents)**:
-   - Search for your bot(s) using the bot tokens you configured
+1. **Telegram**:
+   - Search for your bot using the bot token you configured
    - Send `/start` or a test message
    - If you used the smart default (REPLACE_ME), you'll have instant access via TELEGRAM_CHAT_ID fallback
 
-2. **Telegram (Claude Code)**:
-   - Set `TELEGRAM_BOT_TOKEN_CC` in `.env` to a separate bot token created via @BotFather
-   - Re-run the setup script — it installs the plugin, writes the token, and configures access automatically
-   - The Claude Code channel uses the same `TELEGRAM_ALLOWED_USERS` allowlist as the main bot
-
-3. **WhatsApp**:
+2. **WhatsApp**:
    - Run: `openclaw channels whatsapp link family`
    - Scan the QR code with WhatsApp mobile app
    - Send a test message
@@ -317,20 +303,25 @@ If you plan to let agents manage your Calendar, Gmail, Drive, Docs, or Sheets, y
 
 ### Access Agent Workspaces
 
-Each agent has its own workspace and memory:
+The deployment keeps one shared project workspace plus per-agent state for the
+named OpenClaw agents:
 
 ```bash
-# Agent directories
+# Shared workspace
+~/.openclaw/workspace/
+
+# Named agent directories
 ~/.openclaw/agents/main/
-~/.openclaw/agents/coding/
-~/.openclaw/agents/marketing/
 ~/.openclaw/agents/family/
 
-# Each contains:
+# Each named agent directory contains:
 # - workspace/     # Agent's working directory
 # - agent/         # Agent configuration (AGENTS.md, MEMORY.md, TOOLS.md)
 # - memory.db      # Conversation history and memory index
 ```
+
+Codex ACP sessions reuse `~/.openclaw/workspace` rather than a separate named
+agent directory.
 
 ## Troubleshooting
 
@@ -407,13 +398,14 @@ gws writes an API discovery cache and reads OAuth tokens on startup. If it error
 2. **Stale image**: Older images used an npm JS shim that was blocked by Docker's seccomp profile. The current setup installs gws as a native binary. Rebuild to pick up this fix (same command above).
 3. **Mount permissions**: gws needs `~/.config/gws/` mounted read/write for token and discovery cache. This is configured automatically by `config/apply-config.py` — re-run the self-heal to regenerate config.
 
-#### Claude Code "Invalid API Key" in Sandbox
+#### Codex ACP Auth Missing
 
-If the coding agent reports an invalid API key when using Claude Code, the OAuth credentials file may not be mounted. Re-run the self-heal to apply the bind mount:
+If Codex ACP sessions fail because host auth is missing, sign in as the OpenClaw
+user and rerun the self-heal so the adapter can be prewarmed cleanly:
 ```bash
+codex login
 sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
 ```
-Claude Code uses `~/.claude/.credentials.json` for OAuth (token format `sk-ant-oat01-…`), not a raw API key. This file is mounted read-only into the sandbox automatically.
 
 #### Permission Denied Errors
 
@@ -535,34 +527,17 @@ openclaw sessions list
 openclaw sessions view SESSION_ID
 ```
 
-## Agent Communication Infrastructure
+## Agent Communication Settings
 
-The setup script provisions a shared communication layer between the Chas agents and the Claude Code CLI so they maintain consistent context across sessions.
-
-### Shared memory
-
-Both agents write to dated files in `~/.openclaw/workspace/memory/YYYY-MM-DD.md`. A systemd timer (`openclaw-memory-consolidation.timer`) runs at 3:30am daily to initialise the next day's file and report system state.
-
-### Agent inbox
-
-`~/.openclaw/workspace/agent-inbox.md` is a shared message queue:
-
-```
-[FROM: Claude Code] [TO: Chas] [2026-03-26 09:45] Your message here
-[FROM: Chas] [TO: Claude Code] [2026-03-26 09:52] Your reply here
-```
-
-Both agents check this file at session start and clear messages addressed to them after reading.
+This setup no longer provisions a Claude-side inbox, memory bridge, or Claude
+Telegram plugin. `lib/13-agent-comms.sh` now only keeps the main Telegram
+account's optional group allowlist aligned with `TELEGRAM_AGENT_GROUP_ID`.
 
 ### What gets set up automatically
 
 | Component | Location | Managed by |
 |-----------|----------|-----------|
-| Agent inbox | `~/.openclaw/workspace/agent-inbox.md` | `lib/13-agent-comms.sh` |
-| Memory consolidation script | `~/.openclaw/workspace/scripts/memory-consolidation.sh` | `lib/13-agent-comms.sh` |
-| Memory consolidation timer | `~/.config/systemd/user/openclaw-memory-consolidation.timer` | `lib/13-agent-comms.sh` |
-| AGENTS.md memory protocol | `~/.openclaw/workspace/AGENTS.md` | `lib/13-agent-comms.sh` |
-| Claude Code Telegram plugin | `~/.claude/channels/telegram/` | `lib/13-agent-comms.sh` |
+| Telegram group access | `~/.openclaw/openclaw.json` | `lib/13-agent-comms.sh` |
 
 ---
 
@@ -571,9 +546,8 @@ Both agents check this file at session start and clear messages addressed to the
 - `openclaw-self-heal.sh`: Main deployment orchestrator.
 - `lib/`: Modular shell scripts for environment setup, installations, and configuration.
   - `lib/tools/`: **Tool modules** — one file per 3rd-party tool. Each file is the single source of truth for that tool's install logic, AppArmor rules, env var placeholders, and systemd exports.
-  - `lib/13-agent-comms.sh`: Agent communication infrastructure — inbox, memory consolidation cron, Claude Code Telegram plugin.
-- `scripts/memory-consolidation.sh`: Daily memory consolidation script (deployed to workspace by setup).
-- `skills/`: Categorized tri-agent skills (`general`, `coding`, `marketing`) and specialized workspace scaffolds.
+  - `lib/13-agent-comms.sh`: Final Telegram access adjustments for the main OpenClaw account.
+- `skills/`: Shared `general-agent` skills plus `family-agent` skills and supporting scaffolds.
 - `templates/`: AppArmor profile templates and systemd units.
 - `config/`: Python-based JSON configuration patchers.
 - `test/`: Automated test suite (safe to run without sudo or network).
@@ -588,15 +562,15 @@ Both agents check this file at session start and clear messages addressed to the
 
 ### 🔐 Critical Security Warnings
 
-1. **⚠️ Coding Bot Has Bash/Exec Access**
+1. **⚠️ Keep Telegram Access Narrow**
 
-   The coding bot can execute arbitrary shell commands. **NEVER** grant access to untrusted users:
+   The OpenClaw Telegram bot can invoke powerful tools. Keep its allowlist tight:
    ```bash
-   # ✅ GOOD: Only you can access coding bot
-   TELEGRAM_ALLOWED_USERS_CODING=123456789
+   # ✅ GOOD: Only you can access the bot
+   TELEGRAM_ALLOWED_USERS=123456789
 
-   # ❌ BAD: Multiple users with exec access
-   TELEGRAM_ALLOWED_USERS_CODING=123456789,987654321
+   # ❌ BAD: Broad shared access to the bot
+   TELEGRAM_ALLOWED_USERS=123456789,987654321
    ```
 
 2. **🔒 Smart Default for Solo Users**
@@ -720,7 +694,7 @@ register_tool mytool
 ```python
 TOOL_REGISTRY = {
     ...
-    'mytool': ['coding'],   # agents that can use this tool
+    'mytool': ['main'],   # agents that can use this tool
 }
 ```
 
@@ -732,4 +706,6 @@ That's the complete contract. No other files need editing.
 bash test/test-tool-registry.sh
 ```
 
-The test suite runs 38 assertions with no sudo, no network, and no system changes. It covers tool registration, AppArmor marker injection, `apply-config.py` TOOL_REGISTRY output, and a full dummy-tool end-to-end proof.
+The test suite runs with no sudo, no network, and no system changes. It covers
+tool registration, AppArmor marker injection, `apply-config.py` TOOL_REGISTRY
+output, and a full dummy-tool end-to-end proof.

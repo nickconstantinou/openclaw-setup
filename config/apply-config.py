@@ -71,7 +71,7 @@ def main():
     # ── Skills Discovery ──────────────────────────────────────────────────────────
     # general-agent skills are shared by main and family agents
     _skills_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # openclaw-scripts root
-    _gws_skills = f'{_home}/.openclaw/agents/coding/workspace/projects/cli/skills'
+    _gws_skills = f'{_home}/.openclaw/workspace/projects/cli/skills'
     ds(c, 'skills.load.extraDirs', [
         f'{_skills_base}/skills/general-agent',
         f'{_skills_base}/skills/family-agent',
@@ -104,10 +104,10 @@ def main():
     _acp_enabled = _acp_enabled not in {'0', 'false', 'no', 'off'}
 
     _acp_default_agent = os.environ.get('OPENCLAW_ACP_DEFAULT_AGENT', 'codex').strip() or 'codex'
-    _acp_allowed_agents_raw = os.environ.get('OPENCLAW_ACP_ALLOWED_AGENTS', 'codex,claude')
+    _acp_allowed_agents_raw = os.environ.get('OPENCLAW_ACP_ALLOWED_AGENTS', 'codex')
     _acp_allowed_agents = unique_list(
         agent.strip() for agent in _acp_allowed_agents_raw.split(',')
-    ) or ['codex', 'claude']
+    ) or ['codex']
 
     _acpx_permission_mode = os.environ.get('OPENCLAW_ACPX_PERMISSION_MODE', 'approve-all').strip() or 'approve-all'
     if _acpx_permission_mode not in {'approve-all', 'approve-reads', 'deny-all'}:
@@ -230,9 +230,26 @@ def main():
                 'primary':   _main_primary,
                 'fallbacks': _main_fallbacks,
             },
-            'subagents': {'allowAgents': []},  # uses anonymous subagent spawning
+            'subagents': {'allowAgents': ['codex']},
             'tools': {'profile': 'full'},
             'sandbox': {'mode': 'off'},  # main agent explicitly unsandboxed
+        },
+        {
+            'id':        'codex',
+            'name':      'Codex',
+            'workspace':  f'{_home}/.openclaw/workspace',
+            'model':     {'primary': _main_primary, 'fallbacks': _main_fallbacks},
+            'runtime': {
+                'type': 'acp',
+                'acp': {
+                    'agent': 'codex',
+                    'backend': 'acpx',
+                    'mode': 'persistent',
+                    'cwd': f'{_home}/.openclaw/workspace',
+                },
+            },
+            'subagents': {'allowAgents': []},
+            'tools': {'profile': 'full'},
         },
         {
             'id':        'family',
@@ -250,8 +267,9 @@ def main():
     existing_list = c.setdefault('agents', {}).setdefault('list', [])
     existing_ids  = {a.get('id') for a in existing_list}
 
-    # Remove stale coding/marketing agents if present from a previous deploy
-    existing_list[:] = [a for a in existing_list if a.get('id') not in ('coding', 'marketing')]
+    # Remove deprecated native agents and stale legacy ACP targets from a
+    # previous deploy. External host CLIs stay outside OpenClaw agent config.
+    existing_list[:] = [a for a in existing_list if a.get('id') not in ('coding', 'marketing', 'claude')]
 
     for agent in _named_agents:
         if agent['id'] not in {a.get('id') for a in existing_list}:
@@ -262,11 +280,33 @@ def main():
                     entry['name']      = agent['name']
                     entry['model']     = agent['model']
                     entry['workspace'] = agent['workspace']
-                    entry['agentDir']  = agent['agentDir']
                     entry['tools']     = agent['tools']
                     entry['subagents'] = agent['subagents']
-                    entry['identity']  = agent.get('identity', entry.get('identity', {}))
-                    entry['sandbox']   = agent.get('sandbox', entry.get('sandbox', {}))
+
+                    if 'default' in agent:
+                        entry['default'] = agent['default']
+                    else:
+                        entry.pop('default', None)
+
+                    if 'agentDir' in agent:
+                        entry['agentDir'] = agent['agentDir']
+                    else:
+                        entry.pop('agentDir', None)
+
+                    if 'identity' in agent:
+                        entry['identity'] = agent['identity']
+                    else:
+                        entry.pop('identity', None)
+
+                    if 'sandbox' in agent:
+                        entry['sandbox'] = agent['sandbox']
+                    else:
+                        entry.pop('sandbox', None)
+
+                    if 'runtime' in agent:
+                        entry['runtime'] = agent['runtime']
+                    else:
+                        entry.pop('runtime', None)
 
     # Family stays sandboxed by default, while OPENCLAW_SANDBOX_MODE can opt
     # the wider install into off/non-main/all later without losing other
@@ -302,7 +342,7 @@ def main():
     ds(c, 'browser.headless', True)
 
     # ── Exec Tool Configuration ─────────────────────────────────────────────────
-    # Run exec on gateway (host) for tools that need host access (gws, claude_code)
+    # Run exec on gateway (host) for tools that need host access (gws, codex)
     ds(c, 'tools.exec.host', 'gateway')
     ds(c, 'tools.exec.security', 'full')
 
@@ -312,7 +352,7 @@ def main():
     ds(c, 'tools.web.search.enabled', False)
     ds(c, 'tools.web.fetch.enabled',  False)
 
-    # ── Single Telegram account → main agent ─────────────────────────────────────
+    # ── Single OpenClaw Telegram account → main agent ────────────────────────────
     _tg_main = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 
     def parse_allowed_users(env_var, default_list=None):
@@ -365,6 +405,7 @@ def main():
         'allowFrom':   _tg_allowed,
     })
     tg_accounts['default'] = _tg_default_acc
+    ds(c, 'channels.telegram.defaultAccount', 'default')
 
     # ── WhatsApp multi-account (QR-linked, no token needed) ──────────────────────
     _wa_allowed_raw = os.environ.get('WHATSAPP_ALLOWED_USERS', '')
@@ -413,13 +454,28 @@ def main():
 
     # ── Bindings: single Telegram bot → main agent ────────────────────────────────
     bindings = c.setdefault('bindings', [])
-    # Remove all stale Telegram bindings before re-applying
-    bindings[:] = [b for b in bindings if b.get('match', {}).get('channel') != 'telegram']
-    bindings.append({'agentId': 'main', 'match': {'channel': 'telegram', 'accountId': 'default'}})
+    # Remove stale route bindings for deprecated/default accounts while
+    # preserving any operator-managed ACP bindings on Telegram.
+    bindings[:] = [
+        b for b in bindings
+        if not (
+            b.get('match', {}).get('channel') == 'telegram'
+            and b.get('match', {}).get('accountId') in ('default', 'coding', 'marketing')
+            and b.get('type', 'route') != 'acp'
+        )
+    ]
+    bindings.append({'type': 'route', 'agentId': 'main', 'match': {'channel': 'telegram', 'accountId': 'default'}})
 
     # WhatsApp binding — remove stale entries then re-apply
-    bindings[:] = [b for b in bindings if b.get('match', {}).get('channel') != 'whatsapp']
-    bindings.append({'agentId': 'family', 'match': {'channel': 'whatsapp', 'accountId': 'family'}})
+    bindings[:] = [
+        b for b in bindings
+        if not (
+            b.get('match', {}).get('channel') == 'whatsapp'
+            and b.get('match', {}).get('accountId') == 'family'
+            and b.get('type', 'route') != 'acp'
+        )
+    ]
+    bindings.append({'type': 'route', 'agentId': 'family', 'match': {'channel': 'whatsapp', 'accountId': 'family'}})
 
     # Elevated allowFrom — use explicit user IDs (never wildcard)
     _elevated_allow = {}

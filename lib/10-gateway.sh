@@ -14,9 +14,30 @@ warn_apparmor_unconfined() {
     export APPARMOR_UNCONFINED=1
 }
 
+scrub_gateway_unit_environment() {
+    local unit="$1"
+    [[ -f "$unit" ]] || return 0
+
+    sed -i -E \
+        -e '/^Environment=OPENCLAW_GATEWAY_TOKEN=/d' \
+        -e '/^Environment=PATH=/d' \
+        -e '/^Environment=(OPENAI_API_KEY|CODEX_API_KEY)=/d' \
+        -e '/^Environment=.*REPLACE_ME.*$/d' \
+        -e '/^Environment=.*=INHERIT$/d' \
+        -e '/^Environment=TELEGRAM_BOT_TOKEN_(CODING|MARKETING)=.*$/d' \
+        -e '/^Environment=TELEGRAM_ALLOWED_USERS_(CODING|MARKETING)=.*$/d' \
+        "$unit"
+}
+
 # ── 18. INSTALL & START GATEWAY ───────────────────────────────────────────────
 install_gateway_service() {
     log "Installing gateway service..."
+    ensure_system_node_runtime
+
+    local oc_bin
+    oc_bin=$(resolve_openclaw_bin) || die "'openclaw' binary not found for gateway install."
+    local install_path
+    install_path="/bin:/sbin:/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin"
 
     # Work around a bug in openclaw's isSystemdServiceEnabled():
     # systemctl --user is-enabled writes "not-found" to STDOUT (not stderr), but
@@ -32,7 +53,6 @@ install_gateway_service() {
     local unit_dir="$ACTUAL_HOME/.config/systemd/user"
     local unit_file="$unit_dir/openclaw-gateway.service"
     if [[ ! -f "$unit_file" ]]; then
-        local oc_bin; oc_bin=$(command -v openclaw)
         mkdir -p "$unit_dir"
         chown "$ACTUAL_USER:$ACTUAL_USER" "$unit_dir"
         cat > "$unit_file" <<EOF
@@ -60,17 +80,23 @@ EOF
 
     # Install the service without embedding the live gateway token into the unit.
     sudo -u "$ACTUAL_USER" \
-        env PATH="/bin:/sbin:/usr/bin:/usr/local/bin:$PATH" \
+        env -i \
+            PATH="$install_path" \
             HOME="$ACTUAL_HOME" \
             XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
             XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
             XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" \
             DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" \
             DEBIAN_FRONTEND=noninteractive \
-            OPENCLAW_GATEWAY_TOKEN= \
-        openclaw gateway install --force || die "Gateway install failed."
+            TMPDIR=/tmp \
+            NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt \
+        "$oc_bin" gateway install --force --runtime node || die "Gateway install failed."
 
     local unit="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service"
+    if [[ -f "$unit" ]]; then
+        scrub_gateway_unit_environment "$unit"
+    fi
+
     if [[ -f "$unit" ]] && command -v aa-exec >/dev/null 2>&1; then
         local exec_line; exec_line=$(grep "^ExecStart=" "$unit" | head -1)
         local exec_cmd="${exec_line#ExecStart=}"
@@ -110,6 +136,14 @@ TimeoutStartSec=90
 EOF
     chown -R "$ACTUAL_USER:$ACTUAL_USER" "$tuning_dir"
     log "Performance tuning (NODE_COMPILE_CACHE, etc.) applied via systemd drop-in."
+
+    cat > "$tuning_dir/codex-oauth.conf" <<EOF
+[Service]
+Environment=OPENAI_API_KEY=
+Environment=CODEX_API_KEY=
+EOF
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$tuning_dir/codex-oauth.conf"
+    log "Codex OAuth-only environment override applied via systemd drop-in."
 
     # SupplementaryGroups= is not supported in user-mode systemd services (requires CAP_SETGID,
     # exits with code 216/GROUP). The openclaw user is added to the docker group at the OS level.

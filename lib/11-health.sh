@@ -7,14 +7,17 @@
 # ── 22. DEVICE SCOPE ROTATION ─────────────────────────────────────────────────
 rotate_device_scopes() {
     log "Rotating device scopes..."
+    local oc_bin
+    oc_bin=$(resolve_openclaw_bin) || die "'openclaw' binary not found for device scope rotation."
     
     # Run rotation script
-    uas env OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" python3 - <<EOF
+    uas env OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" OPENCLAW_BIN="$oc_bin" python3 - <<EOF
 import json, subprocess, sys, os
 gw_token = os.environ.get('OPENCLAW_GATEWAY_TOKEN', '')
+oc_bin = os.environ.get('OPENCLAW_BIN', 'openclaw')
 token_args = ['--token', gw_token] if gw_token else []
 
-result = subprocess.run(['openclaw', 'devices', 'list', '--json'] + token_args, capture_output=True, text=True)
+result = subprocess.run([oc_bin, 'devices', 'list', '--json'] + token_args, capture_output=True, text=True)
 if result.returncode != 0:
     print("No paired devices — skipping.")
     sys.exit(0)
@@ -23,7 +26,7 @@ devices = json.loads(result.stdout).get('devices', [])
 for dev in devices:
     did = dev.get('id') or dev.get('deviceId', '')
     if not did: continue
-    subprocess.run(['openclaw', 'devices', 'rotate', '--device', did, '--role', 'operator', 
+    subprocess.run([oc_bin, 'devices', 'rotate', '--device', did, '--role', 'operator', 
                    '--scope', 'operator.admin', '--scope', 'operator.approvals', 
                    '--scope', 'operator.pairing', '--scope', 'operator.write', '--scope', 'operator.read'], 
                    capture_output=True)

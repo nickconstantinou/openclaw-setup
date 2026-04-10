@@ -5,8 +5,9 @@
 # @complexity 1
 #
 # This image is used exclusively by the family agent (WhatsApp/messaging profile).
-# It does NOT include claude-code, gws, or document processing tools since the
-# family agent runs with a messaging profile (no exec/bash/code execution).
+# It does NOT include host-side coding helpers, gws, or document processing
+# tools since the family agent runs with a messaging profile (no exec/bash/code
+# execution).
 #
 
 set -Eeuo pipefail
@@ -62,7 +63,7 @@ FROM debian:bookworm-slim
 # - Browser automation (playwright, lightpanda)
 # - Media processing (ffmpeg, yt-dlp)
 # - Python skill dependencies
-# NOTE: No gcloud/gws, claude-code, pandoc, or texlive — not needed for messaging profile
+# NOTE: No gcloud/gws, codex, pandoc, or texlive — not needed for messaging profile
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git nodejs npm python3 python3-pip python3-venv bash curl jq \
     libgbm1 libnss3 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \

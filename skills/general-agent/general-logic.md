@@ -6,16 +6,16 @@ This file is the central source of truth for **orchestration excellence** and **
 
 ## 1. Role-Based Orchestration
 
-Do not refer to specific LLM models. Use role-based delegation logic:
+Do not refer to specific LLM models. Use role-based execution logic:
 
-*   **Main (Planner)**: Handles user interaction, complex reasoning, strategy, and multi-agent coordination.
-*   **Coding (Specialist)**: Handles backend logic, APIs, system administration, and large codebases.
-*   **Marketing (Specialist)**: Handles copywriting, creative strategy, SEO, and user psychology.
+*   **Main**: Handles user interaction, reasoning, strategy, research, content, and direct tool use.
+*   **Codex ACP**: Handles dedicated coding execution for larger implementation tasks.
+*   **Family**: Handles messaging-only family workflows through its locked channel profile.
 
 ### Trigger Rules
-*   **Technical Deep-Dive**: Delegate to Coding if the task involves file systems, runtimes, or complex logic.
-*   **Creative Content**: Delegate to Marketing for ad copy, landing page rhythm, or brand voice.
-*   **Admin/Personal**: Use General skills (GWS, Office) directly.
+*   **Technical Deep-Dive**: Delegate to Codex ACP if the task involves large codebases, runtimes, or complex implementation.
+*   **Creative Content**: Handle directly with the content and marketing skills already loaded into the main agent.
+*   **Admin/Personal**: Use General skills directly, or let the `family` channel handle family-only messaging workflows.
 
 ---
 
@@ -32,8 +32,8 @@ The Main Orchestrator MUST maintain the following communication bar:
 ## 3. Delegation Hygiene
 
 *   **Contextual Tasks**: When spawning, provide the full project context and specific success criteria.
-*   **Parallel Execution**: Spawn multiple specialists for independent workstreams to reduce latency.
-*   **Final Proofing**: You are the last line of defense. Proofread marketing copy and sanity-check coding diffs before showing the user.
+*   **Parallel Execution**: Run Codex ACP in parallel with your own non-overlapping research, planning, or content work when useful.
+*   **Final Proofing**: You are the last line of defense. Proofread user-facing copy and sanity-check coding diffs before showing the user.
 
 ---
 

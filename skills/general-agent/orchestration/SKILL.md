@@ -1,36 +1,37 @@
 ---
 name: orchestration
 description: >
-  Tri-model task routing. Use this skill to decide when to handle a task
-  yourself vs delegating to the coding or marketing specialist agents.
+  Use this skill to decide when to handle a task yourself vs delegating coding
+  execution to the Codex ACP worker.
 ---
 
 # SKILL: Orchestration — When to Delegate
 
 ## Architecture
 
-You are the **Planner**. Your job is to reason about the request,
-decompose it, and decide who executes each part.
+You are the **Main Agent**. Your job is to reason about the request, decompose
+it, and decide whether to execute directly or hand code-heavy work to Codex ACP.
 
 ### Decision tree
 
-| Request Type | Lead Agent |
-|--------------|------------|
-| "Build feature X" | **coding** |
-| "Write blog post" | **marketing** |
+| Request Type | Lead Worker |
+|--------------|-------------|
+| "Build feature X" | **codex** |
+| "Write blog post" | **main** |
 | "Summarize email" | **main** |
-| "Plan launch" | **main** (delegates tasks) |
+| "Plan launch" | **main** |
 
 ## Decision tree
 
 **Handle yourself (main) when:**
 - Task is conversational, research, analysis, or explanation
-- File is < ~20KB and doesn't need specialist context
+- File is < ~20KB and doesn't need a separate coding session
 - Task is a single small function or config edit
+- Task is marketing, copy, content, or user-facing strategy work
 - Coordination between multiple subtasks
 
-**Delegate to `coding` when:**
-- Reading or modifying a large codebase (high-context specialist)
+**Delegate to `codex` when:**
+- Reading or modifying a large codebase in a dedicated ACP coding session
 - Identifying complex system-wide bugs
 - Writing production-grade code adhering to repo protocols
 - Writing backend code: Python, Go, Rust, Node, shell scripts
@@ -38,63 +39,25 @@ decompose it, and decide who executes each part.
 - DevOps, systemd, Docker, infrastructure
 - Any task where you need to "read the whole project first"
 
-**Delegate to `marketing` when:**
-- Drafting high-conversion email sequences or landing page copy
-- SEO optimization for existing content
-- Social media content calendars and post drafting
-- Researching competitors or market trends
-- Creating ad campaigns and taglines
-
 ## How to delegate
 
 ```
-# Spawn a coding subagent
+# Spawn a Codex ACP subagent
 sessions_spawn({
-  agentId: "coding",
+  agentId: "codex",
   task: "Read the entire src/ directory and refactor the auth module to use JWT. Return the changed files.",
   label: "auth-refactor"
 })
-
-# Spawn a marketing subagent
-sessions_spawn({
-  agentId: "marketing",
-  task: "Research the current landing page and draft 3 variations of the hero section for better conversion. Focus on clear value props.",
-  label: "marketing-hero"
-})
 ```
 
-## Cross-Agent Communication Patterns
-
-### Specialist Autonomy (Hybrid Model)
-
-Your specialists can collaborate **without your involvement** in certain cases:
-
-**Marketing → Coding (Autonomous):**
-The marketing agent can spawn coding directly for implementation:
-```javascript
-// Marketing agent does this autonomously
-sessions_spawn({
-    agentId: "coding",
-    task: "Build landing page with requirements: [...]",
-    label: "landing-page"
-})
-```
-
-**Coding → Marketing (Message-Based):**
-The coding agent sends messages for content requests:
-```javascript
-// Coding agent sends message (does NOT spawn)
-sessions_send({
-    sessionKey: "agent:marketing:main",
-    message: "Need docs for new API endpoints: [...]",
-    timeoutSeconds: 300
-})
-```
+There is no separate marketing worker in this setup. Use content and marketing
+skills directly from the main agent. The `family` agent is channel-bound and is
+not a general-purpose worker for spawned tasks.
 
 ### When to Orchestrate Directly
 
 You should coordinate when:
-- Task requires both specialists working in sequence with dependencies
+- Task requires both coding implementation and content/ops work in sequence
 - User request needs decomposition into parallel work streams
 - Complex workflows need supervision
 - Explicit coordination requested
@@ -112,12 +75,12 @@ sessions_list({
 
 ## Parallelism
 
-You can spawn coding + marketing agents simultaneously if tasks are independent:
+You can keep content/research work in `main` while Codex runs implementation in
+parallel:
 ```
-# Both run in parallel
-sessions_spawn({ agentId: "coding",    task: "...", label: "backend" })
-sessions_spawn({ agentId: "marketing", task: "...", label: "marketing" })
-# Then wait for both: sessions_history("backend"), sessions_history("marketing")
+# Codex runs while main continues with docs/research/planning
+sessions_spawn({ agentId: "codex", task: "...", label: "backend" })
+# Then wait for completion: sessions_history("backend")
 ```
 
 ## Context passing
@@ -130,7 +93,8 @@ no memory of your conversation. Include:
 - Expected output format
 
 ## High Context Mode
-When dealing with repos >100 files, always prefer the **coding** specialist, as it is optimized for large repository navigation and dependency mapping.
+When dealing with repos >100 files, prefer **codex** for the implementation
+workstream, as it is the dedicated ACP coding worker in this setup.
 
 ## Thinking mode
 For complex planning, prefix your internal reasoning with `<think>` to engage

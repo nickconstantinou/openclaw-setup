@@ -36,8 +36,6 @@ GITHUB_TOKEN=${GITHUB_PAT:-}
 POST_BRIDGE_API_KEY=${POST_BRIDGE_API_KEY:-}
 OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-}
 TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-TELEGRAM_BOT_TOKEN_CODING=${TELEGRAM_BOT_TOKEN_CODING:-}
-TELEGRAM_BOT_TOKEN_MARKETING=${TELEGRAM_BOT_TOKEN_MARKETING:-}
 SUPABASE_URL=${SUPABASE_URL:-}
 SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
 OLLAMA_API_KEY=ollama-local
@@ -51,9 +49,21 @@ EOF
         local _export_vars var
         IFS=' ' read -ra _export_vars <<< "$exports"
         for var in "${_export_vars[@]}"; do
-            echo "${var}=${!var:-}" | uas tee -a "$envd_file" > /dev/null
+            local value="${!var:-}"
+            has_effective_value "$value" || continue
+            echo "${var}=${value}" | uas tee -a "$envd_file" > /dev/null
         done
     done
+
+    local sanitized_envd="${envd_file}.tmp"
+    : > "$sanitized_envd"
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        local value="${line#*=}"
+        has_effective_value "$value" || continue
+        printf '%s\n' "$line" >> "$sanitized_envd"
+    done < "$envd_file"
+    mv "$sanitized_envd" "$envd_file"
 
     chmod 600 "$envd_file"
 
@@ -69,12 +79,23 @@ EOF
         POST_BRIDGE_API_KEY
         OPENCLAW_GATEWAY_TOKEN
         TELEGRAM_BOT_TOKEN
-        TELEGRAM_BOT_TOKEN_CODING
-        TELEGRAM_BOT_TOKEN_MARKETING
         SUPABASE_URL
         SUPABASE_ANON_KEY
         OLLAMA_API_KEY
     )
+    uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" \
+        systemctl --user unset-environment OPENAI_API_KEY CODEX_API_KEY 2>/dev/null || true
+    for name in "${TOOL_NAMES[@]:-}"; do
+        local exports="${TOOL_SYSTEMD_EXPORTS[$name]:-}"
+        [[ -z "$exports" ]] && continue
+        local _export_vars var
+        IFS=' ' read -ra _export_vars <<< "$exports"
+        for var in "${_export_vars[@]}"; do
+            local value="${!var:-}"
+            has_effective_value "$value" || continue
+            import_vars+=("$var")
+        done
+    done
     uas env XDG_RUNTIME_DIR="/run/user/$ACTUAL_UID" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$ACTUAL_UID/bus" OLLAMA_API_KEY="ollama-local" \
         systemctl --user import-environment "${import_vars[@]}" 2>/dev/null || true
 }
@@ -117,8 +138,8 @@ setup_exec_approvals() {
     log "Setting up exec-approvals.json for host-level tools..."
     local approvals_file="$ACTUAL_HOME/.openclaw/exec-approvals.json"
     
-    # Create the exec-approvals.json with allowlist for gws and claude_code
-    # These tools need to run on the gateway (host) not in sandbox
+    # Create the exec-approvals.json with allowlist for host-level helpers.
+    # These tools need to run on the gateway (host) not in sandbox.
     # Schema: per-agent allowlists under agents.<id>.allowlist (see docs/tools/exec-approvals.md)
     cat << EOF | uas tee "$approvals_file" > /dev/null
 {
@@ -132,32 +153,20 @@ setup_exec_approvals() {
     "main": {
       "allowlist": [
         {"pattern": "$ACTUAL_HOME/.local/bin/gws"},
-        {"pattern": "$ACTUAL_HOME/.local/bin/claude"},
+        {"pattern": "$ACTUAL_HOME/.local/bin/codex"},
         {"pattern": "/usr/local/bin/gws"},
         {"pattern": "/usr/bin/gws"},
-        {"pattern": "/usr/local/bin/claude"},
-        {"pattern": "/usr/bin/claude"},
+        {"pattern": "/usr/local/bin/codex"},
+        {"pattern": "/usr/bin/codex"},
         {"pattern": "/root/.local/bin/gws"},
-        {"pattern": "/root/.local/bin/claude"}
-      ]
-    },
-    "coding": {
-      "allowlist": [
-        {"pattern": "$ACTUAL_HOME/.local/bin/gws"},
-        {"pattern": "$ACTUAL_HOME/.local/bin/claude"},
-        {"pattern": "/usr/local/bin/gws"},
-        {"pattern": "/usr/bin/gws"},
-        {"pattern": "/usr/local/bin/claude"},
-        {"pattern": "/usr/bin/claude"},
-        {"pattern": "/root/.local/bin/gws"},
-        {"pattern": "/root/.local/bin/claude"}
+        {"pattern": "/root/.local/bin/codex"}
       ]
     }
   }
 }
 EOF
     chmod 600 "$approvals_file"
-    log "Exec-approvals configured for gws and claude_code."
+    log "Exec-approvals configured for gws and codex."
 }
 
 patch_config() {
@@ -176,7 +185,7 @@ patch_config() {
         export OPENCLAW_GATEWAY_TOKEN
     fi
 
-    # 2. Setup exec-approvals.json for host-level tools (gws, claude_code)
+    # 2. Setup exec-approvals.json for host-level tools (gws, codex)
     setup_exec_approvals
 
     # 3. Run Python Patch Scripts
@@ -210,11 +219,7 @@ patch_config() {
         POST_BRIDGE_API_KEY="${POST_BRIDGE_API_KEY:-}" \
         OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" \
         TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}" \
-        TELEGRAM_BOT_TOKEN_CODING="${TELEGRAM_BOT_TOKEN_CODING:-}" \
-        TELEGRAM_BOT_TOKEN_MARKETING="${TELEGRAM_BOT_TOKEN_MARKETING:-}" \
         TELEGRAM_ALLOWED_USERS="${TELEGRAM_ALLOWED_USERS:-}" \
-        TELEGRAM_ALLOWED_USERS_CODING="${TELEGRAM_ALLOWED_USERS_CODING:-}" \
-        TELEGRAM_ALLOWED_USERS_MARKETING="${TELEGRAM_ALLOWED_USERS_MARKETING:-}" \
         WHATSAPP_ALLOWED_USERS="${WHATSAPP_ALLOWED_USERS:-}" \
         WHATSAPP_GROUP_ID="${WHATSAPP_GROUP_ID:-}" \
         WHATSAPP_GROUP_ALLOW_FROM="${WHATSAPP_GROUP_ALLOW_FROM:-}" \

@@ -238,7 +238,7 @@ profile openclaw-gateway {
   @{HOME}/.openclaw/workspace/skills/**/venv/bin/python[0-9.]* rix, # allow venv python execution
   @{HOME}/.openclaw/workspace/images/         rwk,   # image generation output dir
   @{HOME}/.openclaw/workspace/images/**       rwk,
-  @{HOME}/.openclaw/agents/                  rw,    # named agent dirs (coding, frontend)
+  @{HOME}/.openclaw/agents/                  rw,    # named agent dirs (main, family)
   @{HOME}/.openclaw/agents/**                rwk,
 
   # ── Temp workspace ──────────────────────────────────────────────────────────

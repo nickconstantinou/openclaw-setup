@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,19 @@ PYTHON = sys.executable
 
 
 class TestConfigScripts(unittest.TestCase):
+    def _run_bash(self, script, extra_env=None):
+        env = os.environ.copy()
+        if extra_env:
+            env.update(extra_env)
+
+        return subprocess.run(
+            ["bash", "-lc", script],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+
     def _run(self, script_rel, config_text, extra_env=None):
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = Path(tmpdir) / "openclaw.json"
@@ -99,7 +113,7 @@ class TestConfigScripts(unittest.TestCase):
               "acp": {
                 "enabled": true,
                 "backend": "acpx",
-                "allowedAgents": ["codex", "claude"]
+                "allowedAgents": ["codex"]
               },
               "agents": {
                 "defaults": {
@@ -194,13 +208,67 @@ class TestConfigScripts(unittest.TestCase):
         self.assertTrue(cfg["acp"]["enabled"])
         self.assertEqual(cfg["acp"]["backend"], "acpx")
         self.assertEqual(cfg["acp"]["defaultAgent"], "codex")
-        self.assertEqual(cfg["acp"]["allowedAgents"], ["codex", "claude"])
+        self.assertEqual(cfg["acp"]["allowedAgents"], ["codex"])
         self.assertTrue(cfg["plugins"]["entries"]["acpx"]["enabled"])
         self.assertEqual(cfg["plugins"]["entries"]["acpx"]["config"]["permissionMode"], "approve-all")
         self.assertEqual(cfg["plugins"]["entries"]["acpx"]["config"]["nonInteractivePermissions"], "fail")
         self.assertFalse(cfg["plugins"]["entries"]["acpx"]["config"]["pluginToolsMcpBridge"])
         self.assertEqual(cfg["plugins"]["entries"]["acpx"]["config"]["command"], "/custom/acpx")
         self.assertEqual(cfg["agents"]["defaults"]["model"]["fallbacks"], ["minimax/MiniMax-M2.5"])
+        self.assertEqual(cfg["channels"]["telegram"]["defaultAccount"], "default")
+        self.assertNotIn("coding", {agent["id"] for agent in cfg["agents"]["list"]})
+        self.assertNotIn("marketing", {agent["id"] for agent in cfg["agents"]["list"]})
+        self.assertNotIn("claude", {agent["id"] for agent in cfg["agents"]["list"]})
+
+        main_agent = next(agent for agent in cfg["agents"]["list"] if agent["id"] == "main")
+        codex_agent = next(agent for agent in cfg["agents"]["list"] if agent["id"] == "codex")
+
+        self.assertEqual(main_agent["subagents"]["allowAgents"], ["codex"])
+        self.assertEqual(codex_agent["runtime"]["type"], "acp")
+        self.assertEqual(codex_agent["runtime"]["acp"]["agent"], "codex")
+        self.assertEqual(codex_agent["runtime"]["acp"]["backend"], "acpx")
+        self.assertEqual(codex_agent["runtime"]["acp"]["mode"], "persistent")
+
+    def test_shell_helpers_prefer_nvm_openclaw_over_homebrew(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            actual_home = tmp / "home"
+            local_bin = actual_home / ".local" / "bin"
+            brew_bin = tmp / "brew" / "bin"
+            nvm_bin = tmp / "nvm" / "bin"
+            local_bin.mkdir(parents=True)
+            brew_bin.mkdir(parents=True)
+            nvm_bin.mkdir(parents=True)
+
+            for target, label in (
+                (brew_bin / "openclaw", "brew"),
+                (nvm_bin / "openclaw", "nvm"),
+            ):
+                target.write_text(f"#!/usr/bin/env bash\necho {label}\n", encoding="utf-8")
+                target.chmod(0o755)
+
+            script = textwrap.dedent(
+                f"""
+                source {shlex.quote(str(ROOT / "lib/00-common.sh"))}
+                printf '%s\\n' "$(resolve_openclaw_bin)"
+                printf '%s\\n' "$(build_user_path)"
+                """
+            )
+            proc = self._run_bash(
+                script,
+                extra_env={
+                    "ACTUAL_HOME": str(actual_home),
+                    "BREW_BIN_DIR": str(brew_bin),
+                    "NVM_NODE_DIR": str(nvm_bin),
+                    "PATH": "/usr/bin",
+                },
+            )
+
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            resolved_bin, user_path = proc.stdout.strip().splitlines()
+            self.assertEqual(resolved_bin, str(nvm_bin / "openclaw"))
+            path_parts = user_path.split(":")
+            self.assertLess(path_parts.index(str(nvm_bin)), path_parts.index(str(brew_bin)))
 
 
 if __name__ == "__main__":

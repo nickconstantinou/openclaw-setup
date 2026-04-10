@@ -1,6 +1,6 @@
 # Coding Universal Logic & Standards
 
-This file is the central source of truth for **technical excellence** and **orchestration protocols** enforced by the Coding Agent.
+This file is the central source of truth for **technical excellence** and **coding execution protocols** used by the main agent and Codex ACP sessions.
 
 ---
 
@@ -40,6 +40,6 @@ Every new or significantly refactored file must include a **Verbose Header**:
 
 ## 4. Multi-Agent Collaboration
 
-*   **Content/Docs:** Delegate to Marketing Agent via `sessions_send`.
-*   **Orchestration:** Escalate complex multi-step flows to the Main Agent.
+*   **Content/Docs:** Handle directly from the main agent with the relevant writing and content skills loaded in this setup.
+*   **Orchestration:** Escalate complex multi-step flows to the main agent.
 *   **Verification:** Use `@review` (MOE Expert Review) for high-severity architectural changes.
