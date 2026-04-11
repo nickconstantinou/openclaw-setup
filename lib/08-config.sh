@@ -24,6 +24,8 @@ setup_systemd_env() {
     local envd_dir="$ACTUAL_HOME/.config/environment.d"
     local envd_file="$envd_dir/openclaw.conf"
     uas mkdir -p "$envd_dir"
+    touch "$envd_file"
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$envd_file"
 
     # Write core environment variables that all timer services inherit
     cat <<EOF | uas tee "$envd_file" > /dev/null
@@ -66,6 +68,7 @@ EOF
     mv "$sanitized_envd" "$envd_file"
 
     chmod 600 "$envd_file"
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$envd_file"
 
     # Make the current user manager pick up the fresh environment immediately
     # so services can rely on environment.d instead of embedding secrets.

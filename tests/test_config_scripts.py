@@ -271,5 +271,18 @@ class TestConfigScripts(unittest.TestCase):
             self.assertLess(path_parts.index(str(nvm_bin)), path_parts.index(str(brew_bin)))
 
 
+    def test_setup_systemd_env_reclaims_user_ownership_after_root_owned_swap(self):
+        script = (ROOT / "lib/08-config.sh").read_text(encoding="utf-8")
+        start = script.index("setup_systemd_env() {")
+        end = script.index("\n# ── 12b. SYSTEMD LINGER", start)
+        body = script[start:end]
+
+        self.assertIn('touch "$envd_file"', body)
+        self.assertIn('chown "$ACTUAL_USER:$ACTUAL_USER" "$envd_file"', body)
+        self.assertRegex(
+            body,
+            r'mv "\$sanitized_envd" "\$envd_file"\n\s*chmod 600 "\$envd_file"\n\s*chown "\$ACTUAL_USER:\$ACTUAL_USER" "\$envd_file"',
+        )
+
 if __name__ == "__main__":
     unittest.main()
