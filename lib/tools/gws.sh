@@ -33,7 +33,10 @@ TOOL_SANDBOX_ENV[gws]="GOOGLE_WORKSPACE_CLI_CLIENT_ID GOOGLE_WORKSPACE_CLI_CLIEN
 
 GWS_PRIMARY_NATIVE_BIN="/usr/lib/node_modules/@googleworkspace/cli/bin/gws"
 GWS_LEGACY_NATIVE_BIN="/usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws"
-GWS_ENTRYPOINT_PATHS="/usr/bin/gws /usr/local/bin/gws"
+GWS_ENTRYPOINT_PATHS=(
+    "/usr/bin/gws"
+    "/usr/local/bin/gws"
+)
 
 resolve_gws_native_bin() {
     local candidate
@@ -65,15 +68,19 @@ repair_gws_entrypoints() {
 
     chmod +x "$native" 2>/dev/null || true
 
-    local path
-    for path in $GWS_ENTRYPOINT_PATHS; do
+    local path failed=0
+    for path in "${GWS_ENTRYPOINT_PATHS[@]}"; do
         if gws_entrypoint_is_native "$path" "$native"; then
             continue
         fi
-        ln -sf "$native" "$path"
-        log "gws: normalized $path -> $native"
+        if ln -sf "$native" "$path"; then
+            log "gws: normalized $path -> $native"
+        else
+            log "WARNING: gws: failed to normalize $path -> $native"
+            failed=1
+        fi
     done
-    return 0
+    [[ $failed -eq 0 ]]
 }
 
 # ── 7d. INSTALL GCLOUD CLI ────────────────────────────────────────────────────

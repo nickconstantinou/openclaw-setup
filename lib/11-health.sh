@@ -68,6 +68,33 @@ check_gateway() {
     fi
 }
 
+# ── 22b-2. GATEWAY UNIT HEALTH ───────────────────────────────────────────────
+check_gateway_service_config() {
+    local unit="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service"
+    if [[ ! -f "$unit" ]]; then
+        log "[HEALTH] WARN — Gateway unit file not found at $unit"
+        return 0
+    fi
+
+    local issues=0
+    if grep -q '^Environment=OPENCLAW_GATEWAY_TOKEN=' "$unit"; then
+        log "[HEALTH] WARN — Gateway unit embeds OPENCLAW_GATEWAY_TOKEN"
+        issues=1
+    fi
+    if grep -q '^Environment=PATH=' "$unit"; then
+        log "[HEALTH] WARN — Gateway unit embeds PATH instead of relying on systemd environment.d"
+        issues=1
+    fi
+    if gateway_unit_uses_version_manager_runtime "$unit"; then
+        log "[HEALTH] WARN — Gateway unit ExecStart references a version-manager runtime"
+        issues=1
+    fi
+
+    if [[ $issues -eq 0 ]]; then
+        log "[HEALTH] PASS — Gateway unit uses recommended service defaults"
+    fi
+}
+
 # ── 22c. VAULT HEALTH ─────────────────────────────────────────────────────────
 check_vault() {
     if [[ -d "$OBSIDIAN_VAULT_PATH" ]]; then
@@ -199,6 +226,7 @@ run_health_suite() {
     local errors=0
     
     check_ollama || ((++errors))
+    check_gateway_service_config
     check_gateway || ((++errors))
     check_vault || ((++errors))
     check_integrations

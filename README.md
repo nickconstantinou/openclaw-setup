@@ -399,6 +399,7 @@ gws writes an API discovery cache and reads OAuth tokens on startup. If it error
 2. **Stale image**: Older images used an npm JS shim that was blocked by Docker's seccomp profile. The current setup installs gws as a native binary. Rebuild to pick up this fix (same command above).
 3. **Mount permissions**: gws needs `~/.config/gws/` mounted read/write for token and discovery cache. This is configured automatically by `config/apply-config.py` — re-run the self-heal to regenerate config.
 4. **Broken host entrypoint**: If you see `bad interpreter` from `/usr/bin/gws`, re-run the self-heal. It now repairs both `/usr/bin/gws` and `/usr/local/bin/gws` to the native binary and the health check will warn when either path still resolves to `run.js`.
+5. **Gateway service drift**: If `openclaw doctor` says the gateway unit embeds `OPENCLAW_GATEWAY_TOKEN`, embeds `PATH`, or uses `~/.nvm/...`, rerun the self-heal and inspect `systemctl --user cat openclaw-gateway.service`. The current setup forces a system-global OpenClaw runtime for the gateway and checks the installed unit for those regressions.
 
 #### Codex ACP Auth Missing
 

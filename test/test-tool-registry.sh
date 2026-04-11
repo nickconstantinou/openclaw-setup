@@ -130,6 +130,7 @@ section "3b. gws entrypoint normalization prefers native binary"
 
 eval "$(bash -c "
     set -euo pipefail
+    IFS=$'\n\t'
     source '$SCRIPT_DIR/lib/tools/_base.sh'
     log() { :; }; wait_for_apt() { :; }; apt_install() { :; }; uas() { \"\$@\" 2>/dev/null || true; }
     ACTUAL_USER='$USER'; ACTUAL_HOME='$HOME'; SCRIPT_DIR='$SCRIPT_DIR'
@@ -154,7 +155,7 @@ EOF
 
     GWS_PRIMARY_NATIVE_BIN=\"\$TMP_GWS/usr/lib/node_modules/@googleworkspace/cli/bin/gws\"
     GWS_LEGACY_NATIVE_BIN=\"\$TMP_GWS/usr/lib/node_modules/@googleworkspace/cli/node_modules/.bin_real/gws\"
-    GWS_ENTRYPOINT_PATHS=\"\$TMP_GWS/usr/bin/gws \$TMP_GWS/usr/local/bin/gws\"
+    GWS_ENTRYPOINT_PATHS=(\"\$TMP_GWS/usr/bin/gws\" \"\$TMP_GWS/usr/local/bin/gws\")
 
     _native=\$(resolve_gws_native_bin)
     repair_gws_entrypoints >/dev/null
@@ -171,6 +172,57 @@ assert_eq  "gws normalizes /usr/bin/gws" "$GWS_NATIVE_TEST" "$GWS_USR_BIN_TARGET
 assert_eq  "gws normalizes /usr/local/bin/gws" "$GWS_NATIVE_TEST" "$GWS_USR_LOCAL_TARGET"
 assert_eq  "gws /usr/bin/gws is native after repair" "yes" "$GWS_USR_BIN_NATIVE"
 assert_eq  "gws /usr/local/bin/gws is native after repair" "yes" "$GWS_USR_LOCAL_NATIVE"
+
+# ─────────────────────────────────────────────────────────────────────────────
+section "3c. gateway unit normalization strips embedded env and version-manager paths"
+# ─────────────────────────────────────────────────────────────────────────────
+
+eval "$(bash -c "
+    set -euo pipefail
+    IFS=$'\n\t'
+    log() { :; }; die() { echo TEST_DIED=1; exit 1; }
+    source '$SCRIPT_DIR/lib/10-gateway.sh'
+
+    TMP_GATEWAY=\$(mktemp -d)
+    trap 'rm -rf "\$TMP_GATEWAY"' EXIT
+    mkdir -p "\$TMP_GATEWAY/usr/bin" "\$TMP_GATEWAY/usr/lib/node_modules/openclaw/dist"
+    : > "\$TMP_GATEWAY/usr/lib/node_modules/openclaw/openclaw.mjs"
+    : > "\$TMP_GATEWAY/usr/lib/node_modules/openclaw/dist/index.js"
+    ln -sf "\$TMP_GATEWAY/usr/lib/node_modules/openclaw/openclaw.mjs" "\$TMP_GATEWAY/usr/bin/openclaw"
+
+    UNIT="\$TMP_GATEWAY/openclaw-gateway.service"
+    cat > "\$UNIT" <<'EOF'
+[Service]
+ExecStart=/home/test/.nvm/versions/node/v24.14.1/bin/node /home/test/.nvm/versions/node/v24.14.1/lib/node_modules/openclaw/dist/index.js gateway --port 18789
+Environment=OPENCLAW_GATEWAY_TOKEN=secret
+Environment=PATH=/home/test/.nvm/versions/node/v24.14.1/bin:/usr/bin:/bin
+EOF
+
+    resolve_system_node_bin() { printf '%s\n' /usr/bin/node; }
+    resolve_system_openclaw_bin() { printf '%s\n' "\$TMP_GATEWAY/usr/bin/openclaw"; }
+    ACTUAL_USER='$USER'
+
+    normalize_gateway_unit "\$UNIT"
+
+    gw_unit_has_token=no
+    grep -q '^Environment=OPENCLAW_GATEWAY_TOKEN=' "\$UNIT" && gw_unit_has_token=yes || true
+    gw_unit_has_path=no
+    grep -q '^Environment=PATH=' "\$UNIT" && gw_unit_has_path=yes || true
+    gw_unit_uses_nvm=no
+    grep -q '/.nvm/' "\$UNIT" && gw_unit_uses_nvm=yes || true
+    gw_unit_execstart=\$(grep '^ExecStart=' "\$UNIT")
+
+    printf 'GW_UNIT_HAS_TOKEN=%q\n' "\$gw_unit_has_token"
+    printf 'GW_UNIT_HAS_PATH=%q\n' "\$gw_unit_has_path"
+    printf 'GW_UNIT_USES_NVM=%q\n' "\$gw_unit_uses_nvm"
+    printf 'GW_UNIT_EXECSTART=%q\n' "\$gw_unit_execstart"
+" 2>/dev/null)"
+
+assert_eq  "gateway unit drops embedded token" "no" "$GW_UNIT_HAS_TOKEN"
+assert_eq  "gateway unit drops embedded PATH" "no" "$GW_UNIT_HAS_PATH"
+assert_eq  "gateway unit removes version-manager runtime" "no" "$GW_UNIT_USES_NVM"
+assert_has "gateway unit rewrites ExecStart to system runtime" "/usr/bin/node" "$GW_UNIT_EXECSTART"
+assert_has "gateway unit rewrites ExecStart to system package dist" "/usr/lib/node_modules/openclaw/dist/index.js" "$GW_UNIT_EXECSTART"
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "4. AppArmor marker injection"

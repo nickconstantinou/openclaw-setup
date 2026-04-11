@@ -29,13 +29,78 @@ scrub_gateway_unit_environment() {
         "$unit"
 }
 
+gateway_unit_has_embedded_environment() {
+    local unit="$1"
+    [[ -f "$unit" ]] || return 1
+    grep -Eq '^Environment=(OPENCLAW_GATEWAY_TOKEN|PATH)=' "$unit"
+}
+
+gateway_unit_uses_version_manager_runtime() {
+    local unit="$1"
+    [[ -f "$unit" ]] || return 1
+    grep -Eq '^ExecStart=.*(/\.nvm/|/\.asdf/|/\.volta/|/\.fnm/|/\.bun/)' "$unit"
+}
+
+wait_for_gateway_unit_file() {
+    local unit="$1"
+    local secs="${2:-10}"
+    for _ in $(seq 1 "$secs"); do
+        [[ -f "$unit" ]] && return 0
+        sleep 1
+    done
+    return 1
+}
+
+normalize_gateway_unit_execstart() {
+    local unit="$1"
+    [[ -f "$unit" ]] || return 1
+
+    local oc_bin node_bin oc_real oc_pkg desired_exec
+    oc_bin=$(resolve_system_openclaw_bin 2>/dev/null || true)
+    node_bin=$(resolve_system_node_bin 2>/dev/null || true)
+    [[ -n "$oc_bin" ]] && [[ -n "$node_bin" ]] || return 0
+
+    oc_real=$(readlink -f "$oc_bin" 2>/dev/null || true)
+    [[ -n "$oc_real" ]] || return 0
+    oc_pkg=$(dirname "$oc_real")
+    [[ -f "$oc_pkg/dist/index.js" ]] || return 0
+
+    desired_exec="ExecStart=$node_bin $oc_pkg/dist/index.js gateway --port 18789"
+    python3 - "$unit" "$desired_exec" <<'PYEOF'
+from pathlib import Path
+import sys
+unit = Path(sys.argv[1])
+desired = sys.argv[2]
+lines = unit.read_text(encoding='utf-8').splitlines()
+out = []
+replaced = False
+for line in lines:
+    if line.startswith('ExecStart=') and not replaced:
+        out.append(desired)
+        replaced = True
+    else:
+        out.append(line)
+if not replaced:
+    out.append(desired)
+unit.write_text('\n'.join(out) + '\n', encoding='utf-8')
+PYEOF
+}
+
+normalize_gateway_unit() {
+    local unit="$1"
+    wait_for_gateway_unit_file "$unit" 15 || return 1
+    scrub_gateway_unit_environment "$unit"
+    normalize_gateway_unit_execstart "$unit"
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$unit" 2>/dev/null || true
+}
+
 # ── 18. INSTALL & START GATEWAY ───────────────────────────────────────────────
 install_gateway_service() {
     log "Installing gateway service..."
     ensure_system_node_runtime
 
     local oc_bin
-    oc_bin=$(resolve_openclaw_bin) || die "'openclaw' binary not found for gateway install."
+    oc_bin=$(resolve_system_openclaw_bin) || die "System-global 'openclaw' binary not found for gateway install."
     local install_path
     install_path="/bin:/sbin:/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin"
 
@@ -93,8 +158,8 @@ EOF
         "$oc_bin" gateway install --force --runtime node || die "Gateway install failed."
 
     local unit="$ACTUAL_HOME/.config/systemd/user/openclaw-gateway.service"
-    if [[ -f "$unit" ]]; then
-        scrub_gateway_unit_environment "$unit"
+    if [[ -f "$unit" ]] || wait_for_gateway_unit_file "$unit" 15; then
+        normalize_gateway_unit "$unit" || true
     fi
 
     if [[ -f "$unit" ]] && command -v aa-exec >/dev/null 2>&1; then
@@ -120,6 +185,13 @@ EOF
                 warn_apparmor_unconfined
             fi
         fi
+    fi
+
+    if gateway_unit_has_embedded_environment "$unit"; then
+        log "WARNING: Gateway unit still contains embedded OPENCLAW_GATEWAY_TOKEN or PATH after normalization."
+    fi
+    if gateway_unit_uses_version_manager_runtime "$unit"; then
+        log "WARNING: Gateway unit ExecStart still references a version-manager runtime after normalization."
     fi
 
     # GAP 1: Performance Tuning Drop-in (docs/vps.md)

@@ -45,6 +45,21 @@ resolve_system_openclaw_bin() {
     return 1
 }
 
+run_system_npm_global_install() {
+    local npm_bin="$1"
+    shift
+
+    env -i \
+        HOME=/root \
+        PATH=/usr/bin:/usr/local/bin:/bin \
+        npm_config_cache=/root/.npm \
+        npm_config_prefix=/usr \
+        XDG_CONFIG_HOME=/root/.config \
+        XDG_DATA_HOME=/root/.local/share \
+        DEBIAN_FRONTEND=noninteractive \
+        "$npm_bin" install -g "$@"
+}
+
 system_node_is_supported() {
     local node_bin node_ver node_major
     node_bin=$(resolve_system_node_bin 2>/dev/null) || return 1
@@ -159,11 +174,17 @@ upgrade_npm() {
 install_openclaw() {
     ensure_system_node_runtime
 
-    # Check for existing binary in common install locations (runs as root, so check explicit paths)
+    # Only treat a system-global openclaw binary as canonical for service installs.
     local oc_bin
     oc_bin=$(resolve_system_openclaw_bin 2>/dev/null || true)
-    [[ -z "$oc_bin" ]] && oc_bin=$(command -v openclaw 2>/dev/null || true)
-    [[ -z "$oc_bin" ]] && oc_bin=$(sudo -u "$ACTUAL_USER" env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" which openclaw 2>/dev/null || true)
+    if [[ -z "$oc_bin" ]]; then
+        local user_oc_bin=""
+        user_oc_bin=$(command -v openclaw 2>/dev/null || true)
+        [[ -z "$user_oc_bin" ]] && user_oc_bin=$(sudo -u "$ACTUAL_USER" env PATH="/usr/bin:/usr/local/bin:$ACTUAL_HOME/.local/bin:$PATH" which openclaw 2>/dev/null || true)
+        if [[ -n "$user_oc_bin" ]]; then
+            log "Non-system OpenClaw install detected at $user_oc_bin. Installing a system-global copy for gateway stability."
+        fi
+    fi
     local npm_bin
     npm_bin=$(resolve_system_npm_bin 2>/dev/null || command -v npm 2>/dev/null || true)
     [[ -n "$npm_bin" ]] || die "npm not found after installing system Node.js."
@@ -183,7 +204,7 @@ install_openclaw() {
         upgrade_npm
         # /usr/lib/node_modules is root-owned, so upgrade must run as root.
         # Use HOME=/root so root's npm cache stays out of the user's ~/.npm.
-        if HOME=/root "$npm_bin" install -g openclaw@latest --quiet 2>&1; then
+        if run_system_npm_global_install "$npm_bin" openclaw@latest --quiet 2>&1; then
             local new_ver; new_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
             log "OpenClaw upgraded: $oc_ver → $new_ver"
         else
@@ -243,8 +264,14 @@ install_openclaw() {
     fi
 
     local installed_oc_bin
-    installed_oc_bin=$(resolve_system_openclaw_bin 2>/dev/null || command -v openclaw 2>/dev/null || true)
-    [[ -n "$installed_oc_bin" ]] || die "'openclaw' binary not found after install."
+    installed_oc_bin=$(resolve_system_openclaw_bin 2>/dev/null || true)
+    if [[ -z "$installed_oc_bin" ]]; then
+        log "System-global OpenClaw binary not found after installer. Installing via system npm..."
+        run_system_npm_global_install "$npm_bin" openclaw@latest --quiet \
+            || die "System-global OpenClaw install failed after installer run."
+        installed_oc_bin=$(resolve_system_openclaw_bin 2>/dev/null || true)
+    fi
+    [[ -n "$installed_oc_bin" ]] || die "System-global 'openclaw' binary not found after install."
     log "OpenClaw installed: $installed_oc_bin"
 }
 

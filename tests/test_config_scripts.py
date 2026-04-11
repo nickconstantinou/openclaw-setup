@@ -284,5 +284,17 @@ class TestConfigScripts(unittest.TestCase):
             r'mv "\$sanitized_envd" "\$envd_file"\n\s*chmod 600 "\$envd_file"\n\s*chown "\$ACTUAL_USER:\$ACTUAL_USER" "\$envd_file"',
         )
 
+    def test_gateway_install_prefers_system_openclaw_and_health_checks_unit_config(self):
+        install_script = (ROOT / "lib/10-gateway.sh").read_text(encoding="utf-8")
+        core_script = (ROOT / "lib/02-install-core.sh").read_text(encoding="utf-8")
+        health_script = (ROOT / "lib/11-health.sh").read_text(encoding="utf-8")
+
+        self.assertIn('oc_bin=$(resolve_system_openclaw_bin)', install_script)
+        self.assertIn('normalize_gateway_unit "$unit"', install_script)
+        self.assertIn('gateway_unit_has_embedded_environment "$unit"', install_script)
+        self.assertIn('gateway_unit_uses_version_manager_runtime "$unit"', install_script)
+        self.assertIn('run_system_npm_global_install()', core_script)
+        self.assertIn('check_gateway_service_config()', health_script)
+
 if __name__ == "__main__":
     unittest.main()
