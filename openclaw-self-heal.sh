@@ -107,6 +107,7 @@ main() {
     setup_agent_comms
     init_memory_index
     run_doctor
+    exclude_claude_cli_from_openclaw
     rotate_device_scopes
     run_health_suite
     

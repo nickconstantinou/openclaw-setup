@@ -128,7 +128,9 @@ prewarm_codex_acp_adapter() {
     fi
 
     log "Prewarming Codex ACP adapter..."
-    if timeout 20 sudo -u "$ACTUAL_USER" env \
+    # 20s was exactly the timeout — npx package download can take the full budget on
+    # a cold cache. 60s gives headroom without blocking the deploy meaningfully.
+    if timeout 60 sudo -u "$ACTUAL_USER" env \
         HOME="$ACTUAL_HOME" \
         PATH="$user_path" \
         npm_config_cache="$ACTUAL_HOME/.npm" \

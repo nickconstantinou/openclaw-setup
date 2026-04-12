@@ -334,15 +334,22 @@ generate_agent_skills_md() {
     fi
     
     # For each agent, generate SKILLS.md
+    # Skip agents whose workspace directory doesn't exist (e.g. codex only has an
+    # agent state dir, not a full workspace) — open() would throw and exit non-zero,
+    # triggering the fallback warning even when the named agents succeeded.
     echo "$agents_json" | python3 -c "
 import json, os, sys
 agents = json.load(sys.stdin)
+base = f'/home/{os.environ.get(\"ACTUAL_USER\", \"openclaw\")}/.openclaw/agents'
 for agent in agents:
     agent_id = agent.get('id', 'unknown')
+    workspace = f'{base}/{agent_id}/workspace'
+    if not os.path.isdir(workspace):
+        continue
     tools = agent.get('tools', {})
     allowlist = tools.get('allow', [])
     profile = tools.get('profile', 'custom')
-    
+
     skills_content = f'''# Skills Guide - {agent_id.upper()}
 
 Auto-generated from agent config.
@@ -352,7 +359,7 @@ Auto-generated from agent config.
 
 ## When to Use Skills
 - Building features → Use superpowers skill
-- Large projects → Use gsd skill  
+- Large projects → Use gsd skill
 - Code review → Use code-review skill
 - Refactoring → Use refactoring skill
 
@@ -374,10 +381,8 @@ Auto-generated from agent config.
 - TOOLS.md - Available tools
 - SKILLS.md - This file
 '''
-    
-    # Write to agent workspace
-    workspace = f'/home/{os.environ.get(\"ACTUAL_USER\", \"openclaw\")}/.openclaw/agents/{agent_id}/workspace/SKILLS.md'
-    with open(workspace, 'w') as f:
+
+    with open(f'{workspace}/SKILLS.md', 'w') as f:
         f.write(skills_content)
     print(f'Created SKILLS.md for {agent_id}')
 " 2>/dev/null || log "WARN: Failed to generate SKILLS.md via Python"

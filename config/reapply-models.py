@@ -16,9 +16,11 @@ def main():
     config = load_config(cfg)
 
     catalog = {
-        # OpenAI Codex Pro (OAuth) — confirmed available models only
-        # gpt-5.4 is the only confirmed Codex Pro model kept in this setup.
+        # OpenAI Codex Pro (OAuth)
         'openai-codex/gpt-5.4':               {'alias': 'gpt-5'},
+        'openai-codex/gpt-5.4-mini':          {'alias': 'gpt-5-mini'},
+        'openai-codex/gpt-5.3-codex':         {'alias': 'gpt-5-codex'},
+        'openai-codex/gpt-5.2':               {'alias': 'gpt-5-2'},
         # MiniMax
         'minimax/MiniMax-M2.7':               {'alias': 'minimax'},
         'minimax/MiniMax-M2.5':               {'alias': 'minimax-m25'},
@@ -42,12 +44,14 @@ def main():
     }
 
     # Add openai-codex provider (OAuth — no API key needed, uses auth profile)
-    # Only confirmed-available Codex Pro models listed here.
     openai_codex_provider = {
         'baseUrl': 'https://chatgpt.com/backend-api',
         'api': 'openai-codex-responses',
         'models': [
-            {'id': 'gpt-5.4',             'name': 'GPT-5.4',      'reasoning': False, 'input': ['text', 'image'], 'contextWindow': 128000, 'maxTokens': 16384},
+            {'id': 'gpt-5.4',       'name': 'GPT-5.4',       'reasoning': True,  'input': ['text', 'image'], 'contextWindow': 1050000, 'contextTokens': 272000, 'maxTokens': 128000},
+            {'id': 'gpt-5.4-mini',  'name': 'GPT-5.4 mini',  'reasoning': True,  'input': ['text', 'image'], 'contextWindow': 272000,  'maxTokens': 128000},
+            {'id': 'gpt-5.3-codex', 'name': 'GPT-5.3 Codex', 'reasoning': False, 'input': ['text', 'image'], 'contextWindow': 128000,  'maxTokens': 65536},
+            {'id': 'gpt-5.2',       'name': 'GPT-5.2',        'reasoning': False, 'input': ['text', 'image'], 'contextWindow': 128000,  'maxTokens': 65536},
         ],
     }
     providers = config.setdefault('models', {}).setdefault('providers', {})

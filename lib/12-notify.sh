@@ -68,6 +68,20 @@ print_summary() {
 send_telegram_notification() {
     log "Sending Telegram deployment notification..."
 
+    # Strip all whitespace/CRLF that may have been introduced when the .env was
+    # sourced — Telegram Bot API returns 401 Unauthorized if the token is padded.
+    local bot_token; bot_token="${TELEGRAM_BOT_TOKEN//[$'\r\n\t ']/}"
+    local chat_id;   chat_id="${TELEGRAM_CHAT_ID//[$'\r\n\t ']/}"
+
+    if [[ -z "$bot_token" ]] || [[ "$bot_token" == *"REPLACE_ME"* ]]; then
+        log "  Telegram notification skipped — TELEGRAM_BOT_TOKEN not configured."
+        return 0
+    fi
+    if [[ -z "$chat_id" ]] || [[ "$chat_id" == *"REPLACE_ME"* ]]; then
+        log "  Telegram notification skipped — TELEGRAM_CHAT_ID not configured."
+        return 0
+    fi
+
     local host; host=$(hostname)
     local dns_name; dns_name=$(tailscale status --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('Self',{}).get('DNSName','').rstrip('.'))" 2>/dev/null || echo "localhost")
     local dashboard="https://${dns_name}/"
@@ -91,8 +105,8 @@ EOF
 
     local status; status=$(curl \
         --silent --show-error --write-out "%{http_code}" --max-time 10 \
-        -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-        --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+        -X POST "https://api.telegram.org/bot${bot_token}/sendMessage" \
+        --data-urlencode "chat_id=${chat_id}" \
         --data-urlencode "text=${msg}" \
         --data-urlencode "parse_mode=HTML" \
         -o /dev/null)
@@ -100,6 +114,6 @@ EOF
     if [[ "$status" == "200" ]]; then
         log "Telegram notification sent."
     else
-        log "WARNING: Telegram notification failed (HTTP $status)."
+        log "WARNING: Telegram notification failed (HTTP $status). Check TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env."
     fi
 }

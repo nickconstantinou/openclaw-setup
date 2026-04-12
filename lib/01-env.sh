@@ -15,10 +15,27 @@ scrub_env_placeholders() {
         -e '/^TELEGRAM_BOT_TOKEN_(CODING|MARKETING)=.*$/d' \
         -e '/^TELEGRAM_ALLOWED_USERS_(CODING|MARKETING)=.*$/d' \
         "$env_file"
-    after=$(wc -l < "$env_file")
 
+    # Deduplicate keys — keep last occurrence so real values override placeholders.
+    # Non-assignment lines (comments, blanks) are always preserved.
+    python3 - "$env_file" <<'PYEOF'
+import sys
+path = sys.argv[1]
+lines = open(path).readlines()
+last = {}
+for i, line in enumerate(lines):
+    key = line.split('=', 1)[0] if '=' in line and not line.startswith('#') else None
+    if key:
+        last[key] = i
+out = [line for i, line in enumerate(lines)
+       if '=' not in line or line.startswith('#')
+       or last.get(line.split('=', 1)[0]) == i]
+open(path, 'w').writelines(out)
+PYEOF
+
+    after=$(wc -l < "$env_file")
     if (( after < before )); then
-        log "  Removed stale placeholder/deprecated entries from $env_file"
+        log "  Removed stale/duplicate entries from $env_file ($((before - after)) line(s) removed)"
     fi
 }
 
@@ -58,6 +75,10 @@ resolve_user_context() {
         "OPENCLAW_ACPX_PERMISSION_MODE=approve-all"
         "OPENCLAW_ACPX_NONINTERACTIVE_PERMISSIONS=fail"
         "OPENCLAW_ACPX_PLUGIN_TOOLS_MCP_BRIDGE=false"
+        # OLLAMA_API_KEY must be present so env:default:OLLAMA_API_KEY SecretRefs resolve
+        # during secrets audit (gateway loads it from systemd environment.d, but the
+        # audit runs before the gateway starts).
+        "OLLAMA_API_KEY=ollama-local"
     )
 
     for p in "${placeholders[@]}"; do
@@ -77,15 +98,16 @@ resolve_user_context() {
 
     log "Loading environment from $ENV_FILE"
     set -o allexport
-    # shellcheck source=/dev/null
-    source "$ENV_FILE"
-    
-    # Fallback: source systemd environment.d if .env was scrubbed
+    # Source environment.d first as a baseline, then .env overrides it.
+    # This ensures .env always wins — environment.d is only a fallback for keys
+    # not present in .env (e.g. after a manual scrub or initial deploy).
     local envd_file="$ACTUAL_HOME/.config/environment.d/openclaw.conf"
     if [[ -f "$envd_file" ]]; then
         # shellcheck source=/dev/null
         source "$envd_file"
     fi
+    # shellcheck source=/dev/null
+    source "$ENV_FILE"
     set +o allexport
 
     # ── NVM / LINUXBREW PATH RESOLUTION ──────────────────────────────────────

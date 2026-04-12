@@ -265,6 +265,33 @@ except Exception:
     fi
 }
 
+# ── 17f. EXCLUDE CLAUDE CLI FROM OPENCLAW ────────────────────────────────────
+# Claude CLI (~/.local/bin/claude) is the operator's shell interface for this
+# session and is intentionally NOT registered as an OpenClaw model provider.
+# OpenClaw runs on openai-codex/gpt-5.4 (main) and minimax (family/fallback).
+#
+# The OpenClaw doctor will report a missing `anthropic:claude-cli` auth profile
+# whenever it detects the claude binary on PATH.  This function silences that
+# by marking the anthropic provider as intentionally excluded in the config so
+# the doctor no longer surfaces it as an actionable fix.
+#
+# Note: this does NOT prevent Claude CLI from being installed or updated by
+# other scripts — it only prevents it from being wired into OpenClaw.
+exclude_claude_cli_from_openclaw() {
+    log "Excluding Claude CLI from OpenClaw model registry (intentional — operator tool only)..."
+    local config_file="$ACTUAL_HOME/.openclaw/openclaw.json"
+    [[ -f "$config_file" ]] || return 0
+
+    # Mark anthropic provider as excluded so the doctor skips the auth check.
+    # openclaw config set returns 0 even if the key is a no-op, so this is safe
+    # to run on every deploy.
+    oc config set models.providers.anthropic.excluded true --strict-json 2>/dev/null \
+        && log "  anthropic provider marked excluded — doctor will no longer suggest claude-cli auth." \
+        || log "  INFO: Could not set models.providers.anthropic.excluded (may not be supported by this version — safe to ignore)."
+
+    log "  Claude CLI installation/updates remain allowed; only OpenClaw integration is blocked."
+}
+
 gateway_is_reachable() {
     oc health --json --timeout 5000 >/dev/null 2>&1
 }
