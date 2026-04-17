@@ -18,15 +18,47 @@ scrub_gateway_unit_environment() {
     local unit="$1"
     [[ -f "$unit" ]] || return 0
 
+    # Strip all secret/sensitive env vars baked in by 'oc gateway install'.
+    # Non-secret runtime vars (HOME, TMPDIR, PATH, NODE_EXTRA_CA_CERTS,
+    # OPENCLAW_SERVICE_*, OPENCLAW_GATEWAY_PORT) are kept.
+    # Secrets are provided at runtime via environment.d/openclaw.conf instead,
+    # which prevents them from appearing in 'systemctl show' output.
     sed -i -E \
         -e '/^Environment=OPENCLAW_GATEWAY_TOKEN=/d' \
-        -e '/^Environment=PATH=/d' \
         -e '/^Environment=(OPENAI_API_KEY|CODEX_API_KEY)=/d' \
         -e '/^Environment=.*REPLACE_ME.*$/d' \
         -e '/^Environment=.*=INHERIT$/d' \
-        -e '/^Environment=TELEGRAM_BOT_TOKEN_(CODING|MARKETING)=.*$/d' \
-        -e '/^Environment=TELEGRAM_ALLOWED_USERS_(CODING|MARKETING)=.*$/d' \
+        -e '/^Environment=TELEGRAM_BOT_TOKEN(_CC)?=/d' \
+        -e '/^Environment=TELEGRAM_ALLOWED_USERS(_[A-Z]+)?=/d' \
+        -e '/^Environment=TELEGRAM_BOT_TOKEN_(CODING|MARKETING)=/d' \
+        -e '/^Environment=TELEGRAM_ALLOWED_USERS_(CODING|MARKETING)=/d' \
+        -e '/^Environment=TELEGRAM_CHAT_ID=/d' \
+        -e '/^Environment=TELEGRAM_AGENT_GROUP_ID=/d' \
+        -e '/^Environment=MINIMAX_API_KEY=/d' \
+        -e '/^Environment=GEMINI_API_KEY=/d' \
+        -e '/^Environment=ANTHROPIC_API_KEY=/d' \
+        -e '/^Environment=NVIDIA_API_KEY=/d' \
+        -e '/^Environment=ELEVENLABS_API_KEY=/d' \
+        -e '/^Environment=KLING_(ACCESS|SECRET)_KEY=/d' \
+        -e '/^Environment=RUNWAY_API_KEY=/d' \
+        -e '/^Environment=TAVILY_API_KEY=/d' \
+        -e '/^Environment=GITHUB_(API_KEY|PAT)=/d' \
+        -e '/^Environment=SUPABASE_(URL|SERVICE_KEY|ANON_KEY|ACCESS_TOKEN|REF)=/d' \
+        -e '/^Environment=POSTHOG_(PROJECT_TOKEN|PERSONAL_API_KEY)=/d' \
+        -e '/^Environment=KIT_API_KEY=/d' \
+        -e '/^Environment=BUFFER_API_KEY=/d' \
+        -e '/^Environment=RESEND_API_KEY=/d' \
+        -e '/^Environment=OUTSCRAPER_API_KEY=/d' \
+        -e '/^Environment=POST_BRIDGE_API_KEY=/d' \
+        -e '/^Environment=GWS_(CREDENTIALS|ENCRYPTION_KEY)_B64=/d' \
+        -e '/^Environment=GOOGLE_WORKSPACE_CLI_(CLIENT_ID|CLIENT_SECRET)=/d' \
+        -e '/^Environment=WHATSAPP_ALLOWED_USERS=/d' \
+        -e '/^Environment=WHATSAPP_GROUP_(ID|ALLOW_FROM)=/d' \
+        -e '/^Environment=TRUSTED_ADMIN_IDS=/d' \
+        -e '/^Environment=OPENCLAW_INSTALLER_SHA256=/d' \
+        -e '/^Environment=TEST_DUMMY_KEY=/d' \
         "$unit"
+    log "Gateway unit secrets scrubbed — runtime env provided via environment.d/openclaw.conf"
 }
 
 gateway_unit_has_embedded_environment() {

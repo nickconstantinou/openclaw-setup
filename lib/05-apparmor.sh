@@ -6,6 +6,14 @@
 
 # ── 10. APPARMOR PROFILE ──────────────────────────────────────────────────────
 setup_apparmor() {
+    if [[ "${OPENCLAW_NO_APPARMOR:-0}" == "1" ]]; then
+        log "AppArmor disabled via OPENCLAW_NO_APPARMOR=1. Skipping."
+        # Remove any existing profile so the gateway starts unconfined
+        sudo apparmor_parser -R /etc/apparmor.d/openclaw-gateway 2>/dev/null || true
+        sudo rm -f /etc/apparmor.d/openclaw-gateway 2>/dev/null || true
+        return 0
+    fi
+
     if ! command -v apparmor_status >/dev/null 2>&1 && ! apt-cache show apparmor-utils >/dev/null 2>&1; then
         log "AppArmor not available on this system. Skipping."
         return

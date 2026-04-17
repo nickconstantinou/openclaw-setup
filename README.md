@@ -33,13 +33,14 @@ curl -fsSL --proto '=https' --tlsv1.2 \
 
 **What gets installed:**
 - ✅ OpenClaw gateway (multi-agent orchestrator)
-- ✅ Ollama (local embeddings for memory search)
+- ✅ Ollama (local embeddings — skippable via `OPENCLAW_NO_OLLAMA=1`)
 - ✅ Playwright (browser automation)
 - ✅ Python packages (yt-dlp, pandoc, etc.)
 - ✅ Google Workspace CLI (optional)
 - ✅ UFW firewall (default-deny, Tailscale-aware)
 - ✅ fail2ban intrusion prevention (SSH brute-force protection)
-- ✅ AppArmor security profiles
+- ✅ AppArmor security profiles (skippable via `OPENCLAW_NO_APPARMOR=1`)
+- ✅ Tailscale (skippable via `OPENCLAW_NO_TAILSCALE=1`)
 - ✅ Systemd service units
 
 ### Setup
@@ -61,6 +62,20 @@ curl -fsSL --proto '=https' --tlsv1.2 \
 
     > [!IMPORTANT]
     > **Security**: Configure access control for Telegram and WhatsApp bots. See [Security Configuration](#security-configuration) below.
+
+    **Personal / single-user server opt-outs** — add these to `.env` to skip components you don't need:
+    ```bash
+    # Skip AppArmor profile installation (recommended for personal servers —
+    # the profile is maintained separately from the openclaw release cycle and
+    # can block legitimate file access such as CLAUDE.md)
+    OPENCLAW_NO_APPARMOR=1
+
+    # Skip Tailscale install/verify (if Tailscale is managed separately)
+    OPENCLAW_NO_TAILSCALE=1
+
+    # Skip Ollama install (if you don't use local embeddings)
+    OPENCLAW_NO_OLLAMA=1
+    ```
 
 3.  **Run the deployment**:
     ```bash
@@ -294,7 +309,7 @@ If you plan to let agents manage your Calendar, Gmail, Drive, Docs, or Sheets, y
    ```
 3. Run the automated deployment script to apply the changes (it will auto-add the file-based keyring backend variable for sandbox compatibility):
    ```bash
-   sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
+   sudo bash ~/.openclaw-scripts/update.sh
    ```
    This also repairs both `/usr/bin/gws` and `/usr/local/bin/gws` so they point at the native `gws` binary instead of npm's `run.js` shim.
 4. Authenticate `gws` to generate `credentials.enc` and your `.encryption_key`:
@@ -351,7 +366,7 @@ grep -v '^#' ~/.openclaw/.env | grep '='
 cat ~/.config/environment.d/openclaw.conf
 
 # Re-run deployment to fix
-sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
+sudo bash ~/.openclaw-scripts/update.sh
 ```
 
 #### Telegram Bot Not Responding
@@ -460,14 +475,31 @@ If you encounter issues:
 
 ## Maintenance & Updates
 
-### Updating OpenClaw
+### Day-to-day updates — use `update.sh`
+
+For routine binary updates, config changes, or key rotations on a **running installation**, use the lightweight `update.sh` script instead of re-running the full self-heal:
 
 ```bash
-# Pull latest scripts
 cd ~/.openclaw-scripts
 git pull
+sudo bash update.sh
+```
 
-# Re-run deployment (safe, idempotent)
+`update.sh` does the minimum necessary:
+1. Updates the openclaw binary if a newer version is available
+2. Syncs skills from the workspace
+3. Fixes any `MINIMAX_API_KEY=test` sentinel left in the service unit
+4. Reloads systemd and restarts the gateway
+5. Waits for ready and prints channel status
+
+> [!IMPORTANT]
+> **Do not re-run `openclaw-self-heal.sh` on a working installation.** The full orchestrator tears down and reinstalls the systemd unit, which can bake stale environment variable values (e.g. `MINIMAX_API_KEY=test`) into the service at install time. Use `update.sh` for ongoing maintenance; reserve `self-heal` for fresh installs or completely broken states.
+
+### Full re-deploy (fresh install or broken state only)
+
+```bash
+cd ~/.openclaw-scripts
+git pull
 sudo bash openclaw-self-heal.sh
 ```
 
@@ -476,9 +508,9 @@ sudo bash openclaw-self-heal.sh
 Skills are deployed from `~/.openclaw-scripts/skills/`:
 
 ```bash
-# After modifying skills
+# After modifying skills — use update.sh, not self-heal
 cd ~/.openclaw-scripts
-sudo bash openclaw-self-heal.sh  # Re-deploys all skills
+sudo bash update.sh
 ```
 
 ### Backup & Restore
@@ -546,7 +578,8 @@ account's optional group allowlist aligned with `TELEGRAM_AGENT_GROUP_ID`.
 
 ## Repository Structure
 
-- `openclaw-self-heal.sh`: Main deployment orchestrator.
+- `openclaw-self-heal.sh`: Full deployment orchestrator — for fresh installs and broken states only.
+- `update.sh`: **Lightweight day-to-day update script** — use this for routine updates on a running installation.
 - `lib/`: Modular shell scripts for environment setup, installations, and configuration.
   - `lib/tools/`: **Tool modules** — one file per 3rd-party tool. Each file is the single source of truth for that tool's install logic, AppArmor rules, env var placeholders, and systemd exports.
   - `lib/13-agent-comms.sh`: Final Telegram access adjustments for the main OpenClaw account.
@@ -599,7 +632,7 @@ account's optional group allowlist aligned with `TELEGRAM_AGENT_GROUP_ID`.
    OPENCLAW_GATEWAY_TOKEN=<new_token>
 
    # Re-deploy
-   sudo bash ~/.openclaw-scripts/openclaw-self-heal.sh
+   sudo bash ~/.openclaw-scripts/update.sh
    ```
 
 4. **📊 Monitor API Usage**

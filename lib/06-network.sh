@@ -6,6 +6,11 @@
 
 # ── 11. TAILSCALE ─────────────────────────────────────────────────────────────
 setup_network() {
+    if [[ "${OPENCLAW_NO_TAILSCALE:-0}" == "1" ]]; then
+        log "Tailscale setup disabled via OPENCLAW_NO_TAILSCALE=1. Skipping."
+        return 0
+    fi
+
     log "Setting up Tailscale..."
 
     if ! command -v tailscale >/dev/null 2>&1; then

@@ -132,6 +132,22 @@ check_integrations() {
     else
         log "[HEALTH] WARN — gws not found"
     fi
+
+    # OpenClaw launcher
+    if command -v openclaw >/dev/null 2>&1; then
+        local oc_bin oc_first_line
+        oc_bin=$(command -v openclaw 2>/dev/null || true)
+        oc_first_line=$(head -n 1 "$oc_bin" 2>/dev/null || true)
+        if [[ "$oc_bin" == "/usr/local/bin/openclaw" ]] && [[ "$oc_first_line" == "#!/bin/sh" ]]; then
+            log "[HEALTH] PASS — openclaw launcher normalized at $oc_bin"
+        elif [[ "$oc_first_line" == "#!/usr/bin/env node" ]]; then
+            log "[HEALTH] WARN — openclaw launcher still uses /usr/bin/env node shim at $oc_bin"
+        else
+            log "[HEALTH] WARN — openclaw launcher found at $oc_bin, but wrapper state is unverified"
+        fi
+    else
+        log "[HEALTH] WARN — openclaw not found on PATH"
+    fi
 }
 
 # ── 22e. APPARMOR HEALTH ──────────────────────────────────────────────────────

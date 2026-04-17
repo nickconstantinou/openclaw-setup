@@ -6,6 +6,11 @@
 
 # ── 8. INSTALL & CONFIGURE OLLAMA ─────────────────────────────────────────────
 install_ollama() {
+    if [[ "${OPENCLAW_NO_OLLAMA:-0}" == "1" ]]; then
+        log "Ollama disabled via OPENCLAW_NO_OLLAMA=1. Skipping."
+        return 0
+    fi
+
     if ! command -v ollama >/dev/null 2>&1; then
         log "Downloading Ollama installer..."
         local tmp; tmp=$(mktemp -d)
@@ -20,6 +25,11 @@ install_ollama() {
 
 # ── 9. OLLAMA SYSTEMD & MODELS ────────────────────────────────────────────────
 configure_ollama() {
+    if [[ "${OPENCLAW_NO_OLLAMA:-0}" == "1" ]]; then
+        log "Ollama disabled via OPENCLAW_NO_OLLAMA=1. Skipping configure."
+        return 0
+    fi
+
     log "Configuring Ollama systemd override..."
     local override_dir="/etc/systemd/system/ollama.service.d"
     sudo mkdir -p "$override_dir"

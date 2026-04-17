@@ -45,6 +45,42 @@ resolve_system_openclaw_bin() {
     return 1
 }
 
+resolve_openclaw_native_target() {
+    local candidate
+    for candidate in \
+        /usr/lib/node_modules/openclaw/dist/index.js \
+        /usr/lib/node_modules/openclaw/openclaw.mjs
+    do
+        [[ -f "$candidate" ]] && printf '%s\n' "$candidate" && return 0
+    done
+    return 1
+}
+
+repair_openclaw_launcher() {
+    local native_target
+    native_target=$(resolve_openclaw_native_target 2>/dev/null || true)
+    [[ -n "$native_target" ]] || return 0
+
+    local wrapper_dir="/usr/local/bin"
+    local wrapper="$wrapper_dir/openclaw"
+    local tmp_wrapper
+    tmp_wrapper=$(mktemp)
+    cat >"$tmp_wrapper" <<EOF
+#!/bin/sh
+exec /usr/bin/node "$native_target" "\$@"
+EOF
+    chmod 755 "$tmp_wrapper"
+    chown root:root "$tmp_wrapper" 2>/dev/null || true
+    mkdir -p "$wrapper_dir"
+    mv "$tmp_wrapper" "$wrapper"
+    chmod 755 "$wrapper"
+    chown root:root "$wrapper" 2>/dev/null || true
+
+    ln -sfn "$wrapper" /usr/bin/openclaw
+    ln -sfn "$wrapper" /bin/openclaw
+    log "OpenClaw launcher normalized: $wrapper -> /usr/bin/node $native_target"
+}
+
 run_system_npm_global_install() {
     local npm_bin="$1"
     shift
@@ -175,6 +211,8 @@ install_openclaw() {
     ensure_system_node_runtime
 
     # Only treat a system-global openclaw binary as canonical for service installs.
+    repair_openclaw_launcher || true
+
     local oc_bin
     oc_bin=$(resolve_system_openclaw_bin 2>/dev/null || true)
     if [[ -z "$oc_bin" ]]; then
@@ -205,6 +243,7 @@ install_openclaw() {
         # /usr/lib/node_modules is root-owned, so upgrade must run as root.
         # Use HOME=/root so root's npm cache stays out of the user's ~/.npm.
         if run_system_npm_global_install "$npm_bin" openclaw@latest --quiet 2>&1; then
+            repair_openclaw_launcher || true
             local new_ver; new_ver=$("$oc_bin" --version 2>/dev/null | head -1 | tr -d 'v' || echo "unknown")
             log "OpenClaw upgraded: $oc_ver → $new_ver"
         else
@@ -222,41 +261,21 @@ install_openclaw() {
         return 0
     fi
 
-    log "Installing OpenClaw (checksum enforced)..."
+    log "Installing OpenClaw via npm..."
     # Ensure npm is healthy before attempting install (catches corrupted system npm)
     upgrade_npm
-    local installer_dir; installer_dir=$(mktemp -d)
-    chmod 700 "$installer_dir"
-    local installer_path="$installer_dir/openclaw-install.sh"
+    # Fix any root-owned npm cache files before running install.
+    # Redirect npm_config_cache to /root/.npm so installs never pollute
+    # $ACTUAL_HOME/.npm with root-owned files (the EACCES cause on re-runs).
+    chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
 
     # Early AppArmor cleanup to prevent node EACCES during install
     if [[ -f /etc/apparmor.d/openclaw-gateway ]]; then
         sudo apparmor_parser -R /etc/apparmor.d/openclaw-gateway 2>/dev/null || true
     fi
 
-    log "Downloading OpenClaw installer..."
-    curl -fsSL "https://openclaw.ai/install.sh" -o "$installer_path"
-    chmod 600 "$installer_path"
-
-    log "Verifying installer checksum..."
-    local actual_sha; actual_sha=$(sha256sum "$installer_path" | awk '{print $1}')
-    if [[ "$actual_sha" != "$OPENCLAW_INSTALLER_SHA256" ]]; then
-        rm -rf "$installer_dir"
-        die "Installer checksum mismatch! Expected: $OPENCLAW_INSTALLER_SHA256, Got: $actual_sha"
-    fi
-
-    log "Checksum verified. Running installer..."
-    # Fix any root-owned npm cache files before running installer (stale from prior runs).
-    # Also redirect npm_config_cache to /root/.npm so the installer's npm calls never
-    # pollute $ACTUAL_HOME/.npm with root-owned files (the EACCES cause on re-runs).
-    chown -R "$ACTUAL_USER:$ACTUAL_USER" "$ACTUAL_HOME/.npm" 2>/dev/null || true
-    sudo HOME="$ACTUAL_HOME" \
-        npm_config_cache=/root/.npm \
-        XDG_CONFIG_HOME="$ACTUAL_HOME/.config" \
-        XDG_DATA_HOME="$ACTUAL_HOME/.local/share" \
-        bash "$installer_path" --no-onboard
-
-    rm -rf "$installer_dir"
+    run_system_npm_global_install "$npm_bin" openclaw@latest --quiet \
+        || die "OpenClaw install via npm failed."
 
     if [[ "$ACTUAL_HOME" != "/root" ]] && [[ -d "/root/.openclaw" ]]; then
         log "Cleaning up stale /root/.openclaw..."
