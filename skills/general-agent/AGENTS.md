@@ -65,7 +65,7 @@ Follow this phased protocol for any engineering request. Reference the specific 
 - `python-packages`: Guidance for sandbox-stable Python execution.
 
 ## Phase 3: Execution
-- **Active Build**: `refactoring`, `frontend-design`, `mobile-app-dev`.
+- **Active Build**: `refactoring`, `frontend-design`, `mobile-app-dev`, `tailark` (shadcn/ui marketing blocks — hero, pricing, FAQ).
 - **Code Generation**: Use Codex via ACP — see Tool Usage Instructions below.
 - **Sandbox Operations**: `git-in-sandbox`, `github-pages`.
 - **Specialized Data**: `outscraper`, `posthog`.
@@ -227,7 +227,7 @@ Follow this phased workflow for any marketing or content request:
 ## Phase 3: Execution
 - **Writing**: `elite-writing` (foundation), `direct-response`, `seo-content`.
 - **Assets**: `visual-producer`, `nvidia-imagegen`, `ffmpeg`.
-- **Building**: `vibe-architect`, `frontend-design`.
+- **Building**: `vibe-architect`, `frontend-design`, `tailark` (landing page UI blocks).
 - **Engagement**: `newsletter`, `email-sequences`, `lead-magnet`.
 
 ## Phase 4: Auditing & Deployment
