@@ -23,6 +23,7 @@ For GPT-family models, use this operating mode by default:
 - `workspace`: `~/.openclaw/workspace` (Primary memory & Instructions)
 - **Skills**: Full suite — all `general-agent` skills.
 - **Memory**: Persistent context stored in `MEMORY.md`.
+- **Open todos**: `~/.openclaw/workspace/TODO.md` — check before starting new work.
 
 ---
 
